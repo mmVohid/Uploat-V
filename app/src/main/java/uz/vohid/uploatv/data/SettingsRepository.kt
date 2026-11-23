@@ -31,7 +31,7 @@ class SettingsRepository(private val context: Context) {
     val settings: Flow<AppSettings> = context.dataStore.data.map { p ->
         AppSettings(
             themeMode = p[Keys.THEME].toEnum(ThemeMode.SYSTEM),
-            dynamicColor = p[Keys.DYNAMIC] ?: true,
+            dynamicColor = p[Keys.DYNAMIC] ?: false,
             defaultQuality = p[Keys.QUALITY].toEnum(Quality.BEST),
             saveTreeUri = p[Keys.SAVE_TREE],
             loaded = true,

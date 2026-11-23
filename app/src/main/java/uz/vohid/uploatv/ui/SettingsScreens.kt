@@ -69,6 +69,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -99,10 +100,9 @@ fun SettingsMainScreen(vm: SettingsViewModel, onNavigate: (String) -> Unit, onBa
 
     SettingsPage(title = "Sozlamalar", onBack = onBack) {
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().glass(RoundedCornerShape(28.dp)),
             shape = RoundedCornerShape(28.dp),
-            colors = appCardColors(),
-        border = appCardBorder(),
+            colors = glassCardColors(),
         ) {
             Column {
                 CategoryRow(
@@ -475,7 +475,7 @@ private fun SettingsPage(title: String, onBack: () -> Unit, content: @Composable
 
     Scaffold(
         modifier = Modifier.nestedScroll(scroll.nestedScrollConnection),
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             LargeTopAppBar(
@@ -486,8 +486,8 @@ private fun SettingsPage(title: String, onBack: () -> Unit, content: @Composable
                     }
                 },
                 colors = TopAppBarDefaults.largeTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = Color.Transparent,
                 ),
                 scrollBehavior = scroll,
             )
@@ -537,10 +537,9 @@ private fun SectionLabel(text: String) {
 @Composable
 private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().glass(RoundedCornerShape(24.dp)),
         shape = RoundedCornerShape(24.dp),
-        colors = appCardColors(),
-        border = appCardBorder(),
+        colors = glassCardColors(),
     ) {
         Column(
             modifier = Modifier.padding(vertical = 8.dp),

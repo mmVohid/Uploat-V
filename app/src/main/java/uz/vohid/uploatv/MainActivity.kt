@@ -26,6 +26,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Scaffold
+import uz.vohid.uploatv.ui.GlassScaffold
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Surface
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
@@ -83,7 +88,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val settings by settingsRepo.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
             UploatTheme(themeMode = settings.themeMode, dynamicColor = settings.dynamicColor) {
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+                GlassScaffold {
                     AppRoot(sharedUrl = sharedUrl, onSharedConsumed = { sharedUrl = null })
                 }
             }
@@ -110,6 +115,8 @@ class MainActivity : ComponentActivity() {
 private fun OnboardingDialog(onAccept: () -> Unit, onSkip: () -> Unit) {
     AlertDialog(
         onDismissRequest = {},
+        shape = RoundedCornerShape(28.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.92f),
         title = { Text("Boshlashdan oldin") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -200,8 +207,20 @@ private fun AppRoot(sharedUrl: String?, onSharedConsumed: () -> Unit) {
     }
 
     Scaffold(
+        containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        snackbarHost = { SnackbarHost(snackbar) },
+        snackbarHost = {
+            SnackbarHost(snackbar) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    modifier = Modifier.padding(12.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.92f),
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    actionColor = MaterialTheme.colorScheme.primary,
+                )
+            }
+        },
     ) { _ ->
         // Sahifalar o'ng tomondan suriladi; chapdan o'ngga surish (orqaga ishorasi) bitta qadam qaytaradi
         val slide = tween<IntOffset>(320)

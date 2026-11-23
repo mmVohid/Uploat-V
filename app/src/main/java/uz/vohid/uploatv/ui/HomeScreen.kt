@@ -46,6 +46,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -71,6 +72,7 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -130,7 +132,7 @@ fun HomeScreen(vm: HomeViewModel, snackbar: SnackbarHostState, onOpenSettings: (
     }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = { HomeHeader(onOpenSettings) },
     ) { pad ->
@@ -150,9 +152,13 @@ fun HomeScreen(vm: HomeViewModel, snackbar: SnackbarHostState, onOpenSettings: (
                 OutlinedTextField(
                     value = ui.url,
                     onValueChange = { vm.onUrlChange(it) },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().glass(RoundedCornerShape(20.dp), tintAlpha = 0.4f),
                     singleLine = true,
                     shape = RoundedCornerShape(20.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent,
+                    ),
                     label = { Text("Video havolasi") },
                     placeholder = { Text("https://…") },
                     leadingIcon = { Icon(Icons.Rounded.Link, contentDescription = null) },
@@ -315,10 +321,9 @@ fun HomeScreen(vm: HomeViewModel, snackbar: SnackbarHostState, onOpenSettings: (
 @Composable
 private fun LoadingCard() {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().glass(RoundedCornerShape(20.dp)),
         shape = RoundedCornerShape(20.dp),
-        colors = appCardColors(),
-        border = appCardBorder(),
+        colors = glassCardColors(),
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -334,12 +339,13 @@ private fun LoadingCard() {
 @Composable
 private fun ErrorCard(message: String, onRetry: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer,
-            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+        modifier = Modifier.fillMaxWidth().glass(
+            RoundedCornerShape(20.dp),
+            tint = MaterialTheme.colorScheme.errorContainer,
+            tintAlpha = 0.65f,
         ),
+        shape = RoundedCornerShape(20.dp),
+        colors = glassCardColors(MaterialTheme.colorScheme.onErrorContainer),
     ) {
         Row(
             modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 8.dp),
@@ -356,10 +362,9 @@ private fun ErrorCard(message: String, onRetry: () -> Unit) {
 @Composable
 private fun InfoCard(info: MediaInfo) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().glass(RoundedCornerShape(20.dp)),
         shape = RoundedCornerShape(20.dp),
-        colors = appCardColors(),
-        border = appCardBorder(),
+        colors = glassCardColors(),
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -404,10 +409,9 @@ private fun InfoCard(info: MediaInfo) {
 @Composable
 private fun OptionsCard(ui: HomeUi, vm: HomeViewModel) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().glass(RoundedCornerShape(20.dp)),
         shape = RoundedCornerShape(20.dp),
-        colors = appCardColors(),
-        border = appCardBorder(),
+        colors = glassCardColors(),
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text(
@@ -475,9 +479,13 @@ private fun HomeHeader(onOpenSettings: () -> Unit) {
 @Composable
 private fun ClipCard(url: String, onUse: () -> Unit, onDismiss: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().glass(
+            RoundedCornerShape(20.dp),
+            tint = MaterialTheme.colorScheme.secondaryContainer,
+            tintAlpha = 0.65f,
+        ),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+        colors = glassCardColors(MaterialTheme.colorScheme.onSecondaryContainer),
     ) {
         Row(
             modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 4.dp),

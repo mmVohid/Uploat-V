@@ -65,6 +65,7 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation("dev.chrisbanes.haze:haze:1.6.10")
 
     val ytdl = "0.17.3"
     implementation("io.github.junkfood02.youtubedl-android:library:$ytdl")

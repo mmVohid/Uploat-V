@@ -45,13 +45,6 @@ import uz.vohid.uploatv.download.DEFAULT_FOLDER
 import uz.vohid.uploatv.download.DownloadItem
 import uz.vohid.uploatv.download.Status
 
-/** Kartochkalar fondan yaxshi ajralishi uchun: bir oz ochroq rang + yengil chegara. */
-@Composable
-fun appCardColors() = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
-
-@Composable
-fun appCardBorder() = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
 /** 16:9 rasm; rasm bo'lmasa tur ikonkasi ko'rsatiladi. */
 @Composable
 fun Thumbnail(url: String?, modifier: Modifier = Modifier) {
@@ -88,10 +81,9 @@ fun DownloadRow(
     modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().glass(RoundedCornerShape(20.dp)),
         shape = RoundedCornerShape(20.dp),
-        colors = appCardColors(),
-        border = appCardBorder(),
+        colors = glassCardColors(),
     ) {
         Column(Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
