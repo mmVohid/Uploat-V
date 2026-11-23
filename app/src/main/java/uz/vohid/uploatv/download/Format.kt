@@ -14,6 +14,13 @@ fun formatEta(seconds: Long): String {
 
 fun formatDuration(seconds: Long): String = formatEta(seconds)
 
+fun formatBytes(bytes: Long): String = when {
+    bytes < 1024 -> "$bytes B"
+    bytes < 1024 * 1024 -> String.format(Locale.US, "%.0f KB", bytes / 1024.0)
+    bytes < 1024L * 1024 * 1024 -> String.format(Locale.US, "%.1f MB", bytes / (1024.0 * 1024))
+    else -> String.format(Locale.US, "%.2f GB", bytes / (1024.0 * 1024 * 1024))
+}
+
 const val DEFAULT_FOLDER = "Download/Uploat-V"
 
 /** SAF papka manzilini o'qiladigan ko'rinishga keltiradi: "Ichki xotira/Movies/Videolar". */

@@ -33,13 +33,13 @@ jobs:
           name: Uploat-V-apk
           path: Uploat-V.apk
 
-      # main'ga push qilinganda telefon orqali yuklab olish uchun "latest" release yangilanadi
-      - name: Publish latest release
+      # main'ga push qilinganda har build alohida release bo'ladi (v1.0.<build raqami>).
+      # Ilova ichidagi "Avtomatik yangilash" shu raqamni solishtiradi.
+      - name: Publish release
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release delete latest --yes --cleanup-tag || true
-          gh release create latest Uploat-V.apk --prerelease \
-            --title "Uploat-V (so'nggi build)" \
+          gh release create "v1.0.${{ github.run_number }}" Uploat-V.apk --latest \
+            --title "Uploat-V 1.0.${{ github.run_number }}" \
             --notes "Avtomatik build: ${GITHUB_SHA::7}"

@@ -48,11 +48,18 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val _ui = MutableStateFlow(HomeUi())
     val ui: StateFlow<HomeUi> = _ui.asStateFlow()
     private var fetchJob: Job? = null
+    private var incognito = false
 
     init {
         viewModelScope.launch {
-            val s = settings.settings.first()
-            _ui.update { it.copy(quality = s.defaultQuality) }
+            var first = true
+            settings.settings.collect { s ->
+                incognito = s.incognito
+                if (first) {
+                    first = false
+                    _ui.update { it.copy(quality = s.defaultQuality) }
+                }
+            }
         }
     }
 
@@ -89,6 +96,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                 uploader = info.uploader,
                 quality = s.quality,
                 playlist = info.isPlaylist,
+                incognito = incognito,
             )
         )
         _ui.update { it.copy(url = "", info = null, error = null, fetching = false, wholePlaylist = false) }

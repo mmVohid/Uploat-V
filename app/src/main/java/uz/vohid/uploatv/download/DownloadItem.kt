@@ -22,6 +22,8 @@ data class DownloadItem(
     /** Fayl saqlangan joy (ko'rsatish uchun), masalan "Download/Uploat-V". */
     val savedTo: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
+    /** Inkognito rejimida yuklangan: tarixga saqlanmaydi. */
+    val incognito: Boolean = false,
 ) {
     val isActive get() = status == Status.QUEUED || status == Status.RUNNING
 

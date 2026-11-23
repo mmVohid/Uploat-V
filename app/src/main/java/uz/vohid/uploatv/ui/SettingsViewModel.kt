@@ -15,7 +15,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import uz.vohid.uploatv.UploatApp
+import uz.vohid.uploatv.download.AppCheck
+import uz.vohid.uploatv.download.AppUpdater
+import uz.vohid.uploatv.download.DownloadManager
 import uz.vohid.uploatv.download.EngineUpdater
+import uz.vohid.uploatv.download.formatBytes
+import java.io.File
 import uz.vohid.uploatv.data.AppSettings
 import uz.vohid.uploatv.data.Quality
 import uz.vohid.uploatv.data.SettingsRepository
@@ -28,6 +33,17 @@ data class EngineUi(
     val messageOk: Boolean = true,
 )
 
+data class CacheUi(
+    val bytes: Long? = null,
+    val busy: Boolean = false,
+    val message: String? = null,
+)
+
+data class AppUpdateUi(
+    val checking: Boolean = false,
+    val result: AppCheck? = null,
+)
+
 class SettingsViewModel(app: Application) : AndroidViewModel(app) {
 
     private val repo = SettingsRepository(app)
@@ -38,6 +54,12 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     private val _engine = MutableStateFlow(EngineUi())
     val engine: StateFlow<EngineUi> = _engine.asStateFlow()
 
+    private val _cache = MutableStateFlow(CacheUi())
+    val cache: StateFlow<CacheUi> = _cache.asStateFlow()
+
+    private val _appUpdate = MutableStateFlow(AppUpdateUi())
+    val appUpdate: StateFlow<AppUpdateUi> = _appUpdate.asStateFlow()
+
     init {
         loadVersion()
     }
@@ -47,6 +69,58 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     fun setDefaultQuality(q: Quality) = viewModelScope.launch { repo.setDefaultQuality(q) }
     fun setNotifyOnDone(on: Boolean) = viewModelScope.launch { repo.setNotifyOnDone(on) }
     fun setSaveTree(uri: String?) = viewModelScope.launch { repo.setSaveTree(uri) }
+    fun setIncognito(on: Boolean) = viewModelScope.launch { repo.setIncognito(on) }
+    fun setAutoUpdateApp(on: Boolean) = viewModelScope.launch { repo.setAutoUpdateApp(on) }
+
+    // ---------- Uploat-V yangilanishi ----------
+
+    fun checkAppNow() {
+        if (_appUpdate.value.checking) return
+        _appUpdate.update { it.copy(checking = true) }
+        viewModelScope.launch {
+            val result = AppUpdater.check(getApplication())
+            _appUpdate.update { AppUpdateUi(checking = false, result = result) }
+        }
+    }
+
+    // ---------- Kesh ----------
+
+    private fun cacheDirs(): List<File> {
+        val app = getApplication<Application>()
+        return listOf(app.cacheDir, File(app.getExternalFilesDir(null) ?: app.filesDir, "tmp"))
+    }
+
+    fun refreshCache() {
+        viewModelScope.launch {
+            val size = withContext(Dispatchers.IO) {
+                cacheDirs().sumOf { dir -> dir.walkTopDown().filter { it.isFile }.sumOf { it.length() } }
+            }
+            _cache.update { it.copy(bytes = size) }
+        }
+    }
+
+    fun clearCache() {
+        if (_cache.value.busy) return
+        if (DownloadManager.items.value.any { it.isActive }) {
+            _cache.update { it.copy(message = "Yuklash davom etayotganda keshni tozalab bo'lmaydi") }
+            return
+        }
+        _cache.update { it.copy(busy = true, message = null) }
+        viewModelScope.launch {
+            val freed = withContext(Dispatchers.IO) {
+                var total = 0L
+                val dirs = cacheDirs()
+                dirs.forEach { dir ->
+                    total += dir.walkTopDown().filter { it.isFile }.sumOf { it.length() }
+                }
+                // Papkalarning o'zi qoladi, ichidagilari o'chadi
+                dirs[0].listFiles()?.forEach { it.deleteRecursively() }
+                dirs[1].deleteRecursively()
+                total
+            }
+            _cache.update { CacheUi(bytes = 0L, busy = false, message = "${formatBytes(freed)} tozalandi") }
+        }
+    }
 
     private fun loadVersion() {
         viewModelScope.launch {

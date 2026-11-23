@@ -12,8 +12,10 @@ android {
         applicationId = "uz.vohid.uploatv"
         minSdk = 29
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        // CI'da build raqami versionCode bo'ladi: yangilanish tekshiruvi shu raqamni solishtiradi
+        val build = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
+        versionCode = build
+        versionName = "1.0.$build"
 
         // yt-dlp + Python + ffmpeg juda og'ir, shu sabab faqat arm64 (deyarli barcha zamonaviy telefonlar)
         ndk { abiFilters += listOf("arm64-v8a") }

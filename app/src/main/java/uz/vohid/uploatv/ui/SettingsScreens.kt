@@ -56,6 +56,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -77,6 +78,7 @@ import uz.vohid.uploatv.data.Quality
 import uz.vohid.uploatv.data.ThemeMode
 import uz.vohid.uploatv.download.DEFAULT_FOLDER
 import uz.vohid.uploatv.download.describeTree
+import uz.vohid.uploatv.download.formatBytes
 
 /** Sozlamalar sahifalarining yo'llari (navigatsiya manzillari). */
 object SettingsRoutes {
@@ -343,6 +345,9 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
         }
     }
 
+    val cache by vm.cache.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { vm.refreshCache() }
+
     SettingsPage(title = "Yuklash", onBack = onBack) {
         SettingsCard {
             LabeledRow("Standart video sifati") {
@@ -372,6 +377,27 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
                     modifier = Modifier.padding(horizontal = 8.dp),
                 ) { Text("Standart papkaga qaytarish") }
             }
+            SwitchRow(
+                title = "Inkognito",
+                subtitle = "Yuklab olish tarixini o'chirib qo'ying: yuklashlar tarixga saqlanmaydi",
+                checked = settings.incognito,
+                onChange = vm::setIncognito,
+            )
+        }
+
+        SectionLabel("Ma'lumotlar va xotira")
+        SettingsCard {
+            ClickableRow(
+                title = "Keshni tozalash",
+                value = when {
+                    cache.busy -> "Tozalanmoqda…"
+                    cache.message != null -> cache.message.orEmpty()
+                    cache.bytes != null -> "Hajmi: ${formatBytes(cache.bytes ?: 0L)}"
+                    else -> "Hajmi hisoblanmoqda…"
+                },
+                hint = "Vaqtinchalik fayllar o'chadi, yuklab olingan videolar saqlanib qoladi",
+                onClick = vm::clearCache,
+            )
         }
     }
 }
@@ -379,11 +405,58 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
 // ======================= Ilova haqida =======================
 
 @Composable
-fun AboutScreen(onBack: () -> Unit) {
+fun AboutScreen(vm: SettingsViewModel, onBack: () -> Unit) {
+    val settings by vm.settings.collectAsStateWithLifecycle()
+    val update by vm.appUpdate.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
     SettingsPage(title = "Ilova haqida", onBack = onBack) {
         SettingsCard {
             InfoRow("Uploat-V", "Versiya ${BuildConfig.VERSION_NAME}")
             InfoRow("Dvigatel", "yt-dlp asosida video yuklovchi")
+        }
+
+        SettingsCard {
+            SwitchRow(
+                title = "Avtomatik yangilash – Uploat-V",
+                subtitle = "GitHub'dan so'nggi versiyani avtomatik ravishda tekshiring.",
+                checked = settings.autoUpdateApp,
+                onChange = vm::setAutoUpdateApp,
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                val result = update.result
+                Text(
+                    text = result?.message ?: "Hali tekshirilmagan",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = when {
+                        result == null -> MaterialTheme.colorScheme.onSurfaceVariant
+                        result.ok -> MaterialTheme.colorScheme.primary
+                        else -> MaterialTheme.colorScheme.error
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(Modifier.width(8.dp))
+                if (update.checking) {
+                    CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.5.dp)
+                } else {
+                    val found = result?.update
+                    if (found != null) {
+                        FilledTonalButton(onClick = {
+                            context.startActivity(
+                                Intent(Intent.ACTION_VIEW, Uri.parse(found.url))
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            )
+                        }) { Text("Yuklab olish") }
+                    } else {
+                        TextButton(onClick = vm::checkAppNow) { Text("Hozir tekshirish") }
+                    }
+                }
+            }
         }
     }
 }
@@ -443,6 +516,16 @@ private fun SettingsPage(title: String, onBack: () -> Unit, content: @Composable
             )
         }
     }
+}
+
+@Composable
+private fun SectionLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(start = 8.dp, top = 8.dp),
+    )
 }
 
 @Composable

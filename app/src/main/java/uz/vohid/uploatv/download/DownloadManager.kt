@@ -79,6 +79,7 @@ object DownloadManager {
                 uploader = null,
                 quality = s.defaultQuality,
                 playlist = false,
+                incognito = s.incognito,
                 detail = "Ma'lumot olinmoqda…",
             )
             _items.update { listOf(item) + it }
@@ -151,7 +152,7 @@ object DownloadManager {
 
     private fun persist() {
         scope.launch {
-            val finished = _items.value.filter { !it.isActive }.take(HISTORY_LIMIT)
+            val finished = _items.value.filter { !it.isActive && !it.incognito }.take(HISTORY_LIMIT)
             HistoryStore.save(app, finished)
         }
     }

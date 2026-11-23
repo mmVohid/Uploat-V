@@ -26,6 +26,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.ui.platform.LocalContext
+import android.net.Uri
+import uz.vohid.uploatv.download.AppUpdater
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -160,6 +165,26 @@ private fun AppRoot(sharedUrl: String?, onSharedConsumed: () -> Unit) {
         )
     }
 
+    // Uploat-V yangilanishini avtomatik tekshirish (yoqilgan bo'lsa, kuniga bir marta)
+    val context = LocalContext.current
+    LaunchedEffect(settings.loaded, settings.autoUpdateApp) {
+        if (settings.loaded && settings.autoUpdateApp) AppUpdater.checkIfDue(context.applicationContext)
+    }
+    val available by AppUpdater.available.collectAsStateWithLifecycle()
+    LaunchedEffect(available?.tag) {
+        val update = available ?: return@LaunchedEffect
+        val action = snackbar.showSnackbar(
+            message = "Uploat-V yangi versiyasi bor: ${update.tag}",
+            actionLabel = "Yuklab olish",
+            duration = SnackbarDuration.Long,
+        )
+        if (action == SnackbarResult.ActionPerformed) {
+            context.startActivity(
+                Intent(Intent.ACTION_VIEW, Uri.parse(update.url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        }
+    }
+
     LaunchedEffect(sharedUrl) {
         sharedUrl?.let {
             // Sozlamalar ochiq bo'lsa ham, ulashilgan havola Bosh sahifada ko'rinsin
@@ -202,7 +227,7 @@ private fun AppRoot(sharedUrl: String?, onSharedConsumed: () -> Unit) {
             composable(SettingsRoutes.APPEARANCE) { AppearanceScreen(settingsVm) { nav.popBackStack() } }
             composable(SettingsRoutes.ENGINE) { EngineScreen(settingsVm) { nav.popBackStack() } }
             composable(SettingsRoutes.DOWNLOAD) { DownloadSettingsScreen(settingsVm) { nav.popBackStack() } }
-            composable(SettingsRoutes.ABOUT) { AboutScreen { nav.popBackStack() } }
+            composable(SettingsRoutes.ABOUT) { AboutScreen(settingsVm) { nav.popBackStack() } }
         }
     }
 }
