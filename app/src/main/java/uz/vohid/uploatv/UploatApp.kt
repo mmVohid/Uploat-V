@@ -18,6 +18,7 @@ class UploatApp : Application() {
         super.onCreate()
         createChannels()
         DownloadManager.init(this)
+        EngineUpdater.init(this)
 
         // Dvigatel (Python + yt-dlp + ffmpeg) birinchi ishga tushishda ochiladi, shu sabab fonda
         CoroutineScope(Dispatchers.IO).launch {

@@ -3,6 +3,8 @@ package uz.vohid.uploatv.download
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import uz.vohid.uploatv.UploatApp
@@ -13,17 +15,25 @@ object InfoFetcher {
 
     private const val PROCESS_ID = "uploatv-info"
 
-    suspend fun fetch(url: String, noPlaylist: Boolean, processId: String = PROCESS_ID): MediaInfo = withContext(Dispatchers.IO) {
+    suspend fun fetch(
+        url: String,
+        noPlaylist: Boolean,
+        processId: String = PROCESS_ID,
+        cancelled: () -> Boolean = { false },
+    ): MediaInfo = withContext(Dispatchers.IO) {
         UploatApp.engineReady.await()
         EngineUpdater.waitIdle()
-        val request = YoutubeDLRequest(url).apply {
-            addOption("--dump-single-json")
-            addOption("--flat-playlist")
-            addOption("--no-warnings")
-            if (noPlaylist) addOption("--no-playlist")
+        val ctx = currentCoroutineContext()
+        // yt-dlp eskirgan bo'lsa dvigatel yangilanib, bir marta qayta uriniladi
+        EngineUpdater.healing(cancelled = { cancelled() || !ctx.isActive }) {
+            val request = YoutubeDLRequest(url).apply {
+                addOption("--dump-single-json")
+                addOption("--flat-playlist")
+                addOption("--no-warnings")
+                if (noPlaylist) addOption("--no-playlist")
+            }
+            parse(YoutubeDL.getInstance().execute(request, processId).out)
         }
-        val out = YoutubeDL.getInstance().execute(request, processId).out
-        parse(out)
     }
 
     fun cancel() {

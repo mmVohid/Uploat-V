@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -24,6 +25,7 @@ data class EngineUi(
     val version: String? = null,
     val updating: Boolean = false,
     val message: String? = null,
+    val messageOk: Boolean = true,
 )
 
 class SettingsViewModel(app: Application) : AndroidViewModel(app) {
@@ -47,7 +49,9 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun loadVersion() {
         viewModelScope.launch {
-            val v = withContext(Dispatchers.IO) {
+            // Ilova o'zi yangilagan versiya bo'lsa shuni, bo'lmasa ilova ichidagi versiyani ko'rsatamiz
+            val own = repo.settings.first().ytdlpVersion
+            val v = own ?: withContext(Dispatchers.IO) {
                 runCatching {
                     UploatApp.engineReady.await()
                     YoutubeDL.getInstance().version(getApplication())
@@ -61,8 +65,8 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         if (_engine.value.updating) return
         _engine.update { it.copy(updating = true, message = null) }
         viewModelScope.launch {
-            val msg = EngineUpdater.update(getApplication())
-            _engine.update { it.copy(updating = false, message = msg) }
+            val result = EngineUpdater.update(getApplication())
+            _engine.update { it.copy(updating = false, message = result.message, messageOk = result.ok) }
             loadVersion()
         }
     }

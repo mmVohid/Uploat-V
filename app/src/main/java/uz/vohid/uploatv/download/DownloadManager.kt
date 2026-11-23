@@ -86,7 +86,10 @@ object DownloadManager {
             try {
                 val noPlaylist = url.contains("v=") && url.contains("list=")
                 // processId = id: shu id bilan "Bekor qilish" ma'lumot olishni ham to'xtatadi
-                val info = InfoFetcher.fetch(url, noPlaylist, processId = id)
+                val info = InfoFetcher.fetch(
+                    url, noPlaylist, processId = id,
+                    cancelled = { get(id)?.status == Status.CANCELED },
+                )
                 if (get(id)?.status == Status.CANCELED) return@launch
                 mutate(id) {
                     it.copy(
@@ -173,27 +176,32 @@ object DownloadManager {
         try {
             UploatApp.engineReady.await()
             EngineUpdater.waitIdle()
-            dir.deleteRecursively()
-            dir.mkdirs()
 
-            var index = 1
-            var total = 1
-            YoutubeDL.getInstance().execute(buildRequest(item, dir), id) { percent, eta, line ->
-                ITEM_REGEX.find(line)?.let {
-                    index = it.groupValues[1].toInt()
-                    total = it.groupValues[2].toInt()
-                }
-                if (percent >= 0f) {
-                    val overall = if (total > 1) ((index - 1) + percent / 100f) / total else percent / 100f
-                    val parts = buildList {
-                        if (total > 1) add("$index/$total")
-                        if (eta > 0) add("${formatEta(eta)} qoldi")
+            // yt-dlp eskirgan bo'lsa (sayt o'zgargan), dvigatel yangilanib bir marta qayta uriniladi
+            EngineUpdater.healing(cancelled = { get(id)?.status == Status.CANCELED }) {
+                dir.deleteRecursively()
+                dir.mkdirs()
+                mutate(id) { it.copy(progress = 0f, detail = "Boshlanmoqda…") }
+
+                var index = 1
+                var total = 1
+                YoutubeDL.getInstance().execute(buildRequest(item, dir), id) { percent, eta, line ->
+                    ITEM_REGEX.find(line)?.let {
+                        index = it.groupValues[1].toInt()
+                        total = it.groupValues[2].toInt()
                     }
-                    mutate(id) {
-                        it.copy(
-                            progress = maxOf(it.progress, overall.coerceIn(0f, 1f)),
-                            detail = parts.joinToString(" · "),
-                        )
+                    if (percent >= 0f) {
+                        val overall = if (total > 1) ((index - 1) + percent / 100f) / total else percent / 100f
+                        val parts = buildList {
+                            if (total > 1) add("$index/$total")
+                            if (eta > 0) add("${formatEta(eta)} qoldi")
+                        }
+                        mutate(id) {
+                            it.copy(
+                                progress = maxOf(it.progress, overall.coerceIn(0f, 1f)),
+                                detail = parts.joinToString(" · "),
+                            )
+                        }
                     }
                 }
             }

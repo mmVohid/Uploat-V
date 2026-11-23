@@ -154,10 +154,21 @@ fun SettingsSheet(vm: SettingsViewModel, onDismiss: () -> Unit) {
                         Column(Modifier.weight(1f)) {
                             Text("yt-dlp", style = MaterialTheme.typography.bodyLarge)
                             Text(
-                                text = engine.message ?: "Versiya: ${engine.version ?: "…"}",
+                                text = "Versiya: ${engine.version ?: "…"}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                            engine.message?.let {
+                                Text(
+                                    text = it,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (engine.messageOk) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.error
+                                    },
+                                )
+                            }
                         }
                         if (engine.updating) {
                             CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.5.dp)

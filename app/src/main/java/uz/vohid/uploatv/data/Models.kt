@@ -27,6 +27,8 @@ data class AppSettings(
     /** Foydalanuvchi yt-dlp'ni avtomatik yangilashga ruxsat bergan. */
     val autoUpdateYtdlp: Boolean = false,
     val lastUpdateMs: Long = 0L,
+    /** Ilova o'zi yuklab o'rnatgan yt-dlp versiyasi (null — ilova ichidagi birinchi versiya). */
+    val ytdlpVersion: String? = null,
 )
 
 /** Havola bo'yicha yt-dlp qaytargan qisqa ma'lumot. */
