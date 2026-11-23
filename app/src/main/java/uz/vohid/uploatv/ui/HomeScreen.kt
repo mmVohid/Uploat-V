@@ -107,6 +107,7 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.rounded.CameraAlt
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.Tag
@@ -363,6 +364,15 @@ fun HomeScreen(vm: HomeViewModel, snackbar: SnackbarHostState, onOpenSettings: (
                 }
             }
         }
+        AnimatedVisibility(
+            visible = !imeVisible,
+            modifier = Modifier.align(Alignment.BottomCenter),
+            enter = fadeIn() + slideInVertically { it },
+            exit = fadeOut() + slideOutVertically { it },
+        ) {
+            FloatingBar(onPaste = pasteFromClipboard, onSettings = onOpenSettings)
+        }
+      }
     }
 }
 
@@ -498,15 +508,6 @@ private fun OptionsCard(ui: HomeUi, vm: HomeViewModel) {
                 }
             }
         }
-        AnimatedVisibility(
-            visible = !imeVisible,
-            modifier = Modifier.align(Alignment.BottomCenter),
-            enter = fadeIn() + slideInVertically { it },
-            exit = fadeOut() + slideOutVertically { it },
-        ) {
-            FloatingBar(onPaste = pasteFromClipboard, onSettings = onOpenSettings)
-        }
-      }
     }
 }
 
