@@ -4,10 +4,9 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Bulut; ichidagi pastga o'q teshik (evenOdd) bo'lib, monoxrom rejimda ham o'qiladi -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M54,72 L36,52 L47,52 L47,32 L61,32 L61,52 L72,52 Z" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M35,77 L73,77 L73,83 L35,83 Z" />
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M40,68 C31,68 25,62 25,55 C25,48 31,43 38,43 C40,35 47,30 55,30 C65,30 72,37 73,46 C80,47 84,52 84,58 C84,64 79,68 72,68 Z M50,40 L58,40 L58,54 L65,54 L54,65 L43,54 L50,54 Z" />
 </vector>
