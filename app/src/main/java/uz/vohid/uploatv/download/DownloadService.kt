@@ -12,6 +12,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
+import uz.vohid.uploatv.data.SettingsRepository
 import kotlinx.coroutines.launch
 import uz.vohid.uploatv.MainActivity
 import uz.vohid.uploatv.R
@@ -38,7 +40,7 @@ class DownloadService : Service() {
         return START_NOT_STICKY
     }
 
-    private fun onItems(items: List<DownloadItem>) {
+    private suspend fun onItems(items: List<DownloadItem>) {
         val nm = getSystemService(NotificationManager::class.java)
         val active = items.filter { it.isActive }
         seen += active.map { it.id }
@@ -47,7 +49,8 @@ class DownloadService : Service() {
             stopForeground(STOP_FOREGROUND_REMOVE)
             val done = items.count { it.id in seen && it.status == Status.DONE }
             val failed = items.count { it.id in seen && it.status == Status.FAILED }
-            if (done + failed > 0) {
+            val notify = SettingsRepository(this).settings.first().notifyOnDone
+            if (notify && done + failed > 0) {
                 val text = buildString {
                     if (done > 0) append("$done ta yuklash tayyor")
                     if (failed > 0) append(if (done > 0) ", $failed ta xatolik" else "$failed ta xatolik")

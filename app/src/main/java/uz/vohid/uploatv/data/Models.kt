@@ -29,6 +29,8 @@ data class AppSettings(
     val lastUpdateMs: Long = 0L,
     /** Ilova o'zi yuklab o'rnatgan yt-dlp versiyasi (null — ilova ichidagi birinchi versiya). */
     val ytdlpVersion: String? = null,
+    /** Barcha yuklashlar tugaganda bildirishnoma ko'rsatish. */
+    val notifyOnDone: Boolean = true,
 )
 
 /** Havola bo'yicha yt-dlp qaytargan qisqa ma'lumot. */

@@ -22,6 +22,7 @@ class SettingsRepository(private val context: Context) {
         val AUTO_UPDATE = booleanPreferencesKey("auto_update_ytdlp")
         val LAST_UPDATE = longPreferencesKey("last_update_ms")
         val YTDLP_VERSION = stringPreferencesKey("ytdlp_version")
+        val NOTIFY_DONE = booleanPreferencesKey("notify_on_done")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { p ->
@@ -35,6 +36,7 @@ class SettingsRepository(private val context: Context) {
             autoUpdateYtdlp = p[Keys.AUTO_UPDATE] ?: false,
             lastUpdateMs = p[Keys.LAST_UPDATE] ?: 0L,
             ytdlpVersion = p[Keys.YTDLP_VERSION],
+            notifyOnDone = p[Keys.NOTIFY_DONE] ?: true,
         )
     }
 
@@ -46,6 +48,7 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setAutoUpdate(on: Boolean) = context.dataStore.edit { it[Keys.AUTO_UPDATE] = on }
     suspend fun setLastUpdate(ms: Long) = context.dataStore.edit { it[Keys.LAST_UPDATE] = ms }
+    suspend fun setNotifyOnDone(on: Boolean) = context.dataStore.edit { it[Keys.NOTIFY_DONE] = on }
     suspend fun setYtdlpVersion(v: String) = context.dataStore.edit { it[Keys.YTDLP_VERSION] = v }
 
     suspend fun setTheme(mode: ThemeMode) = context.dataStore.edit { it[Keys.THEME] = mode.name }

@@ -86,8 +86,7 @@ import uz.vohid.uploatv.download.formatDuration
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(vm: HomeViewModel, settingsVm: SettingsViewModel, snackbar: SnackbarHostState) {
-    var showSettings by rememberSaveable { mutableStateOf(false) }
+fun HomeScreen(vm: HomeViewModel, snackbar: SnackbarHostState, onOpenSettings: () -> Unit) {
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val ui by vm.ui.collectAsStateWithLifecycle()
     val items by DownloadManager.items.collectAsStateWithLifecycle()
@@ -104,7 +103,7 @@ fun HomeScreen(vm: HomeViewModel, settingsVm: SettingsViewModel, snackbar: Snack
             LargeTopAppBar(
                 title = { Text("Uploat-V") },
                 actions = {
-                    IconButton(onClick = { showSettings = true }) {
+                    IconButton(onClick = onOpenSettings) {
                         Icon(Icons.Rounded.Settings, contentDescription = "Sozlamalar")
                     }
                 },
@@ -112,7 +111,6 @@ fun HomeScreen(vm: HomeViewModel, settingsVm: SettingsViewModel, snackbar: Snack
             )
         },
     ) { pad ->
-        SettingsHost(show = showSettings, vm = settingsVm, onDismiss = { showSettings = false })
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -233,11 +231,6 @@ fun HomeScreen(vm: HomeViewModel, settingsVm: SettingsViewModel, snackbar: Snack
             }
         }
     }
-}
-
-@Composable
-private fun SettingsHost(show: Boolean, vm: SettingsViewModel, onDismiss: () -> Unit) {
-    if (show) SettingsSheet(vm = vm, onDismiss = onDismiss)
 }
 
 @Composable

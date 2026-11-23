@@ -39,10 +39,28 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import uz.vohid.uploatv.data.AppSettings
 import uz.vohid.uploatv.data.SettingsRepository
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.ui.unit.IntOffset
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import uz.vohid.uploatv.ui.AboutScreen
+import uz.vohid.uploatv.ui.AppearanceScreen
+import uz.vohid.uploatv.ui.DownloadSettingsScreen
+import uz.vohid.uploatv.ui.EngineScreen
 import uz.vohid.uploatv.ui.HomeScreen
 import uz.vohid.uploatv.ui.HomeViewModel
+import uz.vohid.uploatv.ui.NotificationsScreen
+import uz.vohid.uploatv.ui.SettingsMainScreen
+import uz.vohid.uploatv.ui.SettingsRoutes
 import uz.vohid.uploatv.ui.SettingsViewModel
 import uz.vohid.uploatv.ui.theme.UploatTheme
+
+private const val HOME = "home"
 
 class MainActivity : ComponentActivity() {
 
@@ -123,6 +141,7 @@ private fun AppRoot(sharedUrl: String?, onSharedConsumed: () -> Unit) {
     val homeVm: HomeViewModel = viewModel()
     val settingsVm: SettingsViewModel = viewModel()
     val snackbar = remember { SnackbarHostState() }
+    val nav = rememberNavController()
     val settings by settingsVm.settings.collectAsStateWithLifecycle()
 
     val notificationPermission =
@@ -143,6 +162,8 @@ private fun AppRoot(sharedUrl: String?, onSharedConsumed: () -> Unit) {
 
     LaunchedEffect(sharedUrl) {
         sharedUrl?.let {
+            // Sozlamalar ochiq bo'lsa ham, ulashilgan havola Bosh sahifada ko'rinsin
+            nav.popBackStack(HOME, inclusive = false)
             homeVm.onUrlChange(it, immediate = true)
             onSharedConsumed()
         }
@@ -152,6 +173,36 @@ private fun AppRoot(sharedUrl: String?, onSharedConsumed: () -> Unit) {
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = { SnackbarHost(snackbar) },
     ) { _ ->
-        HomeScreen(vm = homeVm, settingsVm = settingsVm, snackbar = snackbar)
+        // Sahifalar o'ng tomondan suriladi; chapdan o'ngga surish (orqaga ishorasi) bitta qadam qaytaradi
+        val slide = tween<IntOffset>(320)
+        val fade = tween<Float>(320)
+        NavHost(
+            navController = nav,
+            startDestination = HOME,
+            enterTransition = { slideInHorizontally(slide) { it } + fadeIn(fade) },
+            exitTransition = { slideOutHorizontally(slide) { -it / 4 } + fadeOut(fade) },
+            popEnterTransition = { slideInHorizontally(slide) { -it / 4 } + fadeIn(fade) },
+            popExitTransition = { slideOutHorizontally(slide) { it } + fadeOut(fade) },
+        ) {
+            composable(HOME) {
+                HomeScreen(
+                    vm = homeVm,
+                    snackbar = snackbar,
+                    onOpenSettings = { nav.navigate(SettingsRoutes.MAIN) },
+                )
+            }
+            composable(SettingsRoutes.MAIN) {
+                SettingsMainScreen(
+                    vm = settingsVm,
+                    onNavigate = { nav.navigate(it) },
+                    onBack = { nav.popBackStack() },
+                )
+            }
+            composable(SettingsRoutes.NOTIFICATIONS) { NotificationsScreen(settingsVm) { nav.popBackStack() } }
+            composable(SettingsRoutes.APPEARANCE) { AppearanceScreen(settingsVm) { nav.popBackStack() } }
+            composable(SettingsRoutes.ENGINE) { EngineScreen(settingsVm) { nav.popBackStack() } }
+            composable(SettingsRoutes.DOWNLOAD) { DownloadSettingsScreen(settingsVm) { nav.popBackStack() } }
+            composable(SettingsRoutes.ABOUT) { AboutScreen { nav.popBackStack() } }
+        }
     }
 }
