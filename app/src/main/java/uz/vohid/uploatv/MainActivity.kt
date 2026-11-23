@@ -26,6 +26,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.ui.platform.LocalContext
@@ -80,7 +83,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             val settings by settingsRepo.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
             UploatTheme(themeMode = settings.themeMode, dynamicColor = settings.dynamicColor) {
-                AppRoot(sharedUrl = sharedUrl, onSharedConsumed = { sharedUrl = null })
+                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+                    AppRoot(sharedUrl = sharedUrl, onSharedConsumed = { sharedUrl = null })
+                }
             }
         }
     }

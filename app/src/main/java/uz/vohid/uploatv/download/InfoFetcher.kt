@@ -9,6 +9,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import uz.vohid.uploatv.UploatApp
 import uz.vohid.uploatv.data.MediaInfo
+import uz.vohid.uploatv.data.Quality
 
 /** Yuklashdan oldin havola haqida ma'lumot (nom, rasm, davomiylik, mavjud sifat) olish. */
 object InfoFetcher {
@@ -60,7 +61,41 @@ object InfoFetcher {
             isPlaylist = isPlaylist,
             entryCount = if (isPlaylist) (entries?.length() ?: o.optInt("playlist_count")) else 1,
             maxHeight = maxHeight,
+            sizes = if (isPlaylist) emptyMap() else estimateSizes(o.optJSONArray("formats")),
         )
+    }
+
+    /** Formatlar ro'yxatidan har sifat uchun taxminiy hajmni (video + audio) hisoblaydi. */
+    private fun estimateSizes(formats: org.json.JSONArray?): Map<Quality, Long> {
+        if (formats == null) return emptyMap()
+        class F(val height: Int, val size: Long, val hasAudio: Boolean)
+
+        val videos = mutableListOf<F>()
+        var bestAudio = 0L
+        for (i in 0 until formats.length()) {
+            val f = formats.optJSONObject(i) ?: continue
+            val size = f.optLong("filesize", 0L).takeIf { it > 0 } ?: f.optLong("filesize_approx", 0L)
+            if (size <= 0) continue
+            val v = f.optString("vcodec", "none")
+            val a = f.optString("acodec", "none")
+            val height = f.optInt("height", 0)
+            when {
+                v != "none" && height > 0 -> videos += F(height, size, a != "none")
+                v == "none" && a != "none" -> bestAudio = maxOf(bestAudio, size)
+            }
+        }
+        if (videos.isEmpty()) return emptyMap()
+
+        return buildMap {
+            for (q in Quality.entries) {
+                val limit = q.height ?: Int.MAX_VALUE
+                val candidates = videos.filter { it.height <= limit }
+                val top = candidates.maxOfOrNull { it.height } ?: continue
+                val size = candidates.filter { it.height == top }
+                    .maxOf { it.size + if (it.hasAudio) 0L else bestAudio }
+                put(q, size)
+            }
+        }
     }
 
     private fun JSONObject.str(key: String): String? =

@@ -38,6 +38,7 @@ object DownloadManager {
     private const val MAX_PARALLEL = 2
     private const val HISTORY_LIMIT = 100
     private val ITEM_REGEX = Regex("""Downloading item (\d+) of (\d+)""")
+    private val SPEED_REGEX = Regex("""\bat\s+(\d+(?:\.\d+)?\s?[KMGT]?i?B/s)""")
 
     private lateinit var app: Context
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -133,6 +134,14 @@ object DownloadManager {
         persist()
     }
 
+    /** "O'chirildi" xabaridagi "Qaytarish": element ro'yxatga joyiga qaytadi. */
+    fun restore(item: DownloadItem) {
+        _items.update { list ->
+            if (list.any { it.id == item.id }) list else (list + item).sortedByDescending { it.createdAt }
+        }
+        persist()
+    }
+
     fun clearFinished() {
         _items.update { list -> list.filter { it.isActive } }
         persist()
@@ -186,15 +195,18 @@ object DownloadManager {
 
                 var index = 1
                 var total = 1
+                var speed: String? = null
                 YoutubeDL.getInstance().execute(buildRequest(item, dir), id) { percent, eta, line ->
                     ITEM_REGEX.find(line)?.let {
                         index = it.groupValues[1].toInt()
                         total = it.groupValues[2].toInt()
                     }
+                    SPEED_REGEX.find(line)?.let { speed = it.groupValues[1].replace("iB", "B") }
                     if (percent >= 0f) {
                         val overall = if (total > 1) ((index - 1) + percent / 100f) / total else percent / 100f
                         val parts = buildList {
                             if (total > 1) add("$index/$total")
+                            speed?.let { add(it) }
                             if (eta > 0) add("${formatEta(eta)} qoldi")
                         }
                         mutate(id) {

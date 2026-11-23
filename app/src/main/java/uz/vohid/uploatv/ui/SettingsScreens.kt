@@ -35,7 +35,7 @@ import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Palette
-import androidx.compose.material.icons.rounded.SystemUpdate
+import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -101,7 +101,8 @@ fun SettingsMainScreen(vm: SettingsViewModel, onNavigate: (String) -> Unit, onBa
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            colors = appCardColors(),
+        border = appCardBorder(),
         ) {
             Column {
                 CategoryRow(
@@ -119,7 +120,7 @@ fun SettingsMainScreen(vm: SettingsViewModel, onNavigate: (String) -> Unit, onBa
                 )
                 CategoryDivider()
                 CategoryRow(
-                    icon = Icons.Rounded.SystemUpdate,
+                    icon = Icons.Rounded.Memory,
                     title = "Dvigatel",
                     subtitle = "yt-dlp ${engine.version ?: ""}".trim(),
                     onClick = { onNavigate(SettingsRoutes.ENGINE) },
@@ -474,6 +475,7 @@ private fun SettingsPage(title: String, onBack: () -> Unit, content: @Composable
 
     Scaffold(
         modifier = Modifier.nestedScroll(scroll.nestedScrollConnection),
+        containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             LargeTopAppBar(
@@ -483,6 +485,10 @@ private fun SettingsPage(title: String, onBack: () -> Unit, content: @Composable
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Orqaga")
                     }
                 },
+                colors = TopAppBarDefaults.largeTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface,
+                ),
                 scrollBehavior = scroll,
             )
         },
@@ -533,7 +539,8 @@ private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        colors = appCardColors(),
+        border = appCardBorder(),
     ) {
         Column(
             modifier = Modifier.padding(vertical = 8.dp),

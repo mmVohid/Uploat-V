@@ -47,4 +47,6 @@ data class MediaInfo(
     val isPlaylist: Boolean,
     val entryCount: Int,
     val maxHeight: Int?,
+    /** Har sifat uchun taxminiy fayl hajmi (bayt); ma'lum bo'lmasa kalit yo'q. */
+    val sizes: Map<Quality, Long> = emptyMap(),
 )

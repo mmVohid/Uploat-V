@@ -59,7 +59,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import uz.vohid.uploatv.download.formatBytes
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -94,22 +109,30 @@ fun HomeScreen(vm: HomeViewModel, snackbar: SnackbarHostState, onOpenSettings: (
     val scope = rememberCoroutineScope()
     val clipboard = LocalClipboardManager.current
     val focus = LocalFocusManager.current
-    val scroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
+    // Buferdagi havolani aniqlash (Android faqat oyna fokusda bo'lganda o'qishga ruxsat beradi)
+    val windowFocused = LocalWindowInfo.current.isWindowFocused
+    var clipUrl by remember { mutableStateOf<String?>(null) }
+    var dismissedClip by rememberSaveable { mutableStateOf<String?>(null) }
+    LaunchedEffect(windowFocused) {
+        if (windowFocused) clipUrl = URL_REGEX.find(clipboard.getText()?.text.orEmpty())?.value
+    }
+    val showClip = clipUrl != null && clipUrl != dismissedClip &&
+        ui.url.isEmpty() && ui.info == null && !ui.fetching
+
+    val pasteFromClipboard: () -> Unit = {
+        val url = URL_REGEX.find(clipboard.getText()?.text.orEmpty())?.value
+        if (url != null) {
+            vm.onUrlChange(url, immediate = true)
+        } else {
+            scope.launch { snackbar.showSnackbar("Buferda havola yo'q") }
+        }
+    }
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scroll.nestedScrollConnection),
+        containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            LargeTopAppBar(
-                title = { Text("Uploat-V") },
-                actions = {
-                    IconButton(onClick = onOpenSettings) {
-                        Icon(Icons.Rounded.Settings, contentDescription = "Sozlamalar")
-                    }
-                },
-                scrollBehavior = scroll,
-            )
-        },
+        topBar = { HomeHeader(onOpenSettings) },
     ) { pad ->
         LazyColumn(
             modifier = Modifier
@@ -153,6 +176,21 @@ fun HomeScreen(vm: HomeViewModel, snackbar: SnackbarHostState, onOpenSettings: (
                         vm.onUrlChange(ui.url, immediate = true)
                     }),
                 )
+            }
+
+            item(key = "clip") {
+                AnimatedVisibility(visible = showClip) {
+                    clipUrl?.let { url ->
+                        ClipCard(
+                            url = url,
+                            onUse = {
+                                dismissedClip = url
+                                vm.onUrlChange(url, immediate = true)
+                            },
+                            onDismiss = { dismissedClip = url },
+                        )
+                    }
+                }
             }
 
             item(key = "loading") {
@@ -217,16 +255,57 @@ fun HomeScreen(vm: HomeViewModel, snackbar: SnackbarHostState, onOpenSettings: (
             }
 
             if (items.isEmpty()) {
-                item(key = "empty") { EmptyState() }
+                item(key = "empty") { EmptyState(onPaste = pasteFromClipboard) }
             } else {
                 items(items, key = { it.id }) { item ->
-                    DownloadRow(
-                        item = item,
-                        onCancel = { DownloadManager.cancel(item.id) },
-                        onRetry = { DownloadManager.retry(item.id) },
-                        onOpen = { openFile(context, item) },
-                        onRemove = { DownloadManager.remove(item.id) },
+                    val dismissState = rememberSwipeToDismissBoxState(
+                        confirmValueChange = { value ->
+                            if (value == SwipeToDismissBoxValue.EndToStart && !item.isActive) {
+                                DownloadManager.remove(item.id)
+                                scope.launch {
+                                    val result = snackbar.showSnackbar(
+                                        message = "O'chirildi",
+                                        actionLabel = "Qaytarish",
+                                        duration = SnackbarDuration.Short,
+                                    )
+                                    if (result == SnackbarResult.ActionPerformed) DownloadManager.restore(item)
+                                }
+                                true
+                            } else {
+                                false
+                            }
+                        },
                     )
+                    SwipeToDismissBox(
+                        state = dismissState,
+                        modifier = Modifier.animateItem(),
+                        enableDismissFromStartToEnd = false,
+                        enableDismissFromEndToStart = !item.isActive,
+                        backgroundContent = {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(MaterialTheme.colorScheme.errorContainer)
+                                    .padding(end = 24.dp),
+                                contentAlignment = Alignment.CenterEnd,
+                            ) {
+                                Icon(
+                                    Icons.Rounded.Delete,
+                                    contentDescription = "O'chirish",
+                                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                                )
+                            }
+                        },
+                    ) {
+                        DownloadRow(
+                            item = item,
+                            onCancel = { DownloadManager.cancel(item.id) },
+                            onRetry = { DownloadManager.retry(item.id) },
+                            onOpen = { openFile(context, item) },
+                            onRemove = { DownloadManager.remove(item.id) },
+                        )
+                    }
                 }
             }
         }
@@ -238,7 +317,8 @@ private fun LoadingCard() {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        colors = appCardColors(),
+        border = appCardBorder(),
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -278,7 +358,8 @@ private fun InfoCard(info: MediaInfo) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        colors = appCardColors(),
+        border = appCardBorder(),
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -325,7 +406,8 @@ private fun OptionsCard(ui: HomeUi, vm: HomeViewModel) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        colors = appCardColors(),
+        border = appCardBorder(),
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text(
@@ -338,10 +420,11 @@ private fun OptionsCard(ui: HomeUi, vm: HomeViewModel) {
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 ui.availableQualities.forEach { q ->
+                    val size = ui.info?.sizes?.get(q)
                     FilterChip(
                         selected = ui.quality == q,
                         onClick = { vm.setQuality(q) },
-                        label = { Text(q.label) },
+                        label = { Text(if (size != null) "${q.label} · ~${formatBytes(size)}" else q.label) },
                     )
                 }
             }
@@ -366,37 +449,110 @@ private fun OptionsCard(ui: HomeUi, vm: HomeViewModel) {
     }
 }
 
+private val URL_REGEX = Regex("""https?://\S+""")
+
 @Composable
-private fun EmptyState() {
+private fun HomeHeader(onOpenSettings: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "Uploat-V",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.weight(1f),
+        )
+        IconButton(onClick = onOpenSettings) {
+            Icon(Icons.Rounded.Settings, contentDescription = "Sozlamalar")
+        }
+    }
+}
+
+@Composable
+private fun ClipCard(url: String, onUse: () -> Unit, onDismiss: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                Icons.Rounded.ContentPaste,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    "Buferda havola bor",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+                Text(
+                    text = Uri.parse(url).host ?: url,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            TextButton(onClick = onUse) { Text("Ishlatish") }
+            IconButton(onClick = onDismiss) {
+                Icon(
+                    Icons.Rounded.Close,
+                    contentDescription = "Yopish",
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyState(onPaste: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 40.dp),
+            .padding(vertical = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Box(
             modifier = Modifier
-                .size(72.dp)
-                .clip(RoundedCornerShape(24.dp))
-                .then(Modifier),
+                .size(88.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = Icons.Rounded.CloudDownload,
                 contentDescription = null,
-                modifier = Modifier.size(56.dp),
-                tint = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.size(44.dp),
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
             )
         }
+        Spacer(Modifier.height(4.dp))
         Text("Hozircha yuklashlar yo'q", style = MaterialTheme.typography.titleMedium)
         Text(
-            text = "Havolani yuqoridagi maydonga joylang yoki boshqa ilovadan «Ulashish» orqali yuboring",
+            text = "Havolani nusxalang va joylang yoki boshqa ilovadan «Ulashish» orqali yuboring",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 24.dp),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            textAlign = TextAlign.Center,
         )
+        Spacer(Modifier.height(4.dp))
+        Button(onClick = onPaste, modifier = Modifier.height(52.dp)) {
+            Icon(Icons.Rounded.ContentPaste, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text("Havolani joylash", style = MaterialTheme.typography.titleMedium)
+        }
     }
 }
 
