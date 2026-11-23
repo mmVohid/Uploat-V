@@ -13,7 +13,7 @@ object InfoFetcher {
 
     private const val PROCESS_ID = "uploatv-info"
 
-    suspend fun fetch(url: String, noPlaylist: Boolean): MediaInfo = withContext(Dispatchers.IO) {
+    suspend fun fetch(url: String, noPlaylist: Boolean, processId: String = PROCESS_ID): MediaInfo = withContext(Dispatchers.IO) {
         UploatApp.engineReady.await()
         val request = YoutubeDLRequest(url).apply {
             addOption("--dump-single-json")
@@ -21,7 +21,7 @@ object InfoFetcher {
             addOption("--no-warnings")
             if (noPlaylist) addOption("--no-playlist")
         }
-        val out = YoutubeDL.getInstance().execute(request, PROCESS_ID).out
+        val out = YoutubeDL.getInstance().execute(request, processId).out
         parse(out)
     }
 

@@ -20,8 +20,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.flow.first
 import uz.vohid.uploatv.UploatApp
+import uz.vohid.uploatv.data.SettingsRepository
 import java.io.File
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -56,6 +59,55 @@ object DownloadManager {
         _items.update { listOf(item) + it }
         startService()
         launchJob(item.id)
+    }
+
+    /**
+     * "Быстрая загрузка": havola ulashilganda ilova ochilmasdan, sozlamalardagi standart
+     * tur/sifat bilan orqa fonda yuklashni boshlaydi.
+     */
+    fun quickDownload(url: String) {
+        val id = UUID.randomUUID().toString()
+        scope.launch {
+            val s = SettingsRepository(app).settings.first()
+            val item = DownloadItem(
+                id = id,
+                url = url,
+                title = url,
+                thumbnail = null,
+                uploader = null,
+                audio = s.defaultAudio,
+                quality = s.defaultQuality,
+                audioFormat = s.audioFormat,
+                playlist = false,
+                detail = "Ma'lumot olinmoqda…",
+            )
+            _items.update { listOf(item) + it }
+            startService()
+            try {
+                val noPlaylist = url.contains("v=") && url.contains("list=")
+                // processId = id: shu id bilan "Bekor qilish" ma'lumot olishni ham to'xtatadi
+                val info = InfoFetcher.fetch(url, noPlaylist, processId = id)
+                if (get(id)?.status == Status.CANCELED) return@launch
+                mutate(id) {
+                    it.copy(
+                        title = info.title,
+                        thumbnail = info.thumbnail,
+                        uploader = info.uploader,
+                        playlist = info.isPlaylist,
+                        detail = "",
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                if (get(id)?.status != Status.CANCELED) {
+                    mutate(id) { it.copy(status = Status.FAILED, error = friendlyError(e), detail = "") }
+                    persist()
+                }
+                return@launch
+            }
+            launchJob(id)
+        }
     }
 
     fun cancel(id: String) {

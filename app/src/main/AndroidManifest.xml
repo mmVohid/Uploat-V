@@ -32,6 +32,23 @@
             </intent-filter>
         </activity>
 
+        <!-- Ulashish menyusida alohida "Быстрая загрузка" varianti: ilovani ochmasdan fonda yuklaydi -->
+        <activity
+            android:name=".QuickShareActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="Быстрая загрузка"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+
         <service
             android:name=".download.DownloadService"
             android:exported="false"
