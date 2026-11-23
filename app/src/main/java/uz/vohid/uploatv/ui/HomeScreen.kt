@@ -56,8 +56,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -81,7 +87,9 @@ import uz.vohid.uploatv.download.formatDuration
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(vm: HomeViewModel, bottomPadding: Dp, snackbar: SnackbarHostState) {
+fun HomeScreen(vm: HomeViewModel, settingsVm: SettingsViewModel, snackbar: SnackbarHostState) {
+    var showSettings by rememberSaveable { mutableStateOf(false) }
+    val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val ui by vm.ui.collectAsStateWithLifecycle()
     val items by DownloadManager.items.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -91,18 +99,21 @@ fun HomeScreen(vm: HomeViewModel, bottomPadding: Dp, snackbar: SnackbarHostState
     val scroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
-        modifier = Modifier
-            .nestedScroll(scroll.nestedScrollConnection)
-            .padding(bottom = bottomPadding)
-            .consumeWindowInsets(PaddingValues(bottom = bottomPadding)),
+        modifier = Modifier.nestedScroll(scroll.nestedScrollConnection),
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             LargeTopAppBar(
                 title = { Text("Uploat-V") },
+                actions = {
+                    IconButton(onClick = { showSettings = true }) {
+                        Icon(Icons.Rounded.Settings, contentDescription = "Sozlamalar")
+                    }
+                },
                 scrollBehavior = scroll,
             )
         },
     ) { pad ->
+        SettingsHost(show = showSettings, vm = settingsVm, onDismiss = { showSettings = false })
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -111,7 +122,7 @@ fun HomeScreen(vm: HomeViewModel, bottomPadding: Dp, snackbar: SnackbarHostState
                 start = 16.dp,
                 end = 16.dp,
                 top = pad.calculateTopPadding() + 4.dp,
-                bottom = 24.dp,
+                bottom = 24.dp + navBottom,
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -224,6 +235,11 @@ fun HomeScreen(vm: HomeViewModel, bottomPadding: Dp, snackbar: SnackbarHostState
             }
         }
     }
+}
+
+@Composable
+private fun SettingsHost(show: Boolean, vm: SettingsViewModel, onDismiss: () -> Unit) {
+    if (show) SettingsSheet(vm = vm, onDismiss = onDismiss)
 }
 
 @Composable
