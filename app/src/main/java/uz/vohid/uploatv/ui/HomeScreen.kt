@@ -97,6 +97,28 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import uz.vohid.uploatv.data.MediaInfo
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.icons.rounded.CameraAlt
+import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material.icons.rounded.Public
+import androidx.compose.material.icons.rounded.Tag
+import androidx.compose.material.icons.rounded.ThumbUp
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import kotlinx.coroutines.delay
+import uz.vohid.uploatv.UploatApp
 import uz.vohid.uploatv.download.DownloadItem
 import uz.vohid.uploatv.download.DownloadManager
 import uz.vohid.uploatv.download.formatDuration
@@ -111,6 +133,13 @@ fun HomeScreen(vm: HomeViewModel, snackbar: SnackbarHostState, onOpenSettings: (
     val scope = rememberCoroutineScope()
     val clipboard = LocalClipboardManager.current
     val focus = LocalFocusManager.current
+    val haptic = LocalHapticFeedback.current
+    val engineState by produceState(0) {
+        value = if (UploatApp.engineReady.isCompleted) 1 else 0
+        value = if (runCatching { UploatApp.engineReady.await() }.isSuccess) 1 else 2
+    }
+    val activeCount = items.count { it.isActive }
+    val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
 
     // Buferdagi havolani aniqlash (Android faqat oyna fokusda bo'lganda o'qishga ruxsat beradi)
     val windowFocused = LocalWindowInfo.current.isWindowFocused
@@ -124,6 +153,7 @@ fun HomeScreen(vm: HomeViewModel, snackbar: SnackbarHostState, onOpenSettings: (
 
     val pasteFromClipboard: () -> Unit = {
         val url = URL_REGEX.find(clipboard.getText()?.text.orEmpty())?.value
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
         if (url != null) {
             vm.onUrlChange(url, immediate = true)
         } else {
@@ -134,8 +164,9 @@ fun HomeScreen(vm: HomeViewModel, snackbar: SnackbarHostState, onOpenSettings: (
     Scaffold(
         containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = { HomeHeader(onOpenSettings) },
+        topBar = { HomeHeader(engineState = engineState, activeCount = activeCount) },
     ) { pad ->
+      Box(Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -144,7 +175,7 @@ fun HomeScreen(vm: HomeViewModel, snackbar: SnackbarHostState, onOpenSettings: (
                 start = 16.dp,
                 end = 16.dp,
                 top = pad.calculateTopPadding() + 4.dp,
-                bottom = 24.dp + navBottom,
+                bottom = 104.dp + navBottom,
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -161,7 +192,7 @@ fun HomeScreen(vm: HomeViewModel, snackbar: SnackbarHostState, onOpenSettings: (
                     ),
                     label = { Text("Video havolasi") },
                     placeholder = { Text("https://…") },
-                    leadingIcon = { Icon(Icons.Rounded.Link, contentDescription = null) },
+                    leadingIcon = { PlatformBadge(ui.url) },
                     trailingIcon = {
                         if (ui.url.isEmpty()) {
                             IconButton(onClick = {
@@ -215,16 +246,20 @@ fun HomeScreen(vm: HomeViewModel, snackbar: SnackbarHostState, onOpenSettings: (
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             InfoCard(info)
                             OptionsCard(ui = ui, vm = vm)
+                            val dlSource = remember { MutableInteractionSource() }
                             Button(
+                                interactionSource = dlSource,
                                 onClick = {
                                     focus.clearFocus()
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     if (vm.download()) {
                                         scope.launch { snackbar.showSnackbar("Yuklash navbatga qo'shildi") }
                                     }
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(56.dp),
+                                    .height(56.dp)
+                                    .pressScale(dlSource),
                             ) {
                                 Icon(Icons.Rounded.Download, contentDescription = null)
                                 Spacer(Modifier.width(8.dp))
@@ -261,12 +296,13 @@ fun HomeScreen(vm: HomeViewModel, snackbar: SnackbarHostState, onOpenSettings: (
             }
 
             if (items.isEmpty()) {
-                item(key = "empty") { EmptyState(onPaste = pasteFromClipboard) }
+                item(key = "empty") { EmptyState() }
             } else {
-                items(items, key = { it.id }) { item ->
+                itemsIndexed(items, key = { _, it -> it.id }) { index, item ->
                     val dismissState = rememberSwipeToDismissBoxState(
                         confirmValueChange = { value ->
                             if (value == SwipeToDismissBoxValue.EndToStart && !item.isActive) {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 DownloadManager.remove(item.id)
                                 scope.launch {
                                     val result = snackbar.showSnackbar(
@@ -304,13 +340,25 @@ fun HomeScreen(vm: HomeViewModel, snackbar: SnackbarHostState, onOpenSettings: (
                             }
                         },
                     ) {
-                        DownloadRow(
-                            item = item,
-                            onCancel = { DownloadManager.cancel(item.id) },
-                            onRetry = { DownloadManager.retry(item.id) },
-                            onOpen = { openFile(context, item) },
-                            onRemove = { DownloadManager.remove(item.id) },
-                        )
+                        var shown by rememberSaveable(item.id) { mutableStateOf(index > 6) }
+                        LaunchedEffect(item.id) {
+                            if (!shown) {
+                                delay(index * 60L)
+                                shown = true
+                            }
+                        }
+                        AnimatedVisibility(
+                            visible = shown,
+                            enter = fadeIn(tween(350)) + slideInVertically(tween(350)) { it / 4 },
+                        ) {
+                            DownloadRow(
+                                item = item,
+                                onCancel = { DownloadManager.cancel(item.id) },
+                                onRetry = { DownloadManager.retry(item.id) },
+                                onOpen = { openFile(context, item) },
+                                onRemove = { DownloadManager.remove(item.id) },
+                            )
+                        }
                     }
                 }
             }
@@ -450,28 +498,117 @@ private fun OptionsCard(ui: HomeUi, vm: HomeViewModel) {
                 }
             }
         }
+        AnimatedVisibility(
+            visible = !imeVisible,
+            modifier = Modifier.align(Alignment.BottomCenter),
+            enter = fadeIn() + slideInVertically { it },
+            exit = fadeOut() + slideOutVertically { it },
+        ) {
+            FloatingBar(onPaste = pasteFromClipboard, onSettings = onOpenSettings)
+        }
+      }
     }
 }
 
 private val URL_REGEX = Regex("""https?://\S+""")
 
 @Composable
-private fun HomeHeader(onOpenSettings: () -> Unit) {
+private fun HomeHeader(engineState: Int, activeCount: Int) {
+    val scheme = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 4.dp),
+            .padding(start = 20.dp, end = 16.dp, top = 12.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = "Uploat-V",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.headlineLarge.copy(
+                brush = Brush.linearGradient(listOf(scheme.primary, scheme.tertiary)),
+                fontWeight = FontWeight.ExtraBold,
+            ),
             modifier = Modifier.weight(1f),
         )
-        IconButton(onClick = onOpenSettings) {
+        val (label, dot) = when {
+            activeCount > 0 -> "$activeCount ta yuklash" to scheme.primary
+            engineState == 1 -> "Tayyor" to scheme.tertiary
+            engineState == 2 -> "Dvigatel xatosi" to scheme.error
+            else -> "Yuklanmoqda…" to scheme.outline
+        }
+        Row(
+            modifier = Modifier
+                .glass(RoundedCornerShape(50), tintAlpha = 0.45f)
+                .padding(horizontal = 12.dp, vertical = 7.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(Modifier.size(8.dp).clip(CircleShape).background(dot))
+            Spacer(Modifier.width(8.dp))
+            Text(label, style = MaterialTheme.typography.labelLarge)
+        }
+    }
+}
+
+@Composable
+private fun FloatingBar(onPaste: () -> Unit, onSettings: () -> Unit) {
+    val pasteSource = remember { MutableInteractionSource() }
+    val setSource = remember { MutableInteractionSource() }
+    Row(
+        modifier = Modifier
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .fillMaxWidth()
+            .glass(RoundedCornerShape(32.dp), tintAlpha = 0.55f)
+            .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Button(
+            onClick = onPaste,
+            interactionSource = pasteSource,
+            modifier = Modifier
+                .weight(1f)
+                .height(52.dp)
+                .pressScale(pasteSource),
+        ) {
+            Icon(Icons.Rounded.ContentPaste, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text("Havolani joylash", style = MaterialTheme.typography.titleMedium)
+        }
+        FilledTonalIconButton(
+            onClick = onSettings,
+            interactionSource = setSource,
+            modifier = Modifier
+                .size(52.dp)
+                .pressScale(setSource),
+        ) {
             Icon(Icons.Rounded.Settings, contentDescription = "Sozlamalar")
+        }
+    }
+}
+
+/** Havola domeniga qarab platforma belgisi; noma'lum bo'lsa oddiy havola ikonkasi. */
+@Composable
+private fun PlatformBadge(url: String) {
+    val scheme = MaterialTheme.colorScheme
+    val host = if (url.isBlank()) null else runCatching { Uri.parse(url.trim()).host?.lowercase() }.getOrNull()
+    val (color, icon) = when {
+        host == null -> null to Icons.Rounded.Link
+        "youtube" in host || "youtu.be" in host -> Color(0xFFFF0033) to Icons.Rounded.PlayArrow
+        "instagram" in host -> Color(0xFFE1306C) to Icons.Rounded.CameraAlt
+        "tiktok" in host -> Color(0xFF00BFB3) to Icons.Rounded.MusicNote
+        "facebook" in host || "fb.watch" in host -> Color(0xFF1877F2) to Icons.Rounded.ThumbUp
+        "twitter" in host || host == "x.com" || host.endsWith(".x.com") -> Color(0xFF1D9BF0) to Icons.Rounded.Tag
+        else -> scheme.primary to Icons.Rounded.Public
+    }
+    if (color == null) {
+        Icon(icon, contentDescription = null)
+    } else {
+        Box(
+            Modifier.size(28.dp).clip(CircleShape).background(color),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
         }
     }
 }
@@ -524,7 +661,7 @@ private fun ClipCard(url: String, onUse: () -> Unit, onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun EmptyState(onPaste: () -> Unit) {
+private fun EmptyState() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -549,18 +686,12 @@ private fun EmptyState(onPaste: () -> Unit) {
         Spacer(Modifier.height(4.dp))
         Text("Hozircha yuklashlar yo'q", style = MaterialTheme.typography.titleMedium)
         Text(
-            text = "Havolani nusxalang va joylang yoki boshqa ilovadan «Ulashish» orqali yuboring",
+            text = "Havolani nusxalang va pastdagi tugmani bosing yoki boshqa ilovadan «Ulashish» orqali yuboring",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 24.dp),
             textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.height(4.dp))
-        Button(onClick = onPaste, modifier = Modifier.height(52.dp)) {
-            Icon(Icons.Rounded.ContentPaste, contentDescription = null)
-            Spacer(Modifier.width(8.dp))
-            Text("Havolani joylash", style = MaterialTheme.typography.titleMedium)
-        }
     }
 }
 

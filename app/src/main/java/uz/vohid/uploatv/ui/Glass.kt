@@ -1,6 +1,20 @@
 package uz.vohid.uploatv.ui
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.InteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -29,7 +43,7 @@ import dev.chrisbanes.haze.hazeSource
 val LocalHazeState = compositionLocalOf<HazeState?> { null }
 
 /**
- * Butun ilova uchun fon: gradient + yumshoq rangli "nur dog'lari".
+ * Butun ilova uchun fon: gradient + sekin suzuvchi rangli "aurora" dog'lari.
  * Aynan shu qatlam xiralashtiriladi (hazeSource), kontent esa uning ustida turadi.
  */
 @Composable
@@ -37,7 +51,22 @@ fun GlassScaffold(content: @Composable BoxScope.() -> Unit) {
     val hazeState = remember { HazeState() }
     val scheme = MaterialTheme.colorScheme
     val dark = scheme.surface.luminance() < 0.5f
-    val glow = if (dark) 0.40f else 0.30f
+    val glow = if (dark) 0.42f else 0.32f
+
+    val infinite = rememberInfiniteTransition(label = "aurora")
+    val a by infinite.animateFloat(
+        0f, 1f,
+        infiniteRepeatable(tween(17000, easing = LinearEasing), RepeatMode.Reverse), label = "a",
+    )
+    val b by infinite.animateFloat(
+        0f, 1f,
+        infiniteRepeatable(tween(23000, easing = LinearEasing), RepeatMode.Reverse), label = "b",
+    )
+    val c by infinite.animateFloat(
+        0f, 1f,
+        infiniteRepeatable(tween(29000, easing = LinearEasing), RepeatMode.Reverse), label = "c",
+    )
+
     Box(Modifier.fillMaxSize()) {
         Box(
             Modifier
@@ -50,30 +79,45 @@ fun GlassScaffold(content: @Composable BoxScope.() -> Unit) {
                     drawRect(
                         Brush.radialGradient(
                             listOf(scheme.primary.copy(alpha = glow), Color.Transparent),
-                            center = Offset(w * 0.1f, h * 0.08f),
+                            center = Offset(w * (0.05f + 0.55f * a), h * (0.05f + 0.20f * b)),
                             radius = w * 1.1f,
                         ),
                     )
                     drawRect(
                         Brush.radialGradient(
                             listOf(scheme.tertiary.copy(alpha = glow), Color.Transparent),
-                            center = Offset(w * 0.95f, h * 0.45f),
+                            center = Offset(w * (0.95f - 0.50f * b), h * (0.35f + 0.25f * c)),
                             radius = w * 1.0f,
                         ),
                     )
                     drawRect(
                         Brush.radialGradient(
                             listOf(scheme.secondary.copy(alpha = glow * 0.9f), Color.Transparent),
-                            center = Offset(w * 0.2f, h * 0.98f),
+                            center = Offset(w * (0.15f + 0.50f * c), h * (0.98f - 0.22f * a)),
                             radius = w * 1.1f,
                         ),
                     )
                 },
         )
-        androidx.compose.runtime.CompositionLocalProvider(LocalHazeState provides hazeState) {
+        CompositionLocalProvider(
+            LocalHazeState provides hazeState,
+            LocalContentColor provides scheme.onSurface,
+        ) {
             Box(Modifier.fillMaxSize(), content = content)
         }
     }
+}
+
+/** Bosilganda yumshoq kichrayish (spring) effekti. */
+@Composable
+fun Modifier.pressScale(source: InteractionSource, pressedScale: Float = 0.95f): Modifier {
+    val pressed by source.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        if (pressed) pressedScale else 1f,
+        spring(dampingRatio = 0.55f, stiffness = 600f),
+        label = "press",
+    )
+    return this.graphicsLayer { scaleX = scale; scaleY = scale }
 }
 
 /** Shisha effekti: xiralashgan fon + yarim shaffof rang + yorug' chegara. */

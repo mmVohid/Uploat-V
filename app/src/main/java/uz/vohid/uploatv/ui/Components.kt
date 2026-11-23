@@ -33,6 +33,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -87,7 +93,7 @@ fun DownloadRow(
     ) {
         Column(Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Thumbnail(item.thumbnail, Modifier.size(width = 96.dp, height = 54.dp))
+                ProgressThumb(item)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
@@ -97,16 +103,6 @@ fun DownloadRow(
                         overflow = TextOverflow.Ellipsis,
                     )
                     StatusLine(item)
-                }
-            }
-
-            if (item.isActive) {
-                Spacer(Modifier.height(10.dp))
-                val progress by animateFloatAsState(item.progress, label = "progress")
-                if (item.status == Status.QUEUED || item.progress <= 0f) {
-                    LinearProgressIndicator(Modifier.fillMaxWidth())
-                } else {
-                    LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
                 }
             }
 
@@ -143,6 +139,94 @@ fun DownloadRow(
                     }
                 }
             }
+        }
+    }
+}
+
+/** Yumaloq rasm atrofida gradient progress halqasi; tugagach yashil porlaydi. */
+@Composable
+private fun ProgressThumb(item: DownloadItem) {
+    val scheme = MaterialTheme.colorScheme
+    val progress by animateFloatAsState(item.progress, label = "ring")
+    val done = item.status == Status.DONE
+    val failed = item.status == Status.FAILED
+    Box(
+        modifier = Modifier
+            .size(72.dp)
+            .drawBehind {
+                if (done) {
+                    drawCircle(
+                        Brush.radialGradient(
+                            listOf(scheme.tertiary.copy(alpha = 0.45f), Color.Transparent),
+                            radius = size.minDimension * 0.75f,
+                        ),
+                    )
+                }
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            Modifier
+                .size(56.dp)
+                .clip(CircleShape)
+                .background(scheme.surfaceContainerHighest),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (item.thumbnail != null) {
+                AsyncImage(
+                    model = item.thumbnail,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.matchParentSize(),
+                )
+            } else {
+                Icon(Icons.Rounded.Videocam, null, tint = scheme.onSurfaceVariant)
+            }
+            if (item.status == Status.RUNNING && item.progress > 0f) {
+                Box(
+                    Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.45f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        "${(item.progress * 100).toInt()}%",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White,
+                    )
+                }
+            }
+        }
+        val track = scheme.outlineVariant.copy(alpha = 0.5f)
+        when {
+            item.status == Status.QUEUED || (item.status == Status.RUNNING && item.progress <= 0f) ->
+                CircularProgressIndicator(
+                    modifier = Modifier.size(70.dp),
+                    strokeWidth = 4.dp,
+                    color = scheme.primary,
+                    trackColor = track,
+                    strokeCap = StrokeCap.Round,
+                )
+            item.status == Status.RUNNING ->
+                CircularProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier.size(70.dp),
+                    strokeWidth = 4.dp,
+                    color = scheme.primary,
+                    trackColor = track,
+                    strokeCap = StrokeCap.Round,
+                )
+            else ->
+                CircularProgressIndicator(
+                    progress = { 1f },
+                    modifier = Modifier.size(70.dp),
+                    strokeWidth = 3.dp,
+                    color = when {
+                        done -> scheme.tertiary
+                        failed -> scheme.error
+                        else -> track
+                    },
+                    trackColor = Color.Transparent,
+                    strokeCap = StrokeCap.Round,
+                )
         }
     }
 }

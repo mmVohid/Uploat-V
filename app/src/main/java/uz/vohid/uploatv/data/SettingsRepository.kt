@@ -15,7 +15,7 @@ class SettingsRepository(private val context: Context) {
 
     private object Keys {
         val THEME = stringPreferencesKey("theme")
-        val DYNAMIC = booleanPreferencesKey("dynamic_color")
+        val DYNAMIC = booleanPreferencesKey("dynamic_color_v2")
         val QUALITY = stringPreferencesKey("default_quality")
         val SAVE_TREE = stringPreferencesKey("save_tree_uri")
         val ONBOARDING = booleanPreferencesKey("onboarding_done")
