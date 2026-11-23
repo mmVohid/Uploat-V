@@ -3,6 +3,7 @@ package uz.vohid.uploatv.data
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -17,6 +18,9 @@ class SettingsRepository(private val context: Context) {
         val DYNAMIC = booleanPreferencesKey("dynamic_color")
         val QUALITY = stringPreferencesKey("default_quality")
         val SAVE_TREE = stringPreferencesKey("save_tree_uri")
+        val ONBOARDING = booleanPreferencesKey("onboarding_done")
+        val AUTO_UPDATE = booleanPreferencesKey("auto_update_ytdlp")
+        val LAST_UPDATE = longPreferencesKey("last_update_ms")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { p ->
@@ -25,8 +29,21 @@ class SettingsRepository(private val context: Context) {
             dynamicColor = p[Keys.DYNAMIC] ?: true,
             defaultQuality = p[Keys.QUALITY].toEnum(Quality.BEST),
             saveTreeUri = p[Keys.SAVE_TREE],
+            loaded = true,
+            onboardingDone = p[Keys.ONBOARDING] ?: false,
+            autoUpdateYtdlp = p[Keys.AUTO_UPDATE] ?: false,
+            lastUpdateMs = p[Keys.LAST_UPDATE] ?: 0L,
         )
     }
+
+    /** Birinchi ishga tushishdagi so'rov yakunlandi; [autoUpdate] — yt-dlp yangilashga ruxsat. */
+    suspend fun finishOnboarding(autoUpdate: Boolean) = context.dataStore.edit {
+        it[Keys.ONBOARDING] = true
+        it[Keys.AUTO_UPDATE] = autoUpdate
+    }
+
+    suspend fun setAutoUpdate(on: Boolean) = context.dataStore.edit { it[Keys.AUTO_UPDATE] = on }
+    suspend fun setLastUpdate(ms: Long) = context.dataStore.edit { it[Keys.LAST_UPDATE] = ms }
 
     suspend fun setTheme(mode: ThemeMode) = context.dataStore.edit { it[Keys.THEME] = mode.name }
     suspend fun setDynamicColor(on: Boolean) = context.dataStore.edit { it[Keys.DYNAMIC] = on }

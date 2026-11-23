@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import uz.vohid.uploatv.UploatApp
+import uz.vohid.uploatv.download.EngineUpdater
 import uz.vohid.uploatv.data.AppSettings
 import uz.vohid.uploatv.data.Quality
 import uz.vohid.uploatv.data.SettingsRepository
@@ -60,19 +61,20 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         if (_engine.value.updating) return
         _engine.update { it.copy(updating = true, message = null) }
         viewModelScope.launch {
-            val msg = withContext(Dispatchers.IO) {
-                runCatching {
-                    UploatApp.engineReady.await()
-                    val status = YoutubeDL.getInstance().updateYoutubeDL(getApplication())
-                    if (status?.toString()?.contains("ALREADY", ignoreCase = true) == true) {
-                        "Allaqachon eng so'nggi versiya"
-                    } else {
-                        "Yangilandi"
-                    }
-                }.getOrElse { "Yangilab bo'lmadi. Internetni tekshiring" }
-            }
+            val msg = EngineUpdater.update(getApplication())
             _engine.update { it.copy(updating = false, message = msg) }
             loadVersion()
         }
+    }
+
+    fun setAutoUpdate(on: Boolean) = viewModelScope.launch { repo.setAutoUpdate(on) }
+
+    /**
+     * Birinchi ishga tushishdagi so'rov javobi. [accepted] bo'lsa yt-dlp avtomatik yangilanadi
+     * va hozir ham bir marta yangilanadi.
+     */
+    fun finishOnboarding(accepted: Boolean) {
+        viewModelScope.launch { repo.finishOnboarding(autoUpdate = accepted) }
+        if (accepted) EngineUpdater.updateInBackground(getApplication())
     }
 }

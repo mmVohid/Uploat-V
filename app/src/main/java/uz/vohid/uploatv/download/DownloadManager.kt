@@ -172,6 +172,7 @@ object DownloadManager {
 
         try {
             UploatApp.engineReady.await()
+            EngineUpdater.waitIdle()
             dir.deleteRecursively()
             dir.mkdirs()
 

@@ -165,6 +165,12 @@ fun SettingsSheet(vm: SettingsViewModel, onDismiss: () -> Unit) {
                             FilledTonalButton(onClick = vm::updateEngine) { Text("Yangilash") }
                         }
                     }
+                    SwitchRow(
+                        title = "Avtomatik yangilash",
+                        subtitle = "Kuniga bir marta, internet sarflaydi",
+                        checked = settings.autoUpdateYtdlp,
+                        onChange = vm::setAutoUpdate,
+                    )
                     Text(
                         text = "Sayt o'zgarib video yuklanmay qolsa, avval dvigatelni yangilang",
                         style = MaterialTheme.typography.bodySmall,

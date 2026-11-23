@@ -20,6 +20,13 @@ data class AppSettings(
     val defaultQuality: Quality = Quality.BEST,
     /** Foydalanuvchi tanlagan papka (SAF tree URI). null bo'lsa Download/Uploat-V ishlatiladi. */
     val saveTreeUri: String? = null,
+    /** Sozlamalar diskdan o'qib bo'lingani (birinchi kadrda noto'g'ri dialog ko'rsatmaslik uchun). */
+    val loaded: Boolean = false,
+    /** Birinchi ishga tushishdagi ruxsat so'rovi ko'rsatib bo'lingan. */
+    val onboardingDone: Boolean = false,
+    /** Foydalanuvchi yt-dlp'ni avtomatik yangilashga ruxsat bergan. */
+    val autoUpdateYtdlp: Boolean = false,
+    val lastUpdateMs: Long = 0L,
 )
 
 /** Havola bo'yicha yt-dlp qaytargan qisqa ma'lumot. */

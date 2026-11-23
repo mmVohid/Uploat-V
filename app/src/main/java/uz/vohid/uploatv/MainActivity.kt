@@ -9,7 +9,22 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.SystemUpdate
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -33,14 +48,10 @@ class MainActivity : ComponentActivity() {
 
     private var sharedUrl by mutableStateOf<String?>(null)
 
-    private val notificationPermission =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* natija talab qilinmaydi */ }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         handleIntent(intent)
-        requestNotificationPermission()
 
         val settingsRepo = SettingsRepository(applicationContext)
         setContent {
@@ -62,17 +73,48 @@ class MainActivity : ComponentActivity() {
         sharedUrl = URL_REGEX.find(text)?.value
     }
 
-    private fun requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-        }
-    }
-
     private companion object {
         val URL_REGEX = Regex("""https?://\S+""")
+    }
+}
+
+@Composable
+private fun OnboardingDialog(onAccept: () -> Unit, onSkip: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = {},
+        title = { Text("Boshlashdan oldin") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                PermissionRow(
+                    icon = Icons.Rounded.Notifications,
+                    title = "Bildirishnomalar",
+                    text = "Yuklash jarayoni va natijasini ko'rsatish uchun.",
+                )
+                PermissionRow(
+                    icon = Icons.Rounded.SystemUpdate,
+                    title = "yt-dlp yangilash",
+                    text = "Sayt o'zgarganda video yuklanishi uchun dvigatel kuniga bir marta " +
+                        "avtomatik yangilanadi (internet sarflaydi). Sozlamalardan o'chirish mumkin.",
+                )
+            }
+        },
+        confirmButton = { Button(onClick = onAccept) { Text("Ruxsat berish") } },
+        dismissButton = { TextButton(onClick = onSkip) { Text("Hozir emas") } },
+    )
+}
+
+@Composable
+private fun PermissionRow(icon: ImageVector, title: String, text: String) {
+    Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        Column {
+            Text(title, style = MaterialTheme.typography.titleSmall)
+            Text(
+                text,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
@@ -81,6 +123,23 @@ private fun AppRoot(sharedUrl: String?, onSharedConsumed: () -> Unit) {
     val homeVm: HomeViewModel = viewModel()
     val settingsVm: SettingsViewModel = viewModel()
     val snackbar = remember { SnackbarHostState() }
+    val settings by settingsVm.settings.collectAsStateWithLifecycle()
+
+    val notificationPermission =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { /* natija talab qilinmaydi */ }
+
+    // Birinchi ochilishda: bildirishnoma + yt-dlp yangilash uchun bitta ruxsat so'rovi
+    if (settings.loaded && !settings.onboardingDone) {
+        OnboardingDialog(
+            onAccept = {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+                settingsVm.finishOnboarding(accepted = true)
+            },
+            onSkip = { settingsVm.finishOnboarding(accepted = false) },
+        )
+    }
 
     LaunchedEffect(sharedUrl) {
         sharedUrl?.let {

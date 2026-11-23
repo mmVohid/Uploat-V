@@ -10,6 +10,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import uz.vohid.uploatv.download.DownloadManager
+import uz.vohid.uploatv.download.EngineUpdater
 
 class UploatApp : Application() {
 
@@ -26,7 +27,10 @@ class UploatApp : Application() {
                 engineReady.complete(Unit)
             } catch (e: Throwable) {
                 engineReady.completeExceptionally(e)
+                return@launch
             }
+            // Foydalanuvchi ruxsat bergan bo'lsa, yt-dlp kuniga bir marta yangilanadi
+            runCatching { EngineUpdater.autoUpdateIfDue(this@UploatApp) }
         }
     }
 

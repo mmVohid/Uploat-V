@@ -15,6 +15,7 @@ object InfoFetcher {
 
     suspend fun fetch(url: String, noPlaylist: Boolean, processId: String = PROCESS_ID): MediaInfo = withContext(Dispatchers.IO) {
         UploatApp.engineReady.await()
+        EngineUpdater.waitIdle()
         val request = YoutubeDLRequest(url).apply {
             addOption("--dump-single-json")
             addOption("--flat-playlist")
