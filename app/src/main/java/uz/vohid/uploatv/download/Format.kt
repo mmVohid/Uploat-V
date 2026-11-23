@@ -14,6 +14,18 @@ fun formatEta(seconds: Long): String {
 
 fun formatDuration(seconds: Long): String = formatEta(seconds)
 
+const val DEFAULT_FOLDER = "Download/Uploat-V"
+
+/** SAF papka manzilini o'qiladigan ko'rinishga keltiradi: "Ichki xotira/Movies/Videolar". */
+fun describeTree(tree: android.net.Uri): String {
+    val docId = runCatching { android.provider.DocumentsContract.getTreeDocumentId(tree) }.getOrNull()
+        ?: return tree.toString()
+    val volume = docId.substringBefore(':')
+    val path = docId.substringAfter(':', "")
+    val root = if (volume == "primary") "Ichki xotira" else "SD karta"
+    return if (path.isEmpty()) root else "$root/$path"
+}
+
 /** yt-dlp xatosini foydalanuvchiga tushunarli qisqa matnga aylantiradi. */
 fun friendlyError(e: Throwable): String {
     val msg = e.message.orEmpty()

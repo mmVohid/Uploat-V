@@ -15,7 +15,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import uz.vohid.uploatv.UploatApp
 import uz.vohid.uploatv.data.AppSettings
-import uz.vohid.uploatv.data.AudioFormat
 import uz.vohid.uploatv.data.Quality
 import uz.vohid.uploatv.data.SettingsRepository
 import uz.vohid.uploatv.data.ThemeMode
@@ -42,9 +41,8 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setTheme(mode: ThemeMode) = viewModelScope.launch { repo.setTheme(mode) }
     fun setDynamicColor(on: Boolean) = viewModelScope.launch { repo.setDynamicColor(on) }
-    fun setDefaultAudio(on: Boolean) = viewModelScope.launch { repo.setDefaultAudio(on) }
     fun setDefaultQuality(q: Quality) = viewModelScope.launch { repo.setDefaultQuality(q) }
-    fun setAudioFormat(f: AudioFormat) = viewModelScope.launch { repo.setAudioFormat(f) }
+    fun setSaveTree(uri: String?) = viewModelScope.launch { repo.setSaveTree(uri) }
 
     private fun loadVersion() {
         viewModelScope.launch {

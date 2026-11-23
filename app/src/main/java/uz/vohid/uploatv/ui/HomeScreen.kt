@@ -79,7 +79,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
-import uz.vohid.uploatv.data.AudioFormat
 import uz.vohid.uploatv.data.MediaInfo
 import uz.vohid.uploatv.download.DownloadItem
 import uz.vohid.uploatv.download.DownloadManager
@@ -133,7 +132,7 @@ fun HomeScreen(vm: HomeViewModel, settingsVm: SettingsViewModel, snackbar: Snack
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     shape = RoundedCornerShape(20.dp),
-                    label = { Text("Video yoki audio havolasi") },
+                    label = { Text("Video havolasi") },
                     placeholder = { Text("https://…") },
                     leadingIcon = { Icon(Icons.Rounded.Link, contentDescription = null) },
                     trailingIcon = {
@@ -190,7 +189,6 @@ fun HomeScreen(vm: HomeViewModel, settingsVm: SettingsViewModel, snackbar: Snack
                                 Text(
                                     text = when {
                                         info.isPlaylist -> "Playlistni yuklash (${info.entryCount})"
-                                        ui.audio -> "Audioni yuklash"
                                         else -> "Videoni yuklash"
                                     },
                                     style = MaterialTheme.typography.titleMedium,
@@ -293,7 +291,7 @@ private fun InfoCard(info: MediaInfo) {
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Thumbnail(info.thumbnail, audio = false, modifier = Modifier.size(width = 128.dp, height = 72.dp))
+            Thumbnail(info.thumbnail, modifier = Modifier.size(width = 128.dp, height = 72.dp))
             Spacer(Modifier.width(14.dp))
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
@@ -337,21 +335,8 @@ private fun OptionsCard(ui: HomeUi, vm: HomeViewModel) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                SegmentedButton(
-                    selected = !ui.audio,
-                    onClick = { vm.setAudio(false) },
-                    shape = SegmentedButtonDefaults.itemShape(0, 2),
-                ) { Text("Video") }
-                SegmentedButton(
-                    selected = ui.audio,
-                    onClick = { vm.setAudio(true) },
-                    shape = SegmentedButtonDefaults.itemShape(1, 2),
-                ) { Text("Audio") }
-            }
-
             Text(
-                text = if (ui.audio) "Format" else "Sifat",
+                text = "Video sifati",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -359,22 +344,12 @@ private fun OptionsCard(ui: HomeUi, vm: HomeViewModel) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                if (ui.audio) {
-                    AudioFormat.entries.forEach { f ->
-                        FilterChip(
-                            selected = ui.audioFormat == f,
-                            onClick = { vm.setAudioFormat(f) },
-                            label = { Text(f.label) },
-                        )
-                    }
-                } else {
-                    ui.availableQualities.forEach { q ->
-                        FilterChip(
-                            selected = ui.quality == q,
-                            onClick = { vm.setQuality(q) },
-                            label = { Text(q.label) },
-                        )
-                    }
+                ui.availableQualities.forEach { q ->
+                    FilterChip(
+                        selected = ui.quality == q,
+                        onClick = { vm.setQuality(q) },
+                        label = { Text(q.label) },
+                    )
                 }
             }
 

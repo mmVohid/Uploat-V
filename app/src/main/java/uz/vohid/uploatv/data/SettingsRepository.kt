@@ -15,26 +15,27 @@ class SettingsRepository(private val context: Context) {
     private object Keys {
         val THEME = stringPreferencesKey("theme")
         val DYNAMIC = booleanPreferencesKey("dynamic_color")
-        val AUDIO = booleanPreferencesKey("default_audio")
         val QUALITY = stringPreferencesKey("default_quality")
-        val AUDIO_FORMAT = stringPreferencesKey("audio_format")
+        val SAVE_TREE = stringPreferencesKey("save_tree_uri")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { p ->
         AppSettings(
             themeMode = p[Keys.THEME].toEnum(ThemeMode.SYSTEM),
             dynamicColor = p[Keys.DYNAMIC] ?: true,
-            defaultAudio = p[Keys.AUDIO] ?: false,
-            defaultQuality = p[Keys.QUALITY].toEnum(Quality.P720),
-            audioFormat = p[Keys.AUDIO_FORMAT].toEnum(AudioFormat.M4A),
+            defaultQuality = p[Keys.QUALITY].toEnum(Quality.BEST),
+            saveTreeUri = p[Keys.SAVE_TREE],
         )
     }
 
     suspend fun setTheme(mode: ThemeMode) = context.dataStore.edit { it[Keys.THEME] = mode.name }
     suspend fun setDynamicColor(on: Boolean) = context.dataStore.edit { it[Keys.DYNAMIC] = on }
-    suspend fun setDefaultAudio(on: Boolean) = context.dataStore.edit { it[Keys.AUDIO] = on }
     suspend fun setDefaultQuality(q: Quality) = context.dataStore.edit { it[Keys.QUALITY] = q.name }
-    suspend fun setAudioFormat(f: AudioFormat) = context.dataStore.edit { it[Keys.AUDIO_FORMAT] = f.name }
+
+    /** null — standart papka (Download/Uploat-V). */
+    suspend fun setSaveTree(uri: String?) = context.dataStore.edit {
+        if (uri == null) it.remove(Keys.SAVE_TREE) else it[Keys.SAVE_TREE] = uri
+    }
 }
 
 private inline fun <reified T : Enum<T>> String?.toEnum(default: T): T =

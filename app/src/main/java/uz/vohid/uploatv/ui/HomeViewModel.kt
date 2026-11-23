@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import uz.vohid.uploatv.data.AudioFormat
 import uz.vohid.uploatv.data.MediaInfo
 import uz.vohid.uploatv.data.Quality
 import uz.vohid.uploatv.data.SettingsRepository
@@ -29,9 +28,7 @@ data class HomeUi(
     val fetching: Boolean = false,
     val info: MediaInfo? = null,
     val error: String? = null,
-    val audio: Boolean = false,
-    val quality: Quality = Quality.P720,
-    val audioFormat: AudioFormat = AudioFormat.M4A,
+    val quality: Quality = Quality.BEST,
     val wholePlaylist: Boolean = false,
 ) {
     /** Havolada ham video, ham playlist bo'lsa (watch?v=…&list=…) foydalanuvchi tanlaydi. */
@@ -55,7 +52,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     init {
         viewModelScope.launch {
             val s = settings.settings.first()
-            _ui.update { it.copy(audio = s.defaultAudio, quality = s.defaultQuality, audioFormat = s.audioFormat) }
+            _ui.update { it.copy(quality = s.defaultQuality) }
         }
     }
 
@@ -78,9 +75,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         startFetch(true)
     }
 
-    fun setAudio(audio: Boolean) = _ui.update { it.copy(audio = audio) }
     fun setQuality(q: Quality) = _ui.update { it.copy(quality = q) }
-    fun setAudioFormat(f: AudioFormat) = _ui.update { it.copy(audioFormat = f) }
 
     fun download(): Boolean {
         val s = _ui.value
@@ -92,9 +87,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                 title = info.title,
                 thumbnail = info.thumbnail,
                 uploader = info.uploader,
-                audio = s.audio,
                 quality = s.quality,
-                audioFormat = s.audioFormat,
                 playlist = info.isPlaylist,
             )
         )

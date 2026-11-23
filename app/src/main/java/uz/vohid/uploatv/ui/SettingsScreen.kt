@@ -1,6 +1,15 @@
 package uz.vohid.uploatv.ui
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.LocalContext
+import uz.vohid.uploatv.download.DEFAULT_FOLDER
+import uz.vohid.uploatv.download.describeTree
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -40,7 +49,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uz.vohid.uploatv.BuildConfig
-import uz.vohid.uploatv.data.AudioFormat
 import uz.vohid.uploatv.data.Quality
 import uz.vohid.uploatv.data.ThemeMode
 
@@ -49,6 +57,20 @@ import uz.vohid.uploatv.data.ThemeMode
 fun SettingsSheet(vm: SettingsViewModel, onDismiss: () -> Unit) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val engine by vm.engine.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+    val pickFolder = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) {
+            // Ilova qayta ishga tushsa ham papkaga yozish huquqi saqlansin
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                )
+            }
+            vm.setSaveTree(uri.toString())
+        }
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -91,20 +113,6 @@ fun SettingsSheet(vm: SettingsViewModel, onDismiss: () -> Unit) {
 
             item {
                 Section("Yuklash") {
-                    LabeledRow("Standart tur") {
-                        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                            SegmentedButton(
-                                selected = !settings.defaultAudio,
-                                onClick = { vm.setDefaultAudio(false) },
-                                shape = SegmentedButtonDefaults.itemShape(0, 2),
-                            ) { Text("Video") }
-                            SegmentedButton(
-                                selected = settings.defaultAudio,
-                                onClick = { vm.setDefaultAudio(true) },
-                                shape = SegmentedButtonDefaults.itemShape(1, 2),
-                            ) { Text("Audio") }
-                        }
-                    }
                     LabeledRow("Standart video sifati") {
                         FlowRow(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -119,18 +127,19 @@ fun SettingsSheet(vm: SettingsViewModel, onDismiss: () -> Unit) {
                             }
                         }
                     }
-                    LabeledRow("Standart audio format") {
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            AudioFormat.entries.forEach { f ->
-                                FilterChip(
-                                    selected = settings.audioFormat == f,
-                                    onClick = { vm.setAudioFormat(f) },
-                                    label = { Text(f.label) },
-                                )
-                            }
-                        }
+                    val treeUri = settings.saveTreeUri
+                    ClickableRow(
+                        title = "Saqlash joyi",
+                        value = treeUri?.let { describeTree(Uri.parse(it)) } ?: DEFAULT_FOLDER,
+                        hint = if (treeUri == null) "Standart · o'zgartirish uchun bosing" else "O'zgartirish uchun bosing",
+                        onClick = { pickFolder.launch(null) },
+                    )
+                    if (treeUri != null) {
+                        TextButton(
+                            onClick = { vm.setSaveTree(null) },
+                            modifier = Modifier.padding(horizontal = 8.dp),
+                        ) { Text("Standart papkaga qaytarish") }
                     }
-                    InfoRow("Saqlash joyi", "Download/Uploat-V")
                 }
             }
 
@@ -227,6 +236,25 @@ private fun SwitchRow(title: String, subtitle: String, checked: Boolean, onChang
             )
         }
         Switch(checked = checked, onCheckedChange = onChange)
+    }
+}
+
+@Composable
+private fun ClickableRow(title: String, value: String, hint: String, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Text(title, style = MaterialTheme.typography.bodyLarge)
+        Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+        Text(
+            hint,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

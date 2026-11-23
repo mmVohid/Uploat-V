@@ -14,17 +14,12 @@ enum class Quality(val label: String, val height: Int?) {
     P360("360p", 360),
 }
 
-enum class AudioFormat(val label: String, val ext: String) {
-    M4A("M4A", "m4a"),
-    MP3("MP3", "mp3"),
-}
-
 data class AppSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = true,
-    val defaultAudio: Boolean = false,
-    val defaultQuality: Quality = Quality.P720,
-    val audioFormat: AudioFormat = AudioFormat.M4A,
+    val defaultQuality: Quality = Quality.BEST,
+    /** Foydalanuvchi tanlagan papka (SAF tree URI). null bo'lsa Download/Uploat-V ishlatiladi. */
+    val saveTreeUri: String? = null,
 )
 
 /** Havola bo'yicha yt-dlp qaytargan qisqa ma'lumot. */

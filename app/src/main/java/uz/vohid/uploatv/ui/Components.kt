@@ -40,12 +40,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import uz.vohid.uploatv.download.DEFAULT_FOLDER
 import uz.vohid.uploatv.download.DownloadItem
 import uz.vohid.uploatv.download.Status
 
 /** 16:9 rasm; rasm bo'lmasa tur ikonkasi ko'rsatiladi. */
 @Composable
-fun Thumbnail(url: String?, audio: Boolean, modifier: Modifier = Modifier) {
+fun Thumbnail(url: String?, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
@@ -61,7 +62,7 @@ fun Thumbnail(url: String?, audio: Boolean, modifier: Modifier = Modifier) {
             )
         } else {
             Icon(
-                imageVector = if (audio) Icons.Rounded.Audiotrack else Icons.Rounded.Videocam,
+                imageVector = Icons.Rounded.Videocam,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -85,7 +86,7 @@ fun DownloadRow(
     ) {
         Column(Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Thumbnail(item.thumbnail, item.audio, Modifier.size(width = 96.dp, height = 54.dp))
+                Thumbnail(item.thumbnail, Modifier.size(width = 96.dp, height = 54.dp))
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
@@ -155,7 +156,7 @@ private fun StatusLine(item: DownloadItem) {
             (if (item.detail.isBlank()) pct else "$pct · ${item.detail}") to scheme.primary
         }
         Status.DONE -> {
-            val base = "${item.optionLabel} · Download/Uploat-V"
+            val base = "${item.quality.label} · ${item.savedTo ?: DEFAULT_FOLDER}"
             (if (item.detail.isBlank()) base else "$base · ${item.detail}") to scheme.onSurfaceVariant
         }
         Status.FAILED -> (item.error ?: "Xatolik") to scheme.error

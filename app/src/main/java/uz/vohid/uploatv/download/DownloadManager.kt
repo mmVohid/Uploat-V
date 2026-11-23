@@ -3,6 +3,8 @@ package uz.vohid.uploatv.download
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.webkit.MimeTypeMap
 import androidx.core.content.ContextCompat
@@ -75,9 +77,7 @@ object DownloadManager {
                 title = url,
                 thumbnail = null,
                 uploader = null,
-                audio = s.defaultAudio,
                 quality = s.defaultQuality,
-                audioFormat = s.audioFormat,
                 playlist = false,
                 detail = "Ma'lumot olinmoqda…",
             )
@@ -200,7 +200,8 @@ object DownloadManager {
             if (get(id)?.status == Status.CANCELED) return
 
             mutate(id) { it.copy(detail = "Saqlanmoqda…", progress = 1f) }
-            val saved = saveToDownloads(dir)
+            val treeUri = SettingsRepository(app).settings.first().saveTreeUri
+            val saved = if (treeUri != null) saveToTree(dir, Uri.parse(treeUri)) else saveToDownloads(dir)
             if (saved.isEmpty()) throw IllegalStateException("Fayl topilmadi")
 
             mutate(id) {
@@ -210,6 +211,7 @@ object DownloadManager {
                     detail = if (saved.size > 1) "${saved.size} ta fayl" else "",
                     savedUri = saved.first().first,
                     mime = saved.first().second,
+                    savedTo = if (treeUri != null) describeTree(Uri.parse(treeUri)) else DEFAULT_FOLDER,
                 )
             }
         } catch (e: CancellationException) {
@@ -232,33 +234,44 @@ object DownloadManager {
             addOption("--concurrent-fragments", "4")
             addOption(if (item.playlist) "--yes-playlist" else "--no-playlist")
 
-            if (item.audio) {
-                val selector = if (item.audioFormat.ext == "m4a") "bestaudio[ext=m4a]/bestaudio/best" else "bestaudio/best"
-                addOption("-f", selector)
-                addOption("-x")
-                addOption("--audio-format", item.audioFormat.ext)
-                addOption("--audio-quality", "0")
-            } else {
-                val h = item.quality.height
-                val selector = if (h == null) "bv*+ba/b" else "bv*[height<=$h]+ba/b[height<=$h]/b"
-                addOption("-f", selector)
-                // Telefonlarda keng qo'llab-quvvatlanadigan h264/aac afzal ko'riladi
-                addOption("-S", "res,vcodec:h264,acodec:m4a")
-                addOption("--merge-output-format", "mp4")
-            }
+            val h = item.quality.height
+            val selector = if (h == null) "bv*+ba/b" else "bv*[height<=$h]+ba/b[height<=$h]/b"
+            addOption("-f", selector)
+            // Telefonlarda keng qo'llab-quvvatlanadigan h264/aac afzal ko'riladi
+            addOption("-S", "res,vcodec:h264,acodec:m4a")
+            addOption("--merge-output-format", "mp4")
         }
+
+    private fun listResultFiles(dir: File): List<File> {
+        val skip = setOf("part", "ytdl", "temp", "tmp", "json", "jpg", "jpeg", "png", "webp", "vtt", "srt")
+        return dir.listFiles { f -> f.isFile && f.extension.lowercase() !in skip }
+            ?.sortedBy { it.name }
+            .orEmpty()
+    }
+
+    private fun mimeOf(file: File): String =
+        MimeTypeMap.getSingleton().getMimeTypeFromExtension(file.extension.lowercase())
+            ?: "application/octet-stream"
+
+    /** Foydalanuvchi tanlagan papkaga (SAF) ko'chiradi. */
+    private fun saveToTree(dir: File, tree: Uri): List<Pair<String, String>> {
+        val resolver = app.contentResolver
+        val parent = DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
+        return listResultFiles(dir).map { file ->
+            val mime = mimeOf(file)
+            val target = DocumentsContract.createDocument(resolver, parent, mime, file.name)
+                ?: throw IllegalStateException("Tanlangan papkaga yozib bo'lmadi. Papkani qayta tanlang")
+            resolver.openOutputStream(target)?.use { out -> file.inputStream().use { it.copyTo(out) } }
+                ?: throw IllegalStateException("Faylni yozib bo'lmadi")
+            target.toString() to mime
+        }
+    }
 
     /** Vaqtinchalik papkadagi tayyor fayllarni MediaStore orqali Download/Uploat-V ga ko'chiradi. */
     private fun saveToDownloads(dir: File): List<Pair<String, String>> {
-        val skip = setOf("part", "ytdl", "temp", "tmp", "json", "jpg", "jpeg", "png", "webp", "vtt", "srt")
-        val files = dir.listFiles { f -> f.isFile && f.extension.lowercase() !in skip }
-            ?.sortedBy { it.name }
-            .orEmpty()
-
         val resolver = app.contentResolver
-        return files.map { file ->
-            val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(file.extension.lowercase())
-                ?: "application/octet-stream"
+        return listResultFiles(dir).map { file ->
+            val mime = mimeOf(file)
             val values = ContentValues().apply {
                 put(MediaStore.Downloads.DISPLAY_NAME, file.name)
                 put(MediaStore.Downloads.MIME_TYPE, mime)
