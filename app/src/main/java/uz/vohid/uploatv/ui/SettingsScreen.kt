@@ -6,11 +6,7 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import uz.vohid.uploatv.download.DEFAULT_FOLDER
 import uz.vohid.uploatv.download.describeTree
@@ -56,46 +52,12 @@ import uz.vohid.uploatv.BuildConfig
 import uz.vohid.uploatv.data.Quality
 import uz.vohid.uploatv.data.ThemeMode
 
-private const val ISSUES_URL = "https://github.com/mmVohid/Uploat-V/issues/new"
-
-private val LICENSES = listOf(
-    "yt-dlp" to "Unlicense",
-    "youtubedl-android" to "GPL-3.0",
-    "FFmpeg" to "LGPL 2.1+ / GPL 2+",
-    "Jetpack Compose, AndroidX" to "Apache License 2.0",
-    "Coil" to "Apache License 2.0",
-    "Kotlin, kotlinx.coroutines" to "Apache License 2.0",
-)
-
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SettingsSheet(vm: SettingsViewModel, onDismiss: () -> Unit) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val engine by vm.engine.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    var showLicenses by remember { mutableStateOf(false) }
-
-    if (showLicenses) {
-        AlertDialog(
-            onDismissRequest = { showLicenses = false },
-            title = { Text("Litsenziyalar") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    LICENSES.forEach { (name, license) ->
-                        Column {
-                            Text(name, style = MaterialTheme.typography.bodyLarge)
-                            Text(
-                                license,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
-            },
-            confirmButton = { TextButton(onClick = { showLicenses = false }) { Text("Yopish") } },
-        )
-    }
 
     val pickFolder = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri != null) {
@@ -214,26 +176,7 @@ fun SettingsSheet(vm: SettingsViewModel, onDismiss: () -> Unit) {
 
             item {
                 Section("Ilova haqida") {
-                    InfoRow("Versiya", BuildConfig.VERSION_NAME)
-                    ClickableRow(
-                        title = "Muammo haqida xabar",
-                        value = "GitHub",
-                        hint = "Xato yoki taklifni yuborish",
-                        onClick = {
-                            runCatching {
-                                context.startActivity(
-                                    Intent(Intent.ACTION_VIEW, Uri.parse(ISSUES_URL))
-                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                )
-                            }
-                        },
-                    )
-                    ClickableRow(
-                        title = "Litsenziyalar",
-                        value = "Ochiq manba kutubxonalari",
-                        hint = "yt-dlp, FFmpeg va boshqalar",
-                        onClick = { showLicenses = true },
-                    )
+                    InfoRow("Uploat-V", "Versiya ${BuildConfig.VERSION_NAME}")
                 }
             }
         }
