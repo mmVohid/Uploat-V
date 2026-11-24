@@ -6,6 +6,8 @@ import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.printToString
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ActivityScenario
@@ -77,9 +79,13 @@ class AppE2ETest {
     /** Belgi (badge) bor paytda tugma tavsifi birlashib ketadi, shuning uchun birlashmagan daraxtdan qidiriladi. */
     private fun openDownloads() {
         // Klaviatura yopilguncha pastki panel ko'rinmasligi mumkin: paydo bo'lishini kutamiz
-        rule.waitUntil(15_000) {
-            rule.onAllNodesWithContentDescription("Yuklashlar", substring = true, useUnmergedTree = true)
-                .fetchSemanticsNodes().isNotEmpty()
+        try {
+            rule.waitUntil(15_000) {
+                rule.onAllNodesWithContentDescription("Yuklashlar", substring = true, useUnmergedTree = true)
+                    .fetchSemanticsNodes().isNotEmpty()
+            }
+        } catch (e: androidx.compose.ui.test.ComposeTimeoutException) {
+            throw AssertionError("'Yuklashlar' tugmasi yo'q. Ekran:\n" + rule.onRoot(useUnmergedTree = true).printToString(), e)
         }
         rule.onNodeWithContentDescription("Yuklashlar", substring = true, useUnmergedTree = true).performClick()
     }
@@ -89,8 +95,12 @@ class AppE2ETest {
     }
 
     private fun waitText(text: String, timeoutMs: Long = 15_000) {
-        rule.waitUntil(timeoutMs) {
-            rule.onAllNodes(hasText(text, substring = true)).fetchSemanticsNodes().isNotEmpty()
+        try {
+            rule.waitUntil(timeoutMs) {
+                rule.onAllNodes(hasText(text, substring = true)).fetchSemanticsNodes().isNotEmpty()
+            }
+        } catch (e: androidx.compose.ui.test.ComposeTimeoutException) {
+            throw AssertionError("'$text' topilmadi. Ekran:\n" + rule.onRoot(useUnmergedTree = true).printToString(), e)
         }
     }
 
