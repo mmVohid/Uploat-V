@@ -25,6 +25,7 @@ class DownloadService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var job: Job? = null
     private val seen = mutableSetOf<String>()
+    private val notified = mutableSetOf<String>()
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -44,19 +45,23 @@ class DownloadService : Service() {
         val nm = getSystemService(NotificationManager::class.java)
         val active = items.filter { it.isActive }
         seen += active.map { it.id }
+        // qayta urinilgan yuklash tugaganda yana xabar berilishi uchun
+        notified -= active.map { it.id }.toSet()
+
+        // Har bir video tugashi bilan alohida xabar: qaysi biri yuklandi, qaysi biri yo'q
+        val finished = items.filter {
+            it.id in seen && it.id !in notified && (it.status == Status.DONE || it.status == Status.FAILED)
+        }
+        if (finished.isNotEmpty()) {
+            val notify = SettingsRepository(this).settings.first().notifyOnDone
+            finished.forEach { item ->
+                notified += item.id
+                if (notify) nm.notify(resultId(item.id), buildResult(item))
+            }
+        }
 
         if (active.isEmpty()) {
             stopForeground(STOP_FOREGROUND_REMOVE)
-            val done = items.count { it.id in seen && it.status == Status.DONE }
-            val failed = items.count { it.id in seen && it.status == Status.FAILED }
-            val notify = SettingsRepository(this).settings.first().notifyOnDone
-            if (notify && done + failed > 0) {
-                val text = buildString {
-                    if (done > 0) append("$done ta yuklash tayyor")
-                    if (failed > 0) append(if (done > 0) ", $failed ta xatolik" else "$failed ta xatolik")
-                }
-                nm.notify(DONE_ID, build("Uploat-V", text, -1, done = true))
-            }
             stopSelf()
         } else {
             val current = active.firstOrNull { it.status == Status.RUNNING } ?: active.first()
@@ -64,6 +69,29 @@ class DownloadService : Service() {
             val title = if (active.size > 1) "Yuklanmoqda (${active.size} ta)" else "Yuklanmoqda"
             nm.notify(NOTIF_ID, build(title, current.title, pct))
         }
+    }
+
+    private fun resultId(id: String) = 1000 + (id.hashCode() and 0x7fffffff) % 100000
+
+    private fun buildResult(item: DownloadItem): android.app.Notification {
+        val ok = item.status == Status.DONE
+        // Inkognito yuklashda video nomi bildirishnomada ko'rsatilmaydi
+        val name = if (item.incognito) "Video" else item.title
+        val text = if (ok) name else "$name\n${item.error ?: "Yuklab bo'lmadi"}"
+        return NotificationCompat.Builder(this, UploatApp.CHANNEL_DONE)
+            .setSmallIcon(R.drawable.ic_stat_download)
+            .setContentTitle(if (ok) "Yuklandi" else "Yuklab bo'lmadi")
+            .setContentText(name)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setAutoCancel(true)
+            .setContentIntent(
+                PendingIntent.getActivity(
+                    this, 0,
+                    Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                )
+            )
+            .build()
     }
 
     private fun build(title: String, text: String?, percent: Int, done: Boolean = false) =
@@ -91,6 +119,5 @@ class DownloadService : Service() {
 
     private companion object {
         const val NOTIF_ID = 1
-        const val DONE_ID = 2
     }
 }

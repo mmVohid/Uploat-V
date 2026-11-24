@@ -37,7 +37,7 @@ import java.util.concurrent.ConcurrentHashMap
  */
 object DownloadManager {
 
-    private const val MAX_PARALLEL = 3
+    private const val MAX_PARALLEL = 5
     private const val HISTORY_LIMIT = 100
     private val ITEM_REGEX = Regex("""Downloading item (\d+) of (\d+)""")
     private val SPEED_REGEX = Regex("""\bat\s+(\d+(?:\.\d+)?\s?[KMGT]?i?B/s)""")
@@ -256,7 +256,9 @@ object DownloadManager {
             addOption("-o", "${dir.absolutePath}/%(title).80s [%(id)s].%(ext)s")
             addOption("--no-mtime")
             addOption("--no-warnings")
-            addOption("--concurrent-fragments", "8")
+            // Bitta yuklashda to'liq tezlik (8 qism); bir nechta bo'lsa, tarmoq bo'linib ketmasligi uchun kamroq
+            val busy = _items.value.count { it.status == Status.RUNNING }
+            addOption("--concurrent-fragments", if (busy > 1) "4" else "8")
             addOption("--retries", "5")
             addOption("--fragment-retries", "5")
             addOption("--socket-timeout", "20")
