@@ -114,6 +114,8 @@ import androidx.compose.material.icons.rounded.Tag
 import androidx.compose.material.icons.rounded.ThumbUp
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.runtime.produceState
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
@@ -167,10 +169,12 @@ fun HomeScreen(vm: HomeViewModel, snackbar: SnackbarHostState, onOpenSettings: (
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = { HomeHeader(engineState = engineState, activeCount = activeCount) },
     ) { pad ->
+      val listHaze = remember { HazeState() }
       Box(Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
+                .hazeSource(listHaze)
                 .imePadding(),
             contentPadding = PaddingValues(
                 start = 16.dp,
@@ -184,7 +188,7 @@ fun HomeScreen(vm: HomeViewModel, snackbar: SnackbarHostState, onOpenSettings: (
                 OutlinedTextField(
                     value = ui.url,
                     onValueChange = { vm.onUrlChange(it) },
-                    modifier = Modifier.fillMaxWidth().glass(RoundedCornerShape(20.dp), tintAlpha = 0.4f),
+                    modifier = Modifier.fillMaxWidth().glass(RoundedCornerShape(20.dp)),
                     singleLine = true,
                     shape = RoundedCornerShape(20.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -370,7 +374,7 @@ fun HomeScreen(vm: HomeViewModel, snackbar: SnackbarHostState, onOpenSettings: (
             enter = fadeIn() + slideInVertically { it },
             exit = fadeOut() + slideOutVertically { it },
         ) {
-            FloatingBar(onPaste = pasteFromClipboard, onSettings = onOpenSettings)
+            FloatingBar(onPaste = pasteFromClipboard, onSettings = onOpenSettings, hazeState = listHaze)
         }
       }
     }
@@ -526,7 +530,7 @@ private fun HomeHeader(engineState: Int, activeCount: Int) {
         Text(
             text = "Uploat-V",
             style = MaterialTheme.typography.headlineLarge.copy(
-                brush = Brush.linearGradient(listOf(scheme.primary, scheme.tertiary)),
+                brush = Brush.linearGradient(listOf(scheme.primary, Color(0xFF38BDF8))),
                 fontWeight = FontWeight.ExtraBold,
             ),
             modifier = Modifier.weight(1f),
@@ -551,7 +555,7 @@ private fun HomeHeader(engineState: Int, activeCount: Int) {
 }
 
 @Composable
-private fun FloatingBar(onPaste: () -> Unit, onSettings: () -> Unit) {
+private fun FloatingBar(onPaste: () -> Unit, onSettings: () -> Unit, hazeState: HazeState) {
     val pasteSource = remember { MutableInteractionSource() }
     val setSource = remember { MutableInteractionSource() }
     Row(
@@ -559,7 +563,7 @@ private fun FloatingBar(onPaste: () -> Unit, onSettings: () -> Unit) {
             .navigationBarsPadding()
             .padding(horizontal = 16.dp, vertical = 12.dp)
             .fillMaxWidth()
-            .glass(RoundedCornerShape(32.dp), tintAlpha = 0.55f)
+            .glass(RoundedCornerShape(32.dp), tintAlpha = 0.6f, hazeState = hazeState)
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),

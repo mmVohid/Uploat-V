@@ -43,61 +43,19 @@ import dev.chrisbanes.haze.hazeSource
 val LocalHazeState = compositionLocalOf<HazeState?> { null }
 
 /**
- * Butun ilova uchun fon: gradient + sekin suzuvchi rangli "aurora" dog'lari.
- * Aynan shu qatlam xiralashtiriladi (hazeSource), kontent esa uning ustida turadi.
+ * Butun ilova uchun toza fon (yorug' rejimda oq, qorong'uda qora).
+ * Kartochkalar shu qatlamni xiralashtiradi (hazeSource).
  */
 @Composable
 fun GlassScaffold(content: @Composable BoxScope.() -> Unit) {
     val hazeState = remember { HazeState() }
     val scheme = MaterialTheme.colorScheme
-    val dark = scheme.surface.luminance() < 0.5f
-    val glow = if (dark) 0.42f else 0.32f
-
-    val infinite = rememberInfiniteTransition(label = "aurora")
-    val a by infinite.animateFloat(
-        0f, 1f,
-        infiniteRepeatable(tween(17000, easing = LinearEasing), RepeatMode.Reverse), label = "a",
-    )
-    val b by infinite.animateFloat(
-        0f, 1f,
-        infiniteRepeatable(tween(23000, easing = LinearEasing), RepeatMode.Reverse), label = "b",
-    )
-    val c by infinite.animateFloat(
-        0f, 1f,
-        infiniteRepeatable(tween(29000, easing = LinearEasing), RepeatMode.Reverse), label = "c",
-    )
-
     Box(Modifier.fillMaxSize()) {
         Box(
             Modifier
                 .fillMaxSize()
                 .hazeSource(hazeState)
-                .background(scheme.surface)
-                .drawBehind {
-                    val w = size.width
-                    val h = size.height
-                    drawRect(
-                        Brush.radialGradient(
-                            listOf(scheme.primary.copy(alpha = glow), Color.Transparent),
-                            center = Offset(w * (0.05f + 0.55f * a), h * (0.05f + 0.20f * b)),
-                            radius = w * 1.1f,
-                        ),
-                    )
-                    drawRect(
-                        Brush.radialGradient(
-                            listOf(scheme.tertiary.copy(alpha = glow), Color.Transparent),
-                            center = Offset(w * (0.95f - 0.50f * b), h * (0.35f + 0.25f * c)),
-                            radius = w * 1.0f,
-                        ),
-                    )
-                    drawRect(
-                        Brush.radialGradient(
-                            listOf(scheme.secondary.copy(alpha = glow * 0.9f), Color.Transparent),
-                            center = Offset(w * (0.15f + 0.50f * c), h * (0.98f - 0.22f * a)),
-                            radius = w * 1.1f,
-                        ),
-                    )
-                },
+                .background(scheme.surface),
         )
         CompositionLocalProvider(
             LocalHazeState provides hazeState,
@@ -124,13 +82,14 @@ fun Modifier.pressScale(source: InteractionSource, pressedScale: Float = 0.95f):
 @Composable
 fun Modifier.glass(
     shape: Shape = RoundedCornerShape(20.dp),
-    tint: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
-    tintAlpha: Float = 0.5f,
+    tint: Color = MaterialTheme.colorScheme.surfaceContainer,
+    tintAlpha: Float = 0.9f,
+    hazeState: HazeState? = LocalHazeState.current,
 ): Modifier {
-    val state = LocalHazeState.current
+    val state = hazeState
     val scheme = MaterialTheme.colorScheme
     val dark = scheme.surface.luminance() < 0.5f
-    val rim = if (dark) Color.White else Color.White
+    val rim = if (dark) Color.White else Color.Black
     val base = this.clip(shape)
     val blurred = if (state != null) {
         base.hazeEffect(state) {
@@ -144,7 +103,7 @@ fun Modifier.glass(
     }
     return blurred.border(
         1.dp,
-        Brush.linearGradient(listOf(rim.copy(alpha = if (dark) 0.28f else 0.8f), rim.copy(alpha = if (dark) 0.06f else 0.25f))),
+        Brush.linearGradient(listOf(rim.copy(alpha = if (dark) 0.22f else 0.12f), rim.copy(alpha = if (dark) 0.06f else 0.04f))),
         shape,
     )
 }

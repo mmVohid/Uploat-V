@@ -251,7 +251,7 @@ private fun StatusLine(item: DownloadItem) {
         when (item.status) {
             Status.DONE -> Icon(
                 Icons.Rounded.CheckCircle, null,
-                Modifier.size(14.dp), tint = scheme.primary,
+                Modifier.size(14.dp), tint = scheme.tertiary,
             )
             Status.FAILED -> Icon(
                 Icons.Rounded.ErrorOutline, null,
