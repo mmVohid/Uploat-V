@@ -17,6 +17,8 @@ data class DownloadItem(
     val progress: Float = 0f,
     val detail: String = "",
     val error: String? = null,
+    /** Texnik xato matni (nusxalash uchun). */
+    val errorDetail: String? = null,
     val savedUri: String? = null,
     val mime: String? = null,
     /** Fayl saqlangan joy (ko'rsatish uchun), masalan "Download/Uploat-V". */
@@ -38,6 +40,7 @@ data class DownloadItem(
         put("status", status.name)
         put("detail", detail)
         put("error", error)
+        put("errorDetail", errorDetail)
         put("savedUri", savedUri)
         put("mime", mime)
         put("savedTo", savedTo)
@@ -59,6 +62,7 @@ data class DownloadItem(
                 progress = if (o.optString("status") == Status.DONE.name) 1f else 0f,
                 detail = o.optString("detail"),
                 error = s("error"),
+                errorDetail = s("errorDetail"),
                 savedUri = s("savedUri"),
                 mime = s("mime"),
                 savedTo = s("savedTo"),

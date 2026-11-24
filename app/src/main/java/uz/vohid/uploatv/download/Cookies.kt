@@ -98,14 +98,14 @@ object CookieStore {
      * "Cookie'larni avtomatik boshqarish" yoqilgan bo'lsa: saytni yashirin WebView'da ochib,
      * mehmon (yoki kirilgan) cookie'larni yangilaydi. Har sayt uchun 6 soatda bir marta.
      */
-    suspend fun prepareIfEnabled(url: String) {
+    suspend fun prepareIfEnabled(url: String, force: Boolean = false) {
         if (!SettingsRepository(app).settings.first().autoCookies) return
         val host = runCatching { Uri.parse(url).host?.lowercase() }.getOrNull() ?: return
         val base = baseDomain(host)
         val known = quickSites.any { baseDomain(Uri.parse(it.url).host.orEmpty()) == base } || base in domains()
         if (!known) return
         val now = System.currentTimeMillis()
-        if (now - (lastRefresh[base] ?: 0L) < 6L * 60 * 60 * 1000 && fileFor(url) != null) return
+        if (!force && now - (lastRefresh[base] ?: 0L) < 6L * 60 * 60 * 1000 && fileFor(url) != null) return
         lastRefresh[base] = now
 
         withContext(Dispatchers.Main) {

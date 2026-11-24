@@ -36,6 +36,7 @@ data class AppSettings(
     /** Uploat-V yangi versiyasini GitHub'dan avtomatik tekshirish. */
     val autoUpdateApp: Boolean = false,
     val autoCookies: Boolean = false,
+    val ytdlpNightly: Boolean = false,
     val lastAppCheckMs: Long = 0L,
 )
 

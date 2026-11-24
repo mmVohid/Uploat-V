@@ -33,6 +33,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.draw.drawBehind
@@ -86,6 +90,8 @@ fun DownloadRow(
     onRemove: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val clipboard = LocalClipboardManager.current
+    val context = LocalContext.current
     Card(
         modifier = modifier.fillMaxWidth().glass(RoundedCornerShape(20.dp)),
         shape = RoundedCornerShape(20.dp),
@@ -128,6 +134,12 @@ fun DownloadRow(
                         }
                     }
                     Status.FAILED, Status.CANCELED -> {
+                        if (item.status == Status.FAILED && !item.errorDetail.isNullOrBlank()) {
+                            TextButton(onClick = {
+                                clipboard.setText(AnnotatedString("${item.url}\n${item.errorDetail}"))
+                                Toast.makeText(context, "Xato matni nusxalandi", Toast.LENGTH_SHORT).show()
+                            }) { Text("Nusxalash") }
+                        }
                         TextButton(onClick = onRetry) {
                             Icon(Icons.Rounded.Refresh, null, Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))

@@ -108,7 +108,7 @@ object DownloadManager {
                 throw e
             } catch (e: Throwable) {
                 if (get(id)?.status != Status.CANCELED) {
-                    mutate(id) { it.copy(status = Status.FAILED, error = friendlyError(e), detail = "") }
+                    mutate(id) { it.copy(status = Status.FAILED, error = friendlyError(e), errorDetail = rawError(e), detail = "") }
                     persist()
                 }
                 return@launch
@@ -178,7 +178,22 @@ object DownloadManager {
         }
     }
 
+    private val loginRetried = mutableSetOf<String>()
+
+    /** Login/cookie xatosida: cookie'ni majburan yangilab, bir marta qayta uriniladi. */
     private suspend fun process(id: String) {
+        processOnce(id)
+        val item = get(id) ?: return
+        if (item.status == Status.FAILED && isLoginError(item.errorDetail.orEmpty()) && loginRetried.add(id)) {
+            val enabled = SettingsRepository(app).settings.first().autoCookies
+            if (enabled) {
+                runCatching { CookieStore.prepareIfEnabled(item.url, force = true) }
+                processOnce(id)
+            }
+        }
+    }
+
+    private suspend fun processOnce(id: String) {
         val item = get(id) ?: return
         if (item.status == Status.CANCELED) return
 
@@ -243,7 +258,7 @@ object DownloadManager {
             throw e
         } catch (e: Throwable) {
             if (get(id)?.status != Status.CANCELED) {
-                mutate(id) { it.copy(status = Status.FAILED, error = friendlyError(e)) }
+                mutate(id) { it.copy(status = Status.FAILED, error = friendlyError(e), errorDetail = rawError(e)) }
             }
         } finally {
             dir.deleteRecursively()

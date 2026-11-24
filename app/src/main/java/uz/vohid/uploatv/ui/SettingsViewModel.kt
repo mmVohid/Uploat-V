@@ -71,6 +71,7 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     fun setSaveTree(uri: String?) = viewModelScope.launch { repo.setSaveTree(uri) }
     fun setIncognito(on: Boolean) = viewModelScope.launch { repo.setIncognito(on) }
     fun setAutoUpdateApp(on: Boolean) = viewModelScope.launch { repo.setAutoUpdateApp(on) }
+    fun setYtdlpNightly(on: Boolean) = viewModelScope.launch { repo.setYtdlpNightly(on) }
     fun setAutoCookies(on: Boolean) = viewModelScope.launch { repo.setAutoCookies(on) }
 
     // ---------- Uploat-V yangilanishi ----------

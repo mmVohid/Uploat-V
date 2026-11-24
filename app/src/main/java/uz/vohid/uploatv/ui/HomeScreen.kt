@@ -249,7 +249,7 @@ fun HomeScreen(
 
             item(key = "error") {
                 AnimatedVisibility(visible = ui.error != null) {
-                    ErrorCard(message = ui.error.orEmpty(), onRetry = vm::retryFetch)
+                    ErrorCard(message = ui.error.orEmpty(), detail = ui.errorDetail, url = ui.url, onRetry = vm::retryFetch)
                 }
             }
 
@@ -346,7 +346,9 @@ private fun LoadingCard() {
 }
 
 @Composable
-private fun ErrorCard(message: String, onRetry: () -> Unit) {
+private fun ErrorCard(message: String, detail: String?, url: String, onRetry: () -> Unit) {
+    val clipboard = LocalClipboardManager.current
+    val context = LocalContext.current
     Card(
         modifier = Modifier.fillMaxWidth().glass(
             RoundedCornerShape(20.dp),
@@ -363,7 +365,15 @@ private fun ErrorCard(message: String, onRetry: () -> Unit) {
             Icon(Icons.Rounded.ErrorOutline, contentDescription = null)
             Spacer(Modifier.width(12.dp))
             Text(message, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-            TextButton(onClick = onRetry) { Text("Qayta") }
+            Column(horizontalAlignment = Alignment.End) {
+                TextButton(onClick = onRetry) { Text("Qayta") }
+                if (!detail.isNullOrBlank()) {
+                    TextButton(onClick = {
+                        clipboard.setText(androidx.compose.ui.text.AnnotatedString("$url\n$detail"))
+                        Toast.makeText(context, "Xato matni nusxalandi", Toast.LENGTH_SHORT).show()
+                    }) { Text("Nusxalash") }
+                }
+            }
         }
     }
 }

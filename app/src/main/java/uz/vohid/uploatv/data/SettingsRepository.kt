@@ -26,6 +26,7 @@ class SettingsRepository(private val context: Context) {
         val INCOGNITO = booleanPreferencesKey("incognito")
         val AUTO_UPDATE_APP = booleanPreferencesKey("auto_update_app")
         val AUTO_COOKIES = booleanPreferencesKey("auto_cookies")
+        val YTDLP_NIGHTLY = booleanPreferencesKey("ytdlp_nightly")
         val LAST_APP_CHECK = longPreferencesKey("last_app_check_ms")
     }
 
@@ -44,6 +45,7 @@ class SettingsRepository(private val context: Context) {
             incognito = p[Keys.INCOGNITO] ?: false,
             autoUpdateApp = p[Keys.AUTO_UPDATE_APP] ?: false,
             autoCookies = p[Keys.AUTO_COOKIES] ?: false,
+            ytdlpNightly = p[Keys.YTDLP_NIGHTLY] ?: false,
             lastAppCheckMs = p[Keys.LAST_APP_CHECK] ?: 0L,
         )
     }
@@ -54,6 +56,7 @@ class SettingsRepository(private val context: Context) {
         it[Keys.AUTO_UPDATE] = autoUpdate
         it[Keys.AUTO_COOKIES] = autoCookies
     }
+    suspend fun setYtdlpNightly(on: Boolean) = context.dataStore.edit { it[Keys.YTDLP_NIGHTLY] = on }
     suspend fun setAutoCookies(on: Boolean) = context.dataStore.edit { it[Keys.AUTO_COOKIES] = on }
 
     suspend fun setAutoUpdate(on: Boolean) = context.dataStore.edit { it[Keys.AUTO_UPDATE] = on }

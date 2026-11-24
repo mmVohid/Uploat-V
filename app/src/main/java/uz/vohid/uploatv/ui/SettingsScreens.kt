@@ -330,6 +330,12 @@ fun EngineScreen(vm: SettingsViewModel, onBack: () -> Unit) {
                 }
             }
             SwitchRow(
+                title = "Nightly (eng yangi) versiya",
+                subtitle = "Instagram kabi saytlar tuzatishlari tezroq keladi, lekin ba'zan beqaror. Yoqqandan keyin \"Yangilash\" ni bosing",
+                checked = settings.ytdlpNightly,
+                onChange = vm::setYtdlpNightly,
+            )
+            SwitchRow(
                 title = "Avtomatik yangilash",
                 subtitle = "Kuniga bir marta, internet sarflaydi",
                 checked = settings.autoUpdateYtdlp,

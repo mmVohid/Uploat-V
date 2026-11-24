@@ -36,10 +36,8 @@ fun describeTree(tree: android.net.Uri): String {
 /** yt-dlp xatosini foydalanuvchiga tushunarli qisqa matnga aylantiradi. */
 fun friendlyError(e: Throwable): String {
     val msg = e.message.orEmpty()
-    val low = msg.lowercase()
     return when {
-        "empty media response" in low || "login required" in low || "log in" in low ||
-            "logged-in" in low || "rate-limit reached" in low || "--cookies" in low ->
+        isLoginError(msg) ->
             "Bu video uchun akkauntga kirish kerak. Sozlamalar → Maxfiylik va xavfsizlik → Cookies bo'limidan saytga kiring"
         "Unsupported URL" in msg -> "Bu havola qo'llab-quvvatlanmaydi"
         "Unable to resolve host" in msg || "Network is unreachable" in msg ||
@@ -57,3 +55,13 @@ fun friendlyError(e: Throwable): String {
             ?: "Yuklab bo'lmadi"
     }
 }
+
+/** Sayt akkaunt/cookie talab qilgan xato belgilari. */
+fun isLoginError(msg: String): Boolean {
+    val low = msg.lowercase()
+    return "empty media response" in low || "login required" in low || "log in" in low ||
+        "logged-in" in low || "rate-limit reached" in low || "--cookies" in low
+}
+
+/** Texnik xato matni (nusxalash uchun): oxirgi qismi, qisqartirilgan. */
+fun rawError(e: Throwable): String = e.message.orEmpty().trim().takeLast(1500)

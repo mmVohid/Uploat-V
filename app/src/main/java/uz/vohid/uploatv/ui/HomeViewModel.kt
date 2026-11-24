@@ -21,6 +21,7 @@ import uz.vohid.uploatv.download.DownloadItem
 import uz.vohid.uploatv.download.DownloadManager
 import uz.vohid.uploatv.download.InfoFetcher
 import uz.vohid.uploatv.download.friendlyError
+import uz.vohid.uploatv.download.rawError
 import java.util.UUID
 
 data class HomeUi(
@@ -28,6 +29,7 @@ data class HomeUi(
     val fetching: Boolean = false,
     val info: MediaInfo? = null,
     val error: String? = null,
+    val errorDetail: String? = null,
     val quality: Quality = Quality.BEST,
     val wholePlaylist: Boolean = false,
 ) {
@@ -125,7 +127,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             } catch (e: Throwable) {
                 // Yangi kiritish tufayli bekor qilingan bo'lsa, xato ko'rsatilmaydi
                 currentCoroutineContext().ensureActive()
-                _ui.update { it.copy(fetching = false, error = friendlyError(e)) }
+                _ui.update { it.copy(fetching = false, error = friendlyError(e), errorDetail = rawError(e)) }
             }
         }
     }

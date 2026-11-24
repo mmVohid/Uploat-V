@@ -35,6 +35,8 @@ object EngineUpdater {
     private const val DAY_MS = 24L * 60 * 60 * 1000
     private const val RELEASE_PAGE = "https://github.com/yt-dlp/yt-dlp/releases/latest"
     private const val ASSET_URL = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp"
+    private const val NIGHTLY_PAGE = "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest"
+    private const val NIGHTLY_ASSET_URL = "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp"
     private const val MIN_SIZE = 1_000_000L
 
     private lateinit var app: Context
@@ -128,7 +130,8 @@ object EngineUpdater {
     // ---------- To'g'ridan-to'g'ri yangilash ----------
 
     private suspend fun updateDirect(context: Context, repo: SettingsRepository): UpdateResult {
-        val latest = latestTag()
+        val nightly = repo.settings.first().ytdlpNightly
+        val latest = latestTag(nightly)
         val current = repo.settings.first().ytdlpVersion
         val target = File(context.noBackupFilesDir, "youtubedl-android/yt-dlp/yt-dlp")
 
@@ -144,7 +147,7 @@ object EngineUpdater {
         var last: Throwable? = null
         for (attempt in 1..3) {
             try {
-                download(ASSET_URL, tmp)
+                download(if (nightly) NIGHTLY_ASSET_URL else ASSET_URL, tmp)
                 if (!tmp.renameTo(target)) {
                     tmp.copyTo(target, overwrite = true)
                     tmp.delete()
@@ -165,8 +168,8 @@ object EngineUpdater {
         throw last ?: IOException("Noma'lum xato")
     }
 
-    private fun latestTag(): String {
-        val c = URL(RELEASE_PAGE).openConnection() as HttpURLConnection
+    private fun latestTag(nightly: Boolean): String {
+        val c = URL(if (nightly) NIGHTLY_PAGE else RELEASE_PAGE).openConnection() as HttpURLConnection
         try {
             c.instanceFollowRedirects = false
             c.requestMethod = "HEAD"
