@@ -90,7 +90,7 @@ class AppE2ETest {
                     .fetchSemanticsNodes().isNotEmpty()
             }
         } catch (e: androidx.compose.ui.test.ComposeTimeoutException) {
-            throw AssertionError("'Yuklashlar' tugmasi yo'q.\n" + windowDump() + "\n" + rule.onRoot(useUnmergedTree = true).printToString(), e)
+            throw AssertionError("'Yuklashlar' tugmasi yo'q. " + oneLine(windowDump() + " || " + rule.onRoot(useUnmergedTree = true).printToString(maxDepth = 40)), e)
         }
         rule.onNodeWithContentDescription("Yuklashlar", substring = true, useUnmergedTree = true).performClick()
     }
@@ -104,6 +104,8 @@ class AppE2ETest {
             .joinToString("\n")
     }.getOrDefault("(dump yo'q)")
 
+    private fun oneLine(t: String) = t.replace(Regex("\\s+"), " ").take(2500)
+
     private fun enterUrl(url: String) {
         rule.onNodeWithText("Video havolasi").performTextInput(url)
     }
@@ -114,7 +116,7 @@ class AppE2ETest {
                 rule.onAllNodes(hasText(text, substring = true)).fetchSemanticsNodes().isNotEmpty()
             }
         } catch (e: androidx.compose.ui.test.ComposeTimeoutException) {
-            throw AssertionError("'$text' topilmadi. Ekran:\n" + rule.onRoot(useUnmergedTree = true).printToString(), e)
+            throw AssertionError("'$text' topilmadi. " + oneLine(rule.onRoot(useUnmergedTree = true).printToString(maxDepth = 40)), e)
         }
     }
 
