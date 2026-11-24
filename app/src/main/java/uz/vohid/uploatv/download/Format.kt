@@ -40,7 +40,7 @@ fun friendlyError(e: Throwable): String {
     return when {
         "empty media response" in low || "login required" in low || "log in" in low ||
             "logged-in" in low || "rate-limit reached" in low || "--cookies" in low ->
-            "Bu video uchun akkauntga kirish kerak. Sozlamalar → Akkauntlar bo'limidan kiring"
+            "Bu video uchun akkauntga kirish kerak. Sozlamalar → Maxfiylik va xavfsizlik → Cookies bo'limidan saytga kiring"
         "Unsupported URL" in msg -> "Bu havola qo'llab-quvvatlanmaydi"
         "Unable to resolve host" in msg || "Network is unreachable" in msg ||
             "Temporary failure" in msg || "timed out" in msg -> "Internet aloqasini tekshiring"

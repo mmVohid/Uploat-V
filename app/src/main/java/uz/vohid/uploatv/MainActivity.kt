@@ -61,7 +61,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.navigation.compose.NavHost
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
-import uz.vohid.uploatv.ui.AccountsScreen
+import uz.vohid.uploatv.ui.CookiesScreen
 import uz.vohid.uploatv.ui.GuideScreen
 import uz.vohid.uploatv.ui.PrivacyScreen
 import uz.vohid.uploatv.ui.LoginWebScreen
@@ -263,22 +263,22 @@ private fun AppRoot(sharedUrl: String?, onSharedConsumed: () -> Unit) {
             composable(SettingsRoutes.PRIVACY) {
                 PrivacyScreen(
                     settingsVm,
-                    onOpenAccounts = { nav.navigate(SettingsRoutes.ACCOUNTS) },
+                    onOpenCookies = { nav.navigate(SettingsRoutes.COOKIES) },
                     onBack = { nav.popBackStack() },
                 )
             }
             composable(SettingsRoutes.GUIDE) { GuideScreen { nav.popBackStack() } }
-            composable(SettingsRoutes.ACCOUNTS) {
-                AccountsScreen(
+            composable(SettingsRoutes.COOKIES) {
+                CookiesScreen(
                     onOpenLogin = { nav.navigate(SettingsRoutes.login(it)) },
                     onBack = { nav.popBackStack() },
                 )
             }
             composable(
                 SettingsRoutes.LOGIN,
-                arguments = listOf(navArgument("site") { type = NavType.StringType }),
+                arguments = listOf(navArgument("url") { type = NavType.StringType }),
             ) { entry ->
-                LoginWebScreen(siteKey = entry.arguments?.getString("site").orEmpty()) { nav.popBackStack() }
+                LoginWebScreen(startUrl = entry.arguments?.getString("url").orEmpty()) { nav.popBackStack() }
             }
         }
     }

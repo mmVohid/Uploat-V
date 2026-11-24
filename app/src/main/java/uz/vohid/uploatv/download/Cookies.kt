@@ -5,24 +5,19 @@ import android.net.Uri
 import android.webkit.CookieManager
 import java.io.File
 
-/** Login talab qiladigan sayt: kirish sahifasi va cookie domenlari. */
-data class Account(
-    val key: String,
-    val name: String,
-    val loginUrl: String,
-    val domains: List<String>,
-)
+/** Tez kirish uchun tayyor saytlar (foydalanuvchi istalgan boshqa manzilni ham kiritishi mumkin). */
+data class QuickSite(val name: String, val url: String)
 
 /**
- * Akkaunt cookie'lari (yt-dlp `--cookies`). Foydalanuvchi ilova ichidagi oynada saytga kiradi,
- * cookie Netscape formatida filesDir/cookies/<sayt>.txt ga yoziladi. Parol saqlanmaydi.
+ * Cookie'lar (yt-dlp `--cookies`). Foydalanuvchi ilova ichidagi oynada saytga kiradi,
+ * cookie Netscape formatida filesDir/cookies.txt ga yoziladi. Parol saqlanmaydi.
  */
 object CookieStore {
-    val accounts = listOf(
-        Account("instagram", "Instagram", "https://www.instagram.com/accounts/login/", listOf("instagram.com")),
-        Account("facebook", "Facebook", "https://m.facebook.com/login", listOf("facebook.com", "fb.watch")),
-        Account("tiktok", "TikTok", "https://www.tiktok.com/login", listOf("tiktok.com")),
-        Account("x", "X (Twitter)", "https://x.com/i/flow/login", listOf("x.com", "twitter.com")),
+    val quickSites = listOf(
+        QuickSite("Instagram", "https://www.instagram.com/accounts/login/"),
+        QuickSite("Facebook", "https://m.facebook.com/login"),
+        QuickSite("TikTok", "https://www.tiktok.com/login"),
+        QuickSite("X (Twitter)", "https://x.com/i/flow/login"),
     )
 
     private lateinit var app: Context
@@ -31,53 +26,63 @@ object CookieStore {
         app = context.applicationContext
     }
 
-    fun byKey(key: String): Account? = accounts.firstOrNull { it.key == key }
+    private fun file() = File(app.filesDir, "cookies.txt")
 
-    private fun file(account: Account) = File(File(app.filesDir, "cookies").apply { mkdirs() }, "${account.key}.txt")
-
-    fun isLoggedIn(account: Account): Boolean = file(account).let { it.exists() && it.length() > 40 }
-
-    fun loggedCount(): Int = accounts.count { isLoggedIn(it) }
-
-    /** Havola shu saytlardan biriga tegishli bo'lsa va kirilgan bo'lsa, cookie fayl. */
-    fun fileFor(url: String): File? {
-        val host = runCatching { Uri.parse(url).host?.lowercase() }.getOrNull() ?: return null
-        val account = accounts.firstOrNull { a ->
-            a.domains.any { d -> host == d || host.endsWith(".$d") }
-        } ?: return null
-        return file(account).takeIf { isLoggedIn(account) }
+    /** fayldagi cookie qatorlari: "domen|nom" -> to'liq qator */
+    private fun read(): LinkedHashMap<String, String> {
+        val map = LinkedHashMap<String, String>()
+        val f = file()
+        if (!f.exists()) return map
+        f.readLines().forEach { line ->
+            val parts = line.split("\t")
+            if (parts.size >= 7 && !line.startsWith("#")) map["${parts[0]}|${parts[5]}"] = line
+        }
+        return map
     }
 
-    /** WebView'dagi cookie'larni yt-dlp formatiga saqlaydi. Cookie topilmasa false. */
-    fun saveFromWebView(account: Account): Boolean {
+    fun count(): Int = read().size
+
+    fun domains(): List<String> = read().keys.map { it.substringBefore('|').removePrefix(".") }.distinct().sorted()
+
+    private fun baseDomain(host: String): String {
+        val labels = host.lowercase().split(".")
+        return if (labels.size <= 2) host.lowercase() else labels.takeLast(2).joinToString(".")
+    }
+
+    /** Havola domeniga tegishli cookie bo'lsa, fayl; aks holda null. */
+    fun fileFor(url: String): File? {
+        val host = runCatching { Uri.parse(url).host?.lowercase() }.getOrNull() ?: return null
+        val has = domains().any { d -> host == d || host.endsWith(".$d") }
+        return if (has) file() else null
+    }
+
+    /** WebView'dagi shu saytning cookie'larini mavjudlariga qo'shadi. Cookie topilmasa false. */
+    fun saveFromWebView(pageUrl: String): Boolean {
+        val host = runCatching { Uri.parse(pageUrl).host }.getOrNull() ?: return false
+        val base = baseDomain(host)
         val cm = CookieManager.getInstance()
         cm.flush()
         val expiry = System.currentTimeMillis() / 1000 + 60L * 60 * 24 * 90
-        val seen = LinkedHashMap<String, String>()
-        val lines = StringBuilder("# Netscape HTTP Cookie File\n")
-        var count = 0
-        for (d in account.domains) {
-            for (host in listOf("https://www.$d", "https://$d", "https://m.$d")) {
-                val raw = cm.getCookie(host) ?: continue
-                for (pair in raw.split(";")) {
-                    val p = pair.trim()
-                    val eq = p.indexOf('=')
-                    if (eq <= 0) continue
-                    val key = "$d|${p.substring(0, eq)}"
-                    if (seen.containsKey(key)) continue
-                    seen[key] = p
-                    lines.append(".$d\tTRUE\t/\tTRUE\t$expiry\t${p.substring(0, eq)}\t${p.substring(eq + 1)}\n")
-                    count++
-                }
+        val all = read()
+        var added = 0
+        for (h in listOf("https://$host", "https://$base", "https://www.$base", "https://m.$base").distinct()) {
+            val raw = cm.getCookie(h) ?: continue
+            for (pair in raw.split(";")) {
+                val p = pair.trim()
+                val eq = p.indexOf('=')
+                if (eq <= 0) continue
+                val name = p.substring(0, eq)
+                all[".$base|$name"] = ".$base\tTRUE\t/\tTRUE\t$expiry\t$name\t${p.substring(eq + 1)}"
+                added++
             }
         }
-        if (count == 0) return false
-        file(account).writeText(lines.toString())
+        if (added == 0) return false
+        file().writeText("# Netscape HTTP Cookie File\n" + all.values.joinToString("\n") + "\n")
         return true
     }
 
-    fun logout(account: Account) {
-        file(account).delete()
+    fun clear() {
+        file().delete()
         val cm = CookieManager.getInstance()
         cm.removeAllCookies(null)
         cm.flush()

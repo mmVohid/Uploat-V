@@ -94,11 +94,11 @@ object SettingsRoutes {
     const val ENGINE = "settings/engine"
     const val DOWNLOAD = "settings/download"
     const val ABOUT = "settings/about"
-    const val ACCOUNTS = "settings/accounts"
+    const val COOKIES = "settings/cookies"
     const val PRIVACY = "settings/privacy"
     const val GUIDE = "settings/guide"
-    const val LOGIN = "settings/login/{site}"
-    fun login(key: String) = "settings/login/$key"
+    const val LOGIN = "settings/login?url={url}"
+    fun login(url: String) = "settings/login?url=${Uri.encode(url)}"
 }
 
 // ======================= Asosiy ro'yxat =======================
@@ -134,7 +134,7 @@ fun SettingsMainScreen(vm: SettingsViewModel, onNavigate: (String) -> Unit, onBa
                     title = "Maxfiylik va xavfsizlik",
                     subtitle = buildString {
                         append(if (settings.incognito) "Inkognito yoqilgan" else "Inkognito o'chiq")
-                        CookieStore.loggedCount().takeIf { it > 0 }?.let { append(" · $it ta akkaunt") }
+                        CookieStore.count().takeIf { it > 0 }?.let { append(" · cookies bor") }
                     },
                     onClick = { onNavigate(SettingsRoutes.PRIVACY) },
                 )
@@ -669,72 +669,99 @@ private fun InfoRow(title: String, value: String) {
 }
 
 
-// ======================= Akkauntlar =======================
+// ======================= Cookies =======================
 
 @Composable
-fun AccountsScreen(onOpenLogin: (String) -> Unit, onBack: () -> Unit) {
+fun CookiesScreen(onOpenLogin: (String) -> Unit, onBack: () -> Unit) {
     var refresh by remember { mutableStateOf(0) }
     LifecycleResumeEffect(Unit) {
         refresh++
         onPauseOrDispose { }
     }
-    SettingsPage(title = "Akkauntlar", onBack = onBack) {
+    val count = remember(refresh) { CookieStore.count() }
+    val domains = remember(refresh) { CookieStore.domains() }
+    var custom by remember { mutableStateOf("") }
+    var confirmClear by remember { mutableStateOf(false) }
+
+    SettingsPage(title = "Cookies", onBack = onBack) {
         Text(
-            "Ba'zi saytlar (masalan Instagram) akkauntsiz video bermaydi. Shu yerda kirsangiz, " +
+            "Ba'zi saytlar (masalan Instagram) akkauntsiz video bermaydi. Saytga shu yerda kirsangiz, " +
                 "ilova sizning nomingizdan yuklaydi. Parol saqlanmaydi, faqat kirish belgisi (cookie).",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 4.dp),
         )
         SettingsCard {
-            CookieStore.accounts.forEachIndexed { i, account ->
-                if (i > 0) HorizontalDivider(Modifier.padding(horizontal = 16.dp))
-                val logged = remember(refresh) { CookieStore.isLoggedIn(account) }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(account.name, style = MaterialTheme.typography.bodyLarge)
-                        Text(
-                            if (logged) "Kirilgan" else "Kirilmagan",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (logged) MaterialTheme.colorScheme.tertiary
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    if (logged) {
-                        TextButton(onClick = {
-                            CookieStore.logout(account)
-                            refresh++
-                        }) { Text("Chiqish", color = MaterialTheme.colorScheme.error) }
-                    }
-                    FilledTonalButton(onClick = { onOpenLogin(account.key) }) {
-                        Text(if (logged) "Qayta kirish" else "Kirish")
-                    }
+            InfoRow(
+                "Saqlangan cookie",
+                if (count == 0) "Hozircha yo'q" else "$count ta · ${domains.joinToString(", ")}",
+            )
+        }
+
+        SectionLabel("Saytga kirish")
+        SettingsCard {
+            FlowRow(
+                modifier = Modifier.padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                CookieStore.quickSites.forEach { site ->
+                    FilterChip(selected = false, onClick = { onOpenLogin(site.url) }, label = { Text(site.name) })
                 }
             }
+            androidx.compose.material3.OutlinedTextField(
+                value = custom,
+                onValueChange = { custom = it },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                singleLine = true,
+                label = { Text("Boshqa sayt manzili") },
+                placeholder = { Text("example.com") },
+            )
+            FilledTonalButton(
+                onClick = {
+                    val t = custom.trim()
+                    if (t.isNotEmpty()) onOpenLogin(if (t.startsWith("http")) t else "https://$t")
+                },
+                modifier = Modifier.padding(16.dp),
+            ) { Text("Ochish") }
         }
+
+        if (count > 0) {
+            SettingsCard {
+                TextButton(
+                    onClick = { confirmClear = true },
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                ) { Text("Barcha cookie'larni tozalash", color = MaterialTheme.colorScheme.error) }
+            }
+        }
+    }
+
+    if (confirmClear) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { confirmClear = false },
+            title = { Text("Cookie'larni tozalash") },
+            text = { Text("Barcha saytlardan chiqiladi. Kerak bo'lsa, qayta kirasiz.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    CookieStore.clear()
+                    refresh++
+                    confirmClear = false
+                }) { Text("Tozalash", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("Bekor qilish") } },
+        )
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginWebScreen(siteKey: String, onDone: () -> Unit) {
-    val account = CookieStore.byKey(siteKey)
-    val context = LocalContext.current
+fun LoginWebScreen(startUrl: String, onDone: () -> Unit) {
     var failed by remember { mutableStateOf(false) }
-    if (account == null) {
-        LaunchedEffect(Unit) { onDone() }
-        return
-    }
+    val webRef = remember { arrayOfNulls<android.webkit.WebView>(1) }
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { Text(account.name) },
+                title = { Text(Uri.parse(startUrl).host.orEmpty()) },
                 navigationIcon = {
                     IconButton(onClick = onDone) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Orqaga")
@@ -742,7 +769,8 @@ fun LoginWebScreen(siteKey: String, onDone: () -> Unit) {
                 },
                 actions = {
                     TextButton(onClick = {
-                        if (CookieStore.saveFromWebView(account)) onDone() else failed = true
+                        val current = webRef[0]?.url ?: startUrl
+                        if (CookieStore.saveFromWebView(current)) onDone() else failed = true
                     }) { Text("Tayyor") }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
@@ -768,20 +796,20 @@ fun LoginWebScreen(siteKey: String, onDone: () -> Unit) {
                         cm.setAcceptCookie(true)
                         cm.setAcceptThirdPartyCookies(this, true)
                         webViewClient = android.webkit.WebViewClient()
-                        loadUrl(account.loginUrl)
+                        webRef[0] = this
+                        loadUrl(startUrl)
                     }
                 },
-                onRelease = { it.destroy() },
+                onRelease = { webRef[0] = null; it.destroy() },
             )
         }
     }
 }
 
-
 // ======================= Maxfiylik va xavfsizlik =======================
 
 @Composable
-fun PrivacyScreen(vm: SettingsViewModel, onOpenAccounts: () -> Unit, onBack: () -> Unit) {
+fun PrivacyScreen(vm: SettingsViewModel, onOpenCookies: () -> Unit, onBack: () -> Unit) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     SettingsPage(title = "Maxfiylik va xavfsizlik", onBack = onBack) {
         SettingsCard {
@@ -792,13 +820,13 @@ fun PrivacyScreen(vm: SettingsViewModel, onOpenAccounts: () -> Unit, onBack: () 
                 onChange = vm::setIncognito,
             )
         }
-        SectionLabel("Akkauntlar")
+        SectionLabel("Cookies")
         SettingsCard {
             ClickableRow(
-                title = "Akkauntlar",
-                value = CookieStore.loggedCount().let { if (it == 0) "Ulanmagan" else "$it ta akkaunt ulangan" },
-                hint = "Instagram, Facebook, TikTok va X: login talab qiladigan videolar uchun",
-                onClick = onOpenAccounts,
+                title = "Cookies",
+                value = CookieStore.count().let { if (it == 0) "Hozircha yo'q" else "$it ta cookie saqlangan" },
+                hint = "Login talab qiladigan saytlar (Instagram va boshqalar) uchun kirish",
+                onClick = onOpenCookies,
             )
         }
     }
@@ -818,7 +846,7 @@ private val GUIDE = listOf(
         "tugmalari bor. Tugagan yuklashni chapga surib o'chirasiz, «Qaytarish» bilan tiklaysiz.",
     "6. Saqlash joyi" to "Videolar standart holda Download/Uploat-V papkasiga tushadi. Boshqa papkani " +
         "Ma'lumotlar va xotira → Saqlash joyi orqali tanlang.",
-    "7. Akkauntlar (Instagram va boshqalar)" to "Ba'zi videolar akkauntsiz yuklanmaydi. Maxfiylik va xavfsizlik → Akkauntlar " +
+    "7. Cookies (Instagram va boshqalar)" to "Ba'zi videolar akkauntsiz yuklanmaydi. Maxfiylik va xavfsizlik → Cookies " +
         "bo'limida saytga kiring: shundan keyin o'sha saytning havolalari ishlaydi. Parol saqlanmaydi.",
     "8. Xato chiqsa" to "Avval Dvigatel bo'limida yt-dlp'ni yangilang: saytlar tez-tez o'zgaradi. Keyin havolani qayta sinang.",
     "9. Fonda uzilmasligi uchun" to "Ma'lumotlar va xotira → Batareya cheklovisiz ishlash ruxsatini bering, ekran o'chiq turganda ham yuklash davom etadi.",
