@@ -133,6 +133,13 @@ fun HomeScreen(
     val clipboard = LocalClipboardManager.current
     val focus = LocalFocusManager.current
     val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    // Ma'lumot kelganda klaviatura yopiladi: "Yuklash" tugmasi va sifat tanlovi ko'rinib qoladi
+    LaunchedEffect(ui.info != null) {
+        if (ui.info != null) {
+            keyboard?.hide()
+            focus.clearFocus()
+        }
+    }
     val haptic = LocalHapticFeedback.current
     val engineState by produceState(0) {
         value = if (UploatApp.engineReady.isCompleted) 1 else 0

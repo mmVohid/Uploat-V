@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.printToString
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -128,7 +129,7 @@ class AppE2ETest {
     @Test fun downloadFlowEndsInDownloadsList() {
         enterUrl("https://example.com/watch?v=ok1")
         waitText("Sinov video")
-        rule.onNodeWithText("Videoni yuklash").performClick()
+        rule.onNodeWithText("Videoni yuklash").performScrollTo().performClick()
 
         openDownloads()
         waitText("Sinov video")
@@ -139,7 +140,7 @@ class AppE2ETest {
     @Test fun duplicateUrlAsksForConfirmation() {
         enterUrl("https://example.com/watch?v=dup1")
         waitText("Sinov video")
-        rule.onNodeWithText("Videoni yuklash").performClick()
+        rule.onNodeWithText("Videoni yuklash").performScrollTo().performClick()
         openDownloads()
         waitText("Download/Uploat-V")
 
@@ -147,7 +148,7 @@ class AppE2ETest {
         scenario?.onActivity { it.onBackPressedDispatcher.onBackPressed() }
         enterUrl("https://example.com/watch?v=dup1")
         waitText("Sinov video")
-        rule.onNodeWithText("Videoni yuklash").performClick()
+        rule.onNodeWithText("Videoni yuklash").performScrollTo().performClick()
         waitText("Bu video avval yuklangan")
         rule.onNodeWithText("Bekor qilish").performClick()
     }
@@ -155,7 +156,7 @@ class AppE2ETest {
     @Test fun failedDownloadShowsFriendlyError() {
         enterUrl("https://example.com/watch?v=fail1")
         waitText("Sinov video")
-        rule.onNodeWithText("Videoni yuklash").performClick()
+        rule.onNodeWithText("Videoni yuklash").performScrollTo().performClick()
         openDownloads()
         waitText("Bu video yopiq (maxfiy)")
     }
