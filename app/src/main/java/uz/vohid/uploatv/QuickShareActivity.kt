@@ -7,7 +7,7 @@ import androidx.activity.ComponentActivity
 import uz.vohid.uploatv.download.DownloadManager
 
 /**
- * Ulashish menyusidagi "Быстрая загрузка" varianti. Ekran ko'rsatmaydi:
+ * Ulashish menyusidagi "Tezkor yuklash" varianti. Ekran ko'rsatmaydi:
  * havolani oladi, orqa fonda yuklashni boshlaydi va darhol yopiladi.
  */
 class QuickShareActivity : ComponentActivity() {

@@ -33,13 +33,13 @@
             </intent-filter>
         </activity>
 
-        <!-- Ulashish menyusida alohida "Быстрая загрузка" varianti: ilovani ochmasdan fonda yuklaydi -->
+        <!-- Ulashish menyusida alohida "Tezkor yuklash" varianti: ilovani ochmasdan fonda yuklaydi -->
         <activity
             android:name=".QuickShareActivity"
             android:exported="true"
             android:excludeFromRecents="true"
             android:icon="@mipmap/ic_launcher"
-            android:label="Быстрая загрузка"
+            android:label="Tezkor yuklash"
             android:noHistory="true"
             android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar">

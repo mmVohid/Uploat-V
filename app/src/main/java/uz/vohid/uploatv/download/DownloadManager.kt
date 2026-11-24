@@ -67,7 +67,7 @@ object DownloadManager {
     }
 
     /**
-     * "Быстрая загрузка": havola ulashilganda ilova ochilmasdan, sozlamalardagi standart
+     * "Tezkor yuklash": havola ulashilganda ilova ochilmasdan, sozlamalardagi standart
      * tur/sifat bilan orqa fonda yuklashni boshlaydi.
      */
     fun quickDownload(url: String) {

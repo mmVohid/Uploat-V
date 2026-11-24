@@ -265,9 +265,7 @@ fun HomeScreen(
                                 onClick = {
                                     focus.clearFocus()
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    if (vm.download()) {
-                                        scope.launch { snackbar.showSnackbar("Yuklash navbatga qo'shildi") }
-                                    }
+                                    vm.download()
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()

@@ -847,7 +847,7 @@ private val GUIDE = listOf(
     "1. Havola qo'shish" to "Videoning havolasini nusxalang. Uploat-V'da pastdagi «Havolani joylash» tugmasini bosing. " +
         "Ilova videoni topadi va sifat tanlash ko'rinadi.",
     "2. Ulashish orqali" to "Istalgan ilovada (YouTube, Instagram, brauzer…) «Ulashish» → «Uploat-V» ni tanlang: ilova ochiladi. " +
-        "«Быстрая загрузка» ni tanlasangiz, video orqa fonda avtomatik yuklanadi.",
+        "«Tezkor yuklash» ni tanlasangiz, video orqa fonda avtomatik yuklanadi.",
     "3. Sifat va hajm" to "Sifat tugmalarida taxminiy hajm ko'rsatiladi, masalan «720p · ~45 MB». Standart sifatni " +
         "Ma'lumotlar va xotira bo'limidan o'zgartirasiz.",
     "4. Playlist" to "Havola playlistga tegishli bo'lsa, «Butun playlistni yuklash» ni yoqing, aks holda faqat bitta video yuklanadi.",
