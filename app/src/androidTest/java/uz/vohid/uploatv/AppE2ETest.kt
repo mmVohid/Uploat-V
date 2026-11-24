@@ -73,6 +73,11 @@ class AppE2ETest {
         DownloadManager.clearFinished()
     }
 
+    /** Belgi (badge) bor paytda tugma tavsifi birlashib ketadi, shuning uchun birlashmagan daraxtdan qidiriladi. */
+    private fun openDownloads() {
+        rule.onNodeWithContentDescription("Yuklashlar", substring = true, useUnmergedTree = true).performClick()
+    }
+
     private fun enterUrl(url: String) {
         rule.onNodeWithText("Video havolasi").performTextInput(url)
     }
@@ -93,7 +98,7 @@ class AppE2ETest {
         waitText("Sinov video")
         rule.onNodeWithText("Videoni yuklash").performClick()
 
-        rule.onNodeWithContentDescription("Yuklashlar").performClick()
+        openDownloads()
         waitText("Sinov video")
         // Tugagach holat qatorida saqlangan papka ko'rsatiladi
         waitText("Download/Uploat-V")
@@ -103,7 +108,7 @@ class AppE2ETest {
         enterUrl("https://example.com/watch?v=dup1")
         waitText("Sinov video")
         rule.onNodeWithText("Videoni yuklash").performClick()
-        rule.onNodeWithContentDescription("Yuklashlar").performClick()
+        openDownloads()
         waitText("Download/Uploat-V")
 
         // Bosh sahifaga qaytib, shu havolani yana kiritamiz
@@ -119,7 +124,7 @@ class AppE2ETest {
         enterUrl("https://example.com/watch?v=fail1")
         waitText("Sinov video")
         rule.onNodeWithText("Videoni yuklash").performClick()
-        rule.onNodeWithContentDescription("Yuklashlar").performClick()
+        openDownloads()
         waitText("Bu video yopiq (maxfiy)")
     }
 
