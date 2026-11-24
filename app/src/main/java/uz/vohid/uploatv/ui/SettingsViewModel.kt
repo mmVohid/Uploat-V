@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import uz.vohid.uploatv.UploatApp
-import uz.vohid.uploatv.download.AppCheck
 import uz.vohid.uploatv.download.DownloadManager
 import uz.vohid.uploatv.download.EngineUpdater
 import uz.vohid.uploatv.download.formatBytes
