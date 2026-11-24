@@ -50,7 +50,8 @@ class DownloadService : Service() {
 
         // Har bir video tugashi bilan alohida xabar: qaysi biri yuklandi, qaysi biri yo'q
         val finished = items.filter {
-            it.id in seen && it.id !in notified && (it.status == Status.DONE || it.status == Status.FAILED)
+            it.id in seen && it.id !in notified && (it.status == Status.DONE || it.status == Status.FAILED) &&
+                !(it.status == Status.FAILED && DownloadManager.willAutoRetry(it.id))
         }
         if (finished.isNotEmpty()) {
             val notify = SettingsRepository(this).settings.first().notifyOnDone

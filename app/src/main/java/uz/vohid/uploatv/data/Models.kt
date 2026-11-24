@@ -14,6 +14,13 @@ enum class Quality(val label: String, val height: Int?) {
     P360("360p", 360),
 }
 
+enum class Retention(val label: String, val millis: Long?) {
+    FOREVER("Cheksiz", null),
+    DAYS_30("30 kun", 30L * 24 * 3600 * 1000),
+    DAYS_7("7 kun", 7L * 24 * 3600 * 1000),
+    HOURS_24("24 soat", 24L * 3600 * 1000),
+}
+
 data class AppSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val defaultQuality: Quality = Quality.BEST,
@@ -35,6 +42,10 @@ data class AppSettings(
     /** Uploat-V yangi versiyasini GitHub'dan avtomatik tekshirish. */
     val autoCookies: Boolean = false,
     val ytdlpNightly: Boolean = false,
+    /** Faqat Wi‑Fi (o'lchanmaydigan tarmoq) orqali yuklash. */
+    val wifiOnly: Boolean = false,
+    /** Tugagan yuklashlar ro'yxati qancha vaqt saqlanadi. */
+    val historyRetention: Retention = Retention.FOREVER,
 )
 
 /** Havola bo'yicha yt-dlp qaytargan qisqa ma'lumot. */

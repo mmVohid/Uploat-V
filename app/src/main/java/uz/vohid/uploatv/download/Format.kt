@@ -35,18 +35,31 @@ fun describeTree(tree: android.net.Uri): String {
 
 /** yt-dlp xatosini foydalanuvchiga tushunarli qisqa matnga aylantiradi. */
 fun friendlyError(e: Throwable): String {
-    if (e is OfflineException || e is StorageLowException) return e.message.orEmpty()
+    if (e is OfflineException || e is StorageLowException || e is WifiOnlyException) return e.message.orEmpty()
     val msg = e.message.orEmpty()
+    val low = msg.lowercase()
     return when {
         isLoginError(msg) ->
             "Bu video uchun akkauntga kirish kerak. Sozlamalar → Maxfiylik va xavfsizlik → Cookies bo'limidan saytga kiring"
-        "Unsupported URL" in msg -> "Bu havola qo'llab-quvvatlanmaydi"
-        "Unable to resolve host" in msg || "Network is unreachable" in msg ||
-            "Temporary failure" in msg || "timed out" in msg -> "Internet aloqasini tekshiring"
-        "Sign in to confirm" in msg || "confirm your age" in msg -> "Video kirishni yoki yoshni tasdiqlashni talab qiladi"
-        "Private video" in msg -> "Bu video yopiq"
-        "not available" in msg || "unavailable" in msg -> "Video mavjud emas"
-        "HTTP Error 403" in msg -> "Server ruxsat bermadi (403). Dvigatelni yangilab ko'ring"
+        "unsupported url" in low -> "Bu havola qo'llab-quvvatlanmaydi"
+        isNetworkText(low) -> "Internet aloqasini tekshiring"
+        "no space left" in low -> "Telefon xotirasi to'ldi. Joy bo'shatib qayta urinib ko'ring"
+        "private video" in low || "this video is private" in low -> "Bu video yopiq (maxfiy)"
+        "confirm your age" in low || "age-restricted" in low || "age restricted" in low ->
+            "Video yoshga cheklangan. Cookies orqali akkauntga kiring"
+        "sign in to confirm" in low -> "Sayt tasdiqlashni talab qilmoqda. Cookies'ni yoqing yoki dvigatelni yangilang"
+        "not available in your country" in low || "geo" in low && "restrict" in low || "blocked it in your country" in low ->
+            "Bu video sizning mintaqangizda ko'rish uchun yopilgan"
+        "has been removed" in low || "been deleted" in low || "no longer available" in low || "video unavailable" in low ->
+            "Video o'chirilgan yoki mavjud emas"
+        "copyright" in low -> "Mualliflik huquqi sababli video bloklangan"
+        "premieres in" in low || "this live event will begin" in low -> "Bu video hali boshlanmagan (premyera)"
+        "is live" in low || "live stream" in low -> "Jonli efirni yuklab bo'lmaydi"
+        "http error 429" in low || "too many requests" in low -> "Server ko'p so'rovdan to'xtatdi. Birozdan keyin qayta urinib ko'ring"
+        "http error 404" in low -> "Video topilmadi (404). Havolani tekshiring"
+        "http error 403" in low -> "Server ruxsat bermadi (403). Dvigatelni yangilab ko'ring"
+        "requested format is not available" in low -> "Tanlangan sifat mavjud emas. Boshqa sifatni tanlang"
+        "not available" in low || "unavailable" in low -> "Video mavjud emas"
         else -> msg.lineSequence()
             .lastOrNull { it.contains("ERROR", ignoreCase = true) }
             ?.substringAfter("ERROR:")
@@ -56,6 +69,14 @@ fun friendlyError(e: Throwable): String {
             ?: "Yuklab bo'lmadi"
     }
 }
+
+private fun isNetworkText(low: String) =
+    "unable to resolve host" in low || "network is unreachable" in low || "temporary failure" in low ||
+        "timed out" in low || "no address associated" in low || "connection reset" in low
+
+/** Xato internet bilan bog'liqmi (shunda internet qaytganda yuklash o'zi davom etadi). */
+fun isNetworkFailure(e: Throwable): Boolean =
+    e is OfflineException || e is WifiOnlyException || isNetworkText(e.message.orEmpty().lowercase())
 
 /** Sayt akkaunt/cookie talab qilgan xato belgilari. */
 fun isLoginError(msg: String): Boolean {

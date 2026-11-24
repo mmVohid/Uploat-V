@@ -419,7 +419,41 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
             )
         }
 
+        SectionLabel("Tarmoq")
+        SettingsCard {
+            SwitchRow(
+                title = "Faqat Wi‑Fi'da yuklash",
+                subtitle = "Mobil internet sarflanmaydi. Wi‑Fi'ga ulansangiz yuklash o'zi davom etadi",
+                checked = settings.wifiOnly,
+                onChange = vm::setWifiOnly,
+            )
+        }
+
         NotificationsSection(vm)
+
+        SectionLabel("Xotira tozaligi")
+        SettingsCard {
+            LabeledRow("Yuklashlar tarixini saqlash") {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    uz.vohid.uploatv.data.Retention.entries.forEach { r ->
+                        FilterChip(
+                            selected = settings.historyRetention == r,
+                            onClick = { vm.setRetention(r) },
+                            label = { Text(r.label) },
+                        )
+                    }
+                }
+            }
+            Text(
+                "Faqat ro'yxatdagi eski yozuvlar o'chadi. Yuklangan videolar telefonda qoladi.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+        }
 
         SectionLabel("Kesh")
         SettingsCard {
@@ -449,6 +483,28 @@ fun AboutScreen(vm: SettingsViewModel, onOpenGuide: () -> Unit, onBack: () -> Un
         SettingsCard {
             InfoRow("Uploat-V", "Versiya ${BuildConfig.VERSION_NAME}")
             InfoRow("Dvigatel", "yt-dlp asosida video yuklovchi")
+        }
+
+        SettingsCard {
+            ClickableRow(
+                title = "Xato jurnali",
+                value = "Nusxalash",
+                hint = "Muammo bo'lsa, jurnalni nusxalab yuboring",
+                onClick = {
+                    val log = uz.vohid.uploatv.download.ErrorLog.read().ifBlank { "Xatolar yo'q" }
+                    val header = "Uploat-V ${BuildConfig.VERSION_NAME} · Android ${android.os.Build.VERSION.RELEASE} · ${android.os.Build.MODEL}\n\n"
+                    context.getSystemService(android.content.ClipboardManager::class.java)
+                        .setPrimaryClip(android.content.ClipData.newPlainText("Uploat-V jurnal", header + log))
+                    android.widget.Toast.makeText(context, "Jurnal nusxalandi", android.widget.Toast.LENGTH_SHORT).show()
+                },
+            )
+            TextButton(
+                onClick = {
+                    uz.vohid.uploatv.download.ErrorLog.clear()
+                    android.widget.Toast.makeText(context, "Jurnal tozalandi", android.widget.Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier.padding(horizontal = 8.dp),
+            ) { Text("Jurnalni tozalash") }
         }
 
         SettingsCard {

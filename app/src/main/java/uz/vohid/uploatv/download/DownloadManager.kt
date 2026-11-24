@@ -3,6 +3,8 @@ package uz.vohid.uploatv.download
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.Network
 import android.net.Uri
 import android.provider.DocumentsContract
 import android.provider.MediaStore
@@ -24,6 +26,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.flow.first
 import uz.vohid.uploatv.UploatApp
+import kotlinx.coroutines.delay
 import uz.vohid.uploatv.data.SettingsRepository
 import java.io.File
 import java.io.FileOutputStream
@@ -50,11 +53,75 @@ object DownloadManager {
     private val _items = MutableStateFlow<List<DownloadItem>>(emptyList())
     val items: StateFlow<List<DownloadItem>> = _items.asStateFlow()
 
+    private val netWaiting = ConcurrentHashMap.newKeySet<String>()
+    private val autoRetries = ConcurrentHashMap<String, Int>()
+
+    /** Internet yo'qligidan to'xtagan, tarmoq qaytganda o'zi davom etadigan yuklashmi. */
+    fun willAutoRetry(id: String) = id in netWaiting
+
     fun init(context: Context) {
         app = context.applicationContext
         scope.launch {
             val saved = HistoryStore.load(app)
-            _items.update { current -> current + saved.filter { s -> current.none { it.id == s.id } } }
+                .map { if (it.isActive) it.copy(status = Status.QUEUED, detail = "Davom ettirilmoqda…") else it }
+            val fresh = saved.filter { s -> _items.value.none { it.id == s.id } }
+            _items.update { current -> current + fresh }
+            // Ilova o'chib qolgan bo'lsa, yarim qolgan yuklashlar qayta boshlanadi (tmp'dagi fayllardan davom etadi)
+            val resume = fresh.filter { it.isActive }
+            if (resume.isNotEmpty()) {
+                runCatching { startService() }
+                resume.forEach { launchJob(it.id) }
+            }
+            cleanup()
+        }
+        runCatching {
+            app.getSystemService(ConnectivityManager::class.java)
+                .registerDefaultNetworkCallback(object : ConnectivityManager.NetworkCallback() {
+                    override fun onAvailable(network: Network) = resumeWaiting()
+                })
+        }
+    }
+
+    /** Internet (yoki Wi‑Fi) qaytganda kutib turgan yuklashlarni qayta ishga tushiradi. */
+    private fun resumeWaiting() {
+        if (netWaiting.isEmpty()) return
+        scope.launch {
+            delay(2000)
+            netWaiting.toList().forEach { id ->
+                netWaiting.remove(id)
+                if (get(id)?.status == Status.FAILED) {
+                    autoRetries.merge(id, 1) { a, b -> a + b }
+                    retry(id)
+                }
+            }
+        }
+    }
+
+    /** Eski yozuvlarni (sozlama bo'yicha) va egasiz vaqtinchalik fayllarni tozalaydi. */
+    fun cleanup() {
+        scope.launch {
+            val now = System.currentTimeMillis()
+            val period = SettingsRepository(app).settings.first().historyRetention
+            period.millis?.let { ms ->
+                val old = _items.value.filter { !it.isActive && it.createdAt < now - ms }
+                if (old.isNotEmpty()) {
+                    val ids = old.map { it.id }.toSet()
+                    _items.update { list -> list.filterNot { it.id in ids } }
+                    ids.forEach { tmpDir(it).deleteRecursively() }
+                    persist()
+                }
+            }
+            val day = 24L * 3600 * 1000
+            val live = _items.value.associateBy { it.id }
+            File(app.getExternalFilesDir(null) ?: app.filesDir, "tmp").listFiles()?.forEach { dir ->
+                val item = live[dir.name]
+                val stale = when {
+                    item == null -> dir.lastModified() < now - day              // egasiz
+                    item.status == Status.FAILED -> dir.lastModified() < now - 7 * day // uzoq yotgan xatolik
+                    else -> false
+                }
+                if (stale) dir.deleteRecursively()
+            }
         }
     }
 
@@ -62,6 +129,7 @@ object DownloadManager {
 
     fun enqueue(item: DownloadItem) {
         _items.update { listOf(item) + it }
+        persist()
         startService()
         launchJob(item.id)
     }
@@ -86,6 +154,7 @@ object DownloadManager {
                 detail = "Ma'lumot olinmoqda…",
             )
             _items.update { listOf(item) + it }
+            persist()
             startService()
             try {
                 val noPlaylist = url.contains("v=") && url.contains("list=")
@@ -109,6 +178,7 @@ object DownloadManager {
             } catch (e: Throwable) {
                 if (get(id)?.status != Status.CANCELED) {
                     mutate(id) { it.copy(status = Status.FAILED, error = friendlyError(e), errorDetail = rawError(e), detail = "") }
+                    ErrorLog.add(url, rawError(e))
                     persist()
                 }
                 return@launch
@@ -167,7 +237,7 @@ object DownloadManager {
 
     private fun persist() {
         scope.launch {
-            val finished = _items.value.filter { !it.isActive && !it.incognito }.take(HISTORY_LIMIT)
+            val finished = _items.value.filter { !it.incognito }.take(HISTORY_LIMIT)
             HistoryStore.save(app, finished)
         }
     }
@@ -203,6 +273,7 @@ object DownloadManager {
         val item = get(id) ?: return
         if (item.status == Status.CANCELED) return
 
+        netWaiting.remove(id)
         mutate(id) { it.copy(status = Status.RUNNING, progress = 0f, detail = "Boshlanmoqda…", error = null) }
         val dir = File(app.getExternalFilesDir(null) ?: app.filesDir, "tmp/$id")
 
@@ -215,7 +286,8 @@ object DownloadManager {
         }
 
         try {
-            Preflight.requireOnline()
+            val s = SettingsRepository(app).settings.first()
+            Preflight.requireOnline(s.wifiOnly)
             Preflight.requireStorage()
             UploatApp.engineReady.await()
             EngineUpdater.waitIdle()
@@ -274,6 +346,12 @@ object DownloadManager {
         } catch (e: Throwable) {
             if (get(id)?.status != Status.CANCELED) {
                 mutate(id) { it.copy(status = Status.FAILED, error = friendlyError(e), errorDetail = rawError(e)) }
+                ErrorLog.add(item.url, rawError(e))
+                if (isNetworkFailure(e)) {
+                    // Internet muammosi: fayllar saqlanadi, urinish hisoblanmaydi, tarmoq qaytganda o'zi davom etadi
+                    attempts[id] = attempt - 1
+                    if ((autoRetries[id] ?: 0) < 5) netWaiting.add(id)
+                }
             }
         } finally {
             // Xato bo'lsa yarim fayllar saqlanadi: "Qayta urinish" qolgan joyidan davom etadi

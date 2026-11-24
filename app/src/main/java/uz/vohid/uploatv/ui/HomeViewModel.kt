@@ -19,6 +19,7 @@ import uz.vohid.uploatv.data.Quality
 import uz.vohid.uploatv.data.SettingsRepository
 import uz.vohid.uploatv.download.DownloadItem
 import uz.vohid.uploatv.download.DownloadManager
+import uz.vohid.uploatv.download.Status
 import uz.vohid.uploatv.download.InfoFetcher
 import uz.vohid.uploatv.download.friendlyError
 import uz.vohid.uploatv.download.rawError
@@ -32,6 +33,8 @@ data class HomeUi(
     val errorDetail: String? = null,
     val quality: Quality = Quality.BEST,
     val wholePlaylist: Boolean = false,
+    /** Bu havola avval yuklangan: foydalanuvchidan tasdiq so'raladi. */
+    val duplicate: Boolean = false,
 ) {
     /** Havolada ham video, ham playlist bo'lsa (watch?v=…&list=…) foydalanuvchi tanlaydi. */
     val hasVideoAndList: Boolean
@@ -86,9 +89,17 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setQuality(q: Quality) = _ui.update { it.copy(quality = q) }
 
-    fun download(): Boolean {
+    fun dismissDuplicate() = _ui.update { it.copy(duplicate = false) }
+
+    fun download(force: Boolean = false): Boolean {
         val s = _ui.value
         val info = s.info ?: return false
+        val url = s.url.trim()
+        if (!force && DownloadManager.items.value.any { it.url == url && it.status == Status.DONE }) {
+            _ui.update { it.copy(duplicate = true) }
+            return false
+        }
+        _ui.update { it.copy(duplicate = false) }
         DownloadManager.enqueue(
             DownloadItem(
                 id = UUID.randomUUID().toString(),

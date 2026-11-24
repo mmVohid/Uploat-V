@@ -19,6 +19,7 @@ class UploatApp : Application() {
         createChannels()
         uz.vohid.uploatv.download.CookieStore.init(this)
         uz.vohid.uploatv.download.Preflight.init(this)
+        uz.vohid.uploatv.download.ErrorLog.init(this)
         DownloadManager.init(this)
         EngineUpdater.init(this)
 

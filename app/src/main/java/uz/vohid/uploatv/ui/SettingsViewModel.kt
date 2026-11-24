@@ -61,6 +61,11 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     fun setIncognito(on: Boolean) = viewModelScope.launch { repo.setIncognito(on) }
     fun setYtdlpNightly(on: Boolean) = viewModelScope.launch { repo.setYtdlpNightly(on) }
     fun setAutoCookies(on: Boolean) = viewModelScope.launch { repo.setAutoCookies(on) }
+    fun setWifiOnly(on: Boolean) = viewModelScope.launch { repo.setWifiOnly(on) }
+    fun setRetention(r: uz.vohid.uploatv.data.Retention) = viewModelScope.launch {
+        repo.setRetention(r)
+        DownloadManager.cleanup()
+    }
 
     // ---------- Kesh ----------
 

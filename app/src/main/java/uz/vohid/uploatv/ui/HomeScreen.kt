@@ -138,6 +138,15 @@ fun HomeScreen(
 ) {
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val ui by vm.ui.collectAsStateWithLifecycle()
+    if (ui.duplicate) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = vm::dismissDuplicate,
+            title = { Text("Bu video avval yuklangan") },
+            text = { Text("Shu havola ilgari yuklab olingan. Yana yuklaysizmi?") },
+            confirmButton = { TextButton(onClick = { vm.download(force = true) }) { Text("Yana yuklash") } },
+            dismissButton = { TextButton(onClick = vm::dismissDuplicate) { Text("Bekor qilish") } },
+        )
+    }
     val items by DownloadManager.items.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()

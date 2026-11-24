@@ -7,6 +7,8 @@ import android.os.StatFs
 
 class OfflineException : Exception("Internet yo'q. Ulanishni tekshiring")
 
+class WifiOnlyException : Exception("Faqat Wi‑Fi rejimi yoqilgan. Wi‑Fi'ga ulansangiz yuklash davom etadi")
+
 class StorageLowException(freeMb: Long) :
     Exception("Xotira yetarli emas: ${freeMb} MB bo'sh qoldi. Joy bo'shatib qayta urinib ko'ring")
 
@@ -19,10 +21,11 @@ object Preflight {
         app = context.applicationContext
     }
 
-    fun requireOnline() {
+    fun requireOnline(wifiOnly: Boolean = false) {
         val cm = app.getSystemService(ConnectivityManager::class.java)
         val caps = cm.activeNetwork?.let { cm.getNetworkCapabilities(it) }
         if (caps == null || !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) throw OfflineException()
+        if (wifiOnly && !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)) throw WifiOnlyException()
     }
 
     fun requireStorage() {
