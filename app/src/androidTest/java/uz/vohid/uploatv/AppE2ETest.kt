@@ -61,6 +61,11 @@ class AppE2ETest {
 
     @Before fun setUp() {
         val ctx = InstrumentationRegistry.getInstrumentation().targetContext
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            // Bildirishnoma ruxsati so'rovi oynasi testni to'sib qo'ymasligi uchun oldindan beriladi
+            InstrumentationRegistry.getInstrumentation().uiAutomation
+                .grantRuntimePermission(ctx.packageName, android.Manifest.permission.POST_NOTIFICATIONS)
+        }
         runBlocking {
             // Birinchi ochilish oynalari testga xalaqit bermasligi uchun onboarding tugagan deb belgilanadi
             SettingsRepository(ctx).finishOnboarding(autoUpdate = false, autoCookies = false)
@@ -85,10 +90,19 @@ class AppE2ETest {
                     .fetchSemanticsNodes().isNotEmpty()
             }
         } catch (e: androidx.compose.ui.test.ComposeTimeoutException) {
-            throw AssertionError("'Yuklashlar' tugmasi yo'q. Ekran:\n" + rule.onRoot(useUnmergedTree = true).printToString(), e)
+            throw AssertionError("'Yuklashlar' tugmasi yo'q.\n" + windowDump() + "\n" + rule.onRoot(useUnmergedTree = true).printToString(), e)
         }
         rule.onNodeWithContentDescription("Yuklashlar", substring = true, useUnmergedTree = true).performClick()
     }
+
+    /** Xato bo'lganda qaysi oyna fokusda ekanini bilish uchun. */
+    private fun windowDump(): String = runCatching {
+        val ui = InstrumentationRegistry.getInstrumentation().uiAutomation
+        val pfd = ui.executeShellCommand("dumpsys window")
+        java.io.FileInputStream(pfd.fileDescriptor).bufferedReader().readLines()
+            .filter { "mCurrentFocus" in it || "mFocusedApp" in it || "imeLayeringTarget" in it }
+            .joinToString("\n")
+    }.getOrDefault("(dump yo'q)")
 
     private fun enterUrl(url: String) {
         rule.onNodeWithText("Video havolasi").performTextInput(url)
