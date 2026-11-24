@@ -15,7 +15,6 @@ class SettingsRepository(private val context: Context) {
 
     private object Keys {
         val THEME = stringPreferencesKey("theme")
-        val DYNAMIC = booleanPreferencesKey("dynamic_color_v2")
         val QUALITY = stringPreferencesKey("default_quality")
         val SAVE_TREE = stringPreferencesKey("save_tree_uri")
         val ONBOARDING = booleanPreferencesKey("onboarding_done")
@@ -33,7 +32,6 @@ class SettingsRepository(private val context: Context) {
     val settings: Flow<AppSettings> = context.dataStore.data.map { p ->
         AppSettings(
             themeMode = p[Keys.THEME].toEnum(ThemeMode.SYSTEM),
-            dynamicColor = p[Keys.DYNAMIC] ?: false,
             defaultQuality = p[Keys.QUALITY].toEnum(Quality.BEST),
             saveTreeUri = p[Keys.SAVE_TREE],
             loaded = true,
@@ -68,7 +66,6 @@ class SettingsRepository(private val context: Context) {
     suspend fun setYtdlpVersion(v: String) = context.dataStore.edit { it[Keys.YTDLP_VERSION] = v }
 
     suspend fun setTheme(mode: ThemeMode) = context.dataStore.edit { it[Keys.THEME] = mode.name }
-    suspend fun setDynamicColor(on: Boolean) = context.dataStore.edit { it[Keys.DYNAMIC] = on }
     suspend fun setDefaultQuality(q: Quality) = context.dataStore.edit { it[Keys.QUALITY] = q.name }
 
     /** null — standart papka (Download/Uploat-V). */

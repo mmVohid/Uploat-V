@@ -79,7 +79,6 @@ import uz.vohid.uploatv.ui.DownloadSettingsScreen
 import uz.vohid.uploatv.ui.EngineScreen
 import uz.vohid.uploatv.ui.HomeScreen
 import uz.vohid.uploatv.ui.HomeViewModel
-import uz.vohid.uploatv.ui.NotificationsScreen
 import uz.vohid.uploatv.ui.SettingsMainScreen
 import uz.vohid.uploatv.ui.SettingsRoutes
 import uz.vohid.uploatv.ui.SettingsViewModel
@@ -99,7 +98,7 @@ class MainActivity : ComponentActivity() {
         val settingsRepo = SettingsRepository(applicationContext)
         setContent {
             val settings by settingsRepo.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
-            UploatTheme(themeMode = settings.themeMode, dynamicColor = settings.dynamicColor) {
+            UploatTheme(themeMode = settings.themeMode) {
                 GlassScaffold {
                     AppRoot(sharedUrl = sharedUrl, onSharedConsumed = { sharedUrl = null })
                 }
@@ -289,7 +288,6 @@ private fun AppRoot(sharedUrl: String?, onSharedConsumed: () -> Unit) {
                     onBack = { nav.popBackStack() },
                 )
             }
-            composable(SettingsRoutes.NOTIFICATIONS) { NotificationsScreen(settingsVm) { nav.popBackStack() } }
             composable(SettingsRoutes.APPEARANCE) { AppearanceScreen(settingsVm) { nav.popBackStack() } }
             composable(SettingsRoutes.ENGINE) { EngineScreen(settingsVm) { nav.popBackStack() } }
             composable(SettingsRoutes.DOWNLOAD) { DownloadSettingsScreen(settingsVm) { nav.popBackStack() } }

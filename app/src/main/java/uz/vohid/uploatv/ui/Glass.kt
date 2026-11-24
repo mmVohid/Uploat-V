@@ -48,19 +48,9 @@ val LocalHazeState = compositionLocalOf<HazeState?> { null }
  */
 @Composable
 fun GlassScaffold(content: @Composable BoxScope.() -> Unit) {
-    val hazeState = remember { HazeState() }
     val scheme = MaterialTheme.colorScheme
-    Box(Modifier.fillMaxSize()) {
-        Box(
-            Modifier
-                .fillMaxSize()
-                .hazeSource(hazeState)
-                .background(scheme.surface),
-        )
-        CompositionLocalProvider(
-            LocalHazeState provides hazeState,
-            LocalContentColor provides scheme.onSurface,
-        ) {
+    Box(Modifier.fillMaxSize().background(scheme.surface)) {
+        CompositionLocalProvider(LocalContentColor provides scheme.onSurface) {
             Box(Modifier.fillMaxSize(), content = content)
         }
     }
@@ -84,7 +74,7 @@ fun Modifier.glass(
     shape: Shape = RoundedCornerShape(20.dp),
     tint: Color = MaterialTheme.colorScheme.surfaceContainer,
     tintAlpha: Float = 0.9f,
-    hazeState: HazeState? = LocalHazeState.current,
+    hazeState: HazeState? = null,
 ): Modifier {
     val state = hazeState
     val scheme = MaterialTheme.colorScheme
@@ -99,7 +89,7 @@ fun Modifier.glass(
             noiseFactor = 0.04f
         }
     } else {
-        base.background(tint.copy(alpha = 0.85f))
+        base.background(tint.copy(alpha = tintAlpha))
     }
     return blurred.border(
         1.dp,

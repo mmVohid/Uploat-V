@@ -89,7 +89,6 @@ import uz.vohid.uploatv.download.formatBytes
 /** Sozlamalar sahifalarining yo'llari (navigatsiya manzillari). */
 object SettingsRoutes {
     const val MAIN = "settings"
-    const val NOTIFICATIONS = "settings/notifications"
     const val APPEARANCE = "settings/appearance"
     const val ENGINE = "settings/engine"
     const val DOWNLOAD = "settings/download"
@@ -115,13 +114,6 @@ fun SettingsMainScreen(vm: SettingsViewModel, onNavigate: (String) -> Unit, onBa
             colors = glassCardColors(),
         ) {
             Column {
-                CategoryRow(
-                    icon = Icons.Rounded.Notifications,
-                    title = "Bildirishnomalar",
-                    subtitle = if (settings.notifyOnDone) "Ruxsat va xabarlar" else "Yuklash tugaganda xabar o'chiq",
-                    onClick = { onNavigate(SettingsRoutes.NOTIFICATIONS) },
-                )
-                CategoryDivider()
                 CategoryRow(
                     icon = Icons.Rounded.Palette,
                     title = "Mavzu",
@@ -209,7 +201,7 @@ private fun CategoryDivider() {
 // ======================= Bildirishnomalar =======================
 
 @Composable
-fun NotificationsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
+private fun NotificationsSection(vm: SettingsViewModel) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var enabled by remember { mutableStateOf(NotificationManagerCompat.from(context).areNotificationsEnabled()) }
@@ -220,7 +212,8 @@ fun NotificationsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
         onPauseOrDispose { }
     }
 
-    SettingsPage(title = "Bildirishnomalar", onBack = onBack) {
+    SectionLabel("Bildirishnomalar")
+    run {
         SettingsCard {
             Row(
                 modifier = Modifier
@@ -276,14 +269,6 @@ fun AppearanceScreen(vm: SettingsViewModel, onBack: () -> Unit) {
                         ) { Text(mode.label) }
                     }
                 }
-            }
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                SwitchRow(
-                    title = "Dinamik ranglar",
-                    subtitle = "Rangni telefon fon rasmiga moslash",
-                    checked = settings.dynamicColor,
-                    onChange = vm::setDynamicColor,
-                )
             }
         }
     }
@@ -433,6 +418,8 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
                 },
             )
         }
+
+        NotificationsSection(vm)
 
         SectionLabel("Kesh")
         SettingsCard {

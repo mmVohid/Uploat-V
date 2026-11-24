@@ -65,7 +65,6 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun setTheme(mode: ThemeMode) = viewModelScope.launch { repo.setTheme(mode) }
-    fun setDynamicColor(on: Boolean) = viewModelScope.launch { repo.setDynamicColor(on) }
     fun setDefaultQuality(q: Quality) = viewModelScope.launch { repo.setDefaultQuality(q) }
     fun setNotifyOnDone(on: Boolean) = viewModelScope.launch { repo.setNotifyOnDone(on) }
     fun setSaveTree(uri: String?) = viewModelScope.launch { repo.setSaveTree(uri) }

@@ -16,7 +16,6 @@ enum class Quality(val label: String, val height: Int?) {
 
 data class AppSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
-    val dynamicColor: Boolean = false,
     val defaultQuality: Quality = Quality.BEST,
     /** Foydalanuvchi tanlagan papka (SAF tree URI). null bo'lsa Download/Uploat-V ishlatiladi. */
     val saveTreeUri: String? = null,

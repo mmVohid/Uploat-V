@@ -83,7 +83,6 @@ private val DarkColors = darkColorScheme(
 @Composable
 fun UploatTheme(
     themeMode: ThemeMode,
-    dynamicColor: Boolean,
     content: @Composable () -> Unit,
 ) {
     val dark = when (themeMode) {
@@ -91,13 +90,7 @@ fun UploatTheme(
         ThemeMode.LIGHT -> false
         ThemeMode.DARK -> true
     }
-    val context = LocalContext.current
-    val scheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
-            if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        dark -> DarkColors
-        else -> LightColors
-    }
+    val scheme = if (dark) DarkColors else LightColors
 
     // Status va navigatsiya paneli ikonkalari mavzuga mos bo'lsin
     val view = LocalView.current
