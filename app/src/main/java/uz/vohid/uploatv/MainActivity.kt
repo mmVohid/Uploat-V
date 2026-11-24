@@ -62,6 +62,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import uz.vohid.uploatv.ui.AccountsScreen
+import uz.vohid.uploatv.ui.GuideScreen
+import uz.vohid.uploatv.ui.PrivacyScreen
 import uz.vohid.uploatv.ui.LoginWebScreen
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -255,7 +257,17 @@ private fun AppRoot(sharedUrl: String?, onSharedConsumed: () -> Unit) {
             composable(SettingsRoutes.APPEARANCE) { AppearanceScreen(settingsVm) { nav.popBackStack() } }
             composable(SettingsRoutes.ENGINE) { EngineScreen(settingsVm) { nav.popBackStack() } }
             composable(SettingsRoutes.DOWNLOAD) { DownloadSettingsScreen(settingsVm) { nav.popBackStack() } }
-            composable(SettingsRoutes.ABOUT) { AboutScreen(settingsVm) { nav.popBackStack() } }
+            composable(SettingsRoutes.ABOUT) {
+                AboutScreen(settingsVm, onOpenGuide = { nav.navigate(SettingsRoutes.GUIDE) }) { nav.popBackStack() }
+            }
+            composable(SettingsRoutes.PRIVACY) {
+                PrivacyScreen(
+                    settingsVm,
+                    onOpenAccounts = { nav.navigate(SettingsRoutes.ACCOUNTS) },
+                    onBack = { nav.popBackStack() },
+                )
+            }
+            composable(SettingsRoutes.GUIDE) { GuideScreen { nav.popBackStack() } }
             composable(SettingsRoutes.ACCOUNTS) {
                 AccountsScreen(
                     onOpenLogin = { nav.navigate(SettingsRoutes.login(it)) },

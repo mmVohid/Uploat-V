@@ -37,6 +37,8 @@ import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material3.Card
+import androidx.compose.material.icons.rounded.Storage
+import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material.icons.rounded.AccountCircle
 import uz.vohid.uploatv.download.CookieStore
@@ -93,6 +95,8 @@ object SettingsRoutes {
     const val DOWNLOAD = "settings/download"
     const val ABOUT = "settings/about"
     const val ACCOUNTS = "settings/accounts"
+    const val PRIVACY = "settings/privacy"
+    const val GUIDE = "settings/guide"
     const val LOGIN = "settings/login/{site}"
     fun login(key: String) = "settings/login/$key"
 }
@@ -120,9 +124,19 @@ fun SettingsMainScreen(vm: SettingsViewModel, onNavigate: (String) -> Unit, onBa
                 CategoryDivider()
                 CategoryRow(
                     icon = Icons.Rounded.Palette,
-                    title = "Ko'rinish",
-                    subtitle = "Mavzu: ${settings.themeMode.label}",
+                    title = "Mavzu",
+                    subtitle = settings.themeMode.label,
                     onClick = { onNavigate(SettingsRoutes.APPEARANCE) },
+                )
+                CategoryDivider()
+                CategoryRow(
+                    icon = Icons.Rounded.Shield,
+                    title = "Maxfiylik va xavfsizlik",
+                    subtitle = buildString {
+                        append(if (settings.incognito) "Inkognito yoqilgan" else "Inkognito o'chiq")
+                        CookieStore.loggedCount().takeIf { it > 0 }?.let { append(" · $it ta akkaunt") }
+                    },
+                    onClick = { onNavigate(SettingsRoutes.PRIVACY) },
                 )
                 CategoryDivider()
                 CategoryRow(
@@ -133,15 +147,8 @@ fun SettingsMainScreen(vm: SettingsViewModel, onNavigate: (String) -> Unit, onBa
                 )
                 CategoryDivider()
                 CategoryRow(
-                    icon = Icons.Rounded.AccountCircle,
-                    title = "Akkauntlar",
-                    subtitle = CookieStore.loggedCount().let { if (it == 0) "Instagram, Facebook, TikTok, X" else "$it ta akkaunt ulangan" },
-                    onClick = { onNavigate(SettingsRoutes.ACCOUNTS) },
-                )
-                CategoryDivider()
-                CategoryRow(
-                    icon = Icons.Rounded.Download,
-                    title = "Yuklash",
+                    icon = Icons.Rounded.Storage,
+                    title = "Ma'lumotlar va xotira",
                     subtitle = "${settings.defaultQuality.label} · " +
                         (settings.saveTreeUri?.let { describeTree(Uri.parse(it)) } ?: DEFAULT_FOLDER),
                     onClick = { onNavigate(SettingsRoutes.DOWNLOAD) },
@@ -257,7 +264,7 @@ fun NotificationsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
 fun AppearanceScreen(vm: SettingsViewModel, onBack: () -> Unit) {
     val settings by vm.settings.collectAsStateWithLifecycle()
 
-    SettingsPage(title = "Ko'rinish", onBack = onBack) {
+    SettingsPage(title = "Mavzu", onBack = onBack) {
         SettingsCard {
             LabeledRow("Mavzu") {
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
@@ -362,7 +369,7 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
     val cache by vm.cache.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { vm.refreshCache() }
 
-    SettingsPage(title = "Yuklash", onBack = onBack) {
+    SettingsPage(title = "Ma'lumotlar va xotira", onBack = onBack) {
         SettingsCard {
             LabeledRow("Standart video sifati") {
                 FlowRow(
@@ -391,12 +398,6 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
                     modifier = Modifier.padding(horizontal = 8.dp),
                 ) { Text("Standart papkaga qaytarish") }
             }
-            SwitchRow(
-                title = "Inkognito",
-                subtitle = "Yuklab olish tarixini o'chirib qo'ying: yuklashlar tarixga saqlanmaydi",
-                checked = settings.incognito,
-                onChange = vm::setIncognito,
-            )
         }
 
         SectionLabel("Fon rejimi")
@@ -427,7 +428,7 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
             )
         }
 
-        SectionLabel("Ma'lumotlar va xotira")
+        SectionLabel("Kesh")
         SettingsCard {
             ClickableRow(
                 title = "Keshni tozalash",
@@ -447,7 +448,7 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
 // ======================= Ilova haqida =======================
 
 @Composable
-fun AboutScreen(vm: SettingsViewModel, onBack: () -> Unit) {
+fun AboutScreen(vm: SettingsViewModel, onOpenGuide: () -> Unit, onBack: () -> Unit) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val update by vm.appUpdate.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -456,6 +457,15 @@ fun AboutScreen(vm: SettingsViewModel, onBack: () -> Unit) {
         SettingsCard {
             InfoRow("Uploat-V", "Versiya ${BuildConfig.VERSION_NAME}")
             InfoRow("Dvigatel", "yt-dlp asosida video yuklovchi")
+        }
+
+        SettingsCard {
+            ClickableRow(
+                title = "Foydalanish qo'llanmasi",
+                value = "Ilovadan qanday foydalanish",
+                hint = "Havola qo'shish, yuklash, akkauntlar va boshqalar",
+                onClick = onOpenGuide,
+            )
         }
 
         SettingsCard {
@@ -763,6 +773,72 @@ fun LoginWebScreen(siteKey: String, onDone: () -> Unit) {
                 },
                 onRelease = { it.destroy() },
             )
+        }
+    }
+}
+
+
+// ======================= Maxfiylik va xavfsizlik =======================
+
+@Composable
+fun PrivacyScreen(vm: SettingsViewModel, onOpenAccounts: () -> Unit, onBack: () -> Unit) {
+    val settings by vm.settings.collectAsStateWithLifecycle()
+    SettingsPage(title = "Maxfiylik va xavfsizlik", onBack = onBack) {
+        SettingsCard {
+            SwitchRow(
+                title = "Inkognito",
+                subtitle = "Yuklab olish tarixini o'chirib qo'ying: yuklashlar tarixga saqlanmaydi",
+                checked = settings.incognito,
+                onChange = vm::setIncognito,
+            )
+        }
+        SectionLabel("Akkauntlar")
+        SettingsCard {
+            ClickableRow(
+                title = "Akkauntlar",
+                value = CookieStore.loggedCount().let { if (it == 0) "Ulanmagan" else "$it ta akkaunt ulangan" },
+                hint = "Instagram, Facebook, TikTok va X: login talab qiladigan videolar uchun",
+                onClick = onOpenAccounts,
+            )
+        }
+    }
+}
+
+// ======================= Foydalanish qo'llanmasi =======================
+
+private val GUIDE = listOf(
+    "1. Havola qo'shish" to "Videoning havolasini nusxalang. Uploat-V'da pastdagi «Havolani joylash» tugmasini bosing. " +
+        "Ilova videoni topadi va sifat tanlash ko'rinadi.",
+    "2. Ulashish orqali" to "Istalgan ilovada (YouTube, Instagram, brauzer…) «Ulashish» → «Uploat-V» ni tanlang: ilova ochiladi. " +
+        "«Быстрая загрузка» ni tanlasangiz, video orqa fonda avtomatik yuklanadi.",
+    "3. Sifat va hajm" to "Sifat tugmalarida taxminiy hajm ko'rsatiladi, masalan «720p · ~45 MB». Standart sifatni " +
+        "Ma'lumotlar va xotira bo'limidan o'zgartirasiz.",
+    "4. Playlist" to "Havola playlistga tegishli bo'lsa, «Butun playlistni yuklash» ni yoqing, aks holda faqat bitta video yuklanadi.",
+    "5. Yuklashlar ro'yxati" to "Kartochkada progress, tezlik va qolgan vaqt ko'rinadi. «Bekor qilish», «Qayta urinish» va «Ochish» " +
+        "tugmalari bor. Tugagan yuklashni chapga surib o'chirasiz, «Qaytarish» bilan tiklaysiz.",
+    "6. Saqlash joyi" to "Videolar standart holda Download/Uploat-V papkasiga tushadi. Boshqa papkani " +
+        "Ma'lumotlar va xotira → Saqlash joyi orqali tanlang.",
+    "7. Akkauntlar (Instagram va boshqalar)" to "Ba'zi videolar akkauntsiz yuklanmaydi. Maxfiylik va xavfsizlik → Akkauntlar " +
+        "bo'limida saytga kiring: shundan keyin o'sha saytning havolalari ishlaydi. Parol saqlanmaydi.",
+    "8. Xato chiqsa" to "Avval Dvigatel bo'limida yt-dlp'ni yangilang: saytlar tez-tez o'zgaradi. Keyin havolani qayta sinang.",
+    "9. Fonda uzilmasligi uchun" to "Ma'lumotlar va xotira → Batareya cheklovisiz ishlash ruxsatini bering, ekran o'chiq turganda ham yuklash davom etadi.",
+    "10. Maxfiylik" to "Inkognito yoqilsa, yuklashlar tarixda saqlanmaydi. Keshni Ma'lumotlar va xotira bo'limidan tozalaysiz.",
+)
+
+@Composable
+fun GuideScreen(onBack: () -> Unit) {
+    SettingsPage(title = "Foydalanish qo'llanmasi", onBack = onBack) {
+        GUIDE.forEach { (title, text) ->
+            SettingsCard {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(title, style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        text,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
         }
     }
 }
