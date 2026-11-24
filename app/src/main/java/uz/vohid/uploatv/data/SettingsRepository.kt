@@ -25,6 +25,7 @@ class SettingsRepository(private val context: Context) {
         val NOTIFY_DONE = booleanPreferencesKey("notify_on_done")
         val INCOGNITO = booleanPreferencesKey("incognito")
         val AUTO_UPDATE_APP = booleanPreferencesKey("auto_update_app")
+        val AUTO_COOKIES = booleanPreferencesKey("auto_cookies")
         val LAST_APP_CHECK = longPreferencesKey("last_app_check_ms")
     }
 
@@ -42,15 +43,18 @@ class SettingsRepository(private val context: Context) {
             notifyOnDone = p[Keys.NOTIFY_DONE] ?: true,
             incognito = p[Keys.INCOGNITO] ?: false,
             autoUpdateApp = p[Keys.AUTO_UPDATE_APP] ?: false,
+            autoCookies = p[Keys.AUTO_COOKIES] ?: false,
             lastAppCheckMs = p[Keys.LAST_APP_CHECK] ?: 0L,
         )
     }
 
     /** Birinchi ishga tushishdagi so'rov yakunlandi; [autoUpdate] — yt-dlp yangilashga ruxsat. */
-    suspend fun finishOnboarding(autoUpdate: Boolean) = context.dataStore.edit {
+    suspend fun finishOnboarding(autoUpdate: Boolean, autoCookies: Boolean) = context.dataStore.edit {
         it[Keys.ONBOARDING] = true
         it[Keys.AUTO_UPDATE] = autoUpdate
+        it[Keys.AUTO_COOKIES] = autoCookies
     }
+    suspend fun setAutoCookies(on: Boolean) = context.dataStore.edit { it[Keys.AUTO_COOKIES] = on }
 
     suspend fun setAutoUpdate(on: Boolean) = context.dataStore.edit { it[Keys.AUTO_UPDATE] = on }
     suspend fun setLastUpdate(ms: Long) = context.dataStore.edit { it[Keys.LAST_UPDATE] = ms }

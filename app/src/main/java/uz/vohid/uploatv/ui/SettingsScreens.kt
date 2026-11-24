@@ -672,7 +672,8 @@ private fun InfoRow(title: String, value: String) {
 // ======================= Cookies =======================
 
 @Composable
-fun CookiesScreen(onOpenLogin: (String) -> Unit, onBack: () -> Unit) {
+fun CookiesScreen(vm: SettingsViewModel, onOpenLogin: (String) -> Unit, onBack: () -> Unit) {
+    val settings by vm.settings.collectAsStateWithLifecycle()
     var refresh by remember { mutableStateOf(0) }
     LifecycleResumeEffect(Unit) {
         refresh++
@@ -691,6 +692,14 @@ fun CookiesScreen(onOpenLogin: (String) -> Unit, onBack: () -> Unit) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 4.dp),
         )
+        SettingsCard {
+            SwitchRow(
+                title = "Avtomatik boshqarish",
+                subtitle = "Instagram kabi saytlar uchun kirish belgilari (cookie) avtomatik olinadi va yangilab turiladi",
+                checked = settings.autoCookies,
+                onChange = vm::setAutoCookies,
+            )
+        }
         SettingsCard {
             InfoRow(
                 "Saqlangan cookie",

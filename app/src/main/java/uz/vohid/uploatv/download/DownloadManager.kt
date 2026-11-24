@@ -186,6 +186,7 @@ object DownloadManager {
         try {
             UploatApp.engineReady.await()
             EngineUpdater.waitIdle()
+            CookieStore.prepareIfEnabled(item.url)
 
             // yt-dlp eskirgan bo'lsa (sayt o'zgargan), dvigatel yangilanib bir marta qayta uriniladi
             EngineUpdater.healing(cancelled = { get(id)?.status == Status.CANCELED }) {

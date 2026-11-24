@@ -2,7 +2,18 @@ package uz.vohid.uploatv.download
 
 import android.content.Context
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.webkit.CookieManager
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import uz.vohid.uploatv.data.SettingsRepository
+import kotlin.coroutines.resume
 import java.io.File
 
 /** Tez kirish uchun tayyor saytlar (foydalanuvchi istalgan boshqa manzilni ham kiritishi mumkin). */
@@ -79,6 +90,55 @@ object CookieStore {
         if (added == 0) return false
         file().writeText("# Netscape HTTP Cookie File\n" + all.values.joinToString("\n") + "\n")
         return true
+    }
+
+    private val lastRefresh = HashMap<String, Long>()
+
+    /**
+     * "Cookie'larni avtomatik boshqarish" yoqilgan bo'lsa: saytni yashirin WebView'da ochib,
+     * mehmon (yoki kirilgan) cookie'larni yangilaydi. Har sayt uchun 6 soatda bir marta.
+     */
+    suspend fun prepareIfEnabled(url: String) {
+        if (!SettingsRepository(app).settings.first().autoCookies) return
+        val host = runCatching { Uri.parse(url).host?.lowercase() }.getOrNull() ?: return
+        val base = baseDomain(host)
+        val known = quickSites.any { baseDomain(Uri.parse(it.url).host.orEmpty()) == base } || base in domains()
+        if (!known) return
+        val now = System.currentTimeMillis()
+        if (now - (lastRefresh[base] ?: 0L) < 6L * 60 * 60 * 1000 && fileFor(url) != null) return
+        lastRefresh[base] = now
+
+        withContext(Dispatchers.Main) {
+            withTimeoutOrNull(15_000) {
+                suspendCancellableCoroutine<Unit> { cont ->
+                    val web = WebView(app)
+                    var finished = false
+                    fun finish() {
+                        if (finished) return
+                        finished = true
+                        runCatching { web.stopLoading(); web.destroy() }
+                        if (cont.isActive) cont.resume(Unit)
+                    }
+                    web.settings.javaScriptEnabled = true
+                    web.settings.domStorageEnabled = true
+                    CookieManager.getInstance().setAcceptCookie(true)
+                    CookieManager.getInstance().setAcceptThirdPartyCookies(web, true)
+                    web.webViewClient = object : WebViewClient() {
+                        override fun onPageFinished(view: WebView, pageUrl: String) {
+                            // sahifa skriptlari cookie o'rnatib ulgurishi uchun biroz kutiladi
+                            view.postDelayed({
+                                if (!finished) {
+                                    runCatching { saveFromWebView(pageUrl) }
+                                    finish()
+                                }
+                            }, 2000)
+                        }
+                    }
+                    cont.invokeOnCancellation { Handler(Looper.getMainLooper()).post { finish() } }
+                    web.loadUrl("https://www.$base/")
+                }
+            }
+        }
     }
 
     fun clear() {

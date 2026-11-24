@@ -24,6 +24,7 @@ object InfoFetcher {
     ): MediaInfo = withContext(Dispatchers.IO) {
         UploatApp.engineReady.await()
         EngineUpdater.waitIdle()
+        CookieStore.prepareIfEnabled(url)
         val ctx = currentCoroutineContext()
         // yt-dlp eskirgan bo'lsa dvigatel yangilanib, bir marta qayta uriniladi
         EngineUpdater.healing(cancelled = { cancelled() || !ctx.isActive }) {

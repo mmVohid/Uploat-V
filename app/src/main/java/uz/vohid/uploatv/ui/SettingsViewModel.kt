@@ -71,6 +71,7 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     fun setSaveTree(uri: String?) = viewModelScope.launch { repo.setSaveTree(uri) }
     fun setIncognito(on: Boolean) = viewModelScope.launch { repo.setIncognito(on) }
     fun setAutoUpdateApp(on: Boolean) = viewModelScope.launch { repo.setAutoUpdateApp(on) }
+    fun setAutoCookies(on: Boolean) = viewModelScope.launch { repo.setAutoCookies(on) }
 
     // ---------- Uploat-V yangilanishi ----------
 
@@ -153,7 +154,7 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
      * va hozir ham bir marta yangilanadi.
      */
     fun finishOnboarding(accepted: Boolean) {
-        viewModelScope.launch { repo.finishOnboarding(autoUpdate = accepted) }
+        viewModelScope.launch { repo.finishOnboarding(autoUpdate = accepted, autoCookies = accepted) }
         if (accepted) EngineUpdater.updateInBackground(getApplication())
     }
 }

@@ -4,6 +4,13 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.net.Uri
+import android.os.PowerManager
+import android.provider.Settings
+import androidx.compose.material.icons.rounded.Cookie
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.core.content.ContextCompat
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -127,15 +134,16 @@ private fun OnboardingDialog(onAccept: () -> Unit, onSkip: () -> Unit) {
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 PermissionRow(
-                    icon = Icons.Rounded.Notifications,
-                    title = "Bildirishnomalar",
-                    text = "Yuklash jarayoni va natijasini ko'rsatish uchun.",
-                )
-                PermissionRow(
                     icon = Icons.Rounded.SystemUpdate,
                     title = "yt-dlp yangilash",
                     text = "Sayt o'zgarganda video yuklanishi uchun dvigatel kuniga bir marta " +
                         "avtomatik yangilanadi (internet sarflaydi). Sozlamalardan o'chirish mumkin.",
+                )
+                PermissionRow(
+                    icon = Icons.Rounded.Cookie,
+                    title = "Cookie'larni avtomatik boshqarish",
+                    text = "Instagram kabi saytlar uchun kirish belgilari avtomatik olinadi va yangilab turiladi. " +
+                        "Parol saqlanmaydi, ma'lumot telefoningizda qoladi.",
                 )
             }
         },
@@ -167,18 +175,45 @@ private fun AppRoot(sharedUrl: String?, onSharedConsumed: () -> Unit) {
     val nav = rememberNavController()
     val settings by settingsVm.settings.collectAsStateWithLifecycle()
 
+    // Birinchi ochilish: 0 = bildirishnoma (tizim oynasi), 1 = batareya (tizim oynasi), 2 = bizning oyna
+    var step by rememberSaveable { mutableIntStateOf(0) }
     val notificationPermission =
-        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { /* natija talab qilinmaydi */ }
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { step = 1 }
+    val batteryRequest =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { step = 2 }
+    val appContext = LocalContext.current
+    val onboarding = settings.loaded && !settings.onboardingDone
 
-    // Birinchi ochilishda: bildirishnoma + yt-dlp yangilash uchun bitta ruxsat so'rovi
-    if (settings.loaded && !settings.onboardingDone) {
-        OnboardingDialog(
-            onAccept = {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+    LaunchedEffect(onboarding, step) {
+        if (!onboarding) return@LaunchedEffect
+        when (step) {
+            0 -> {
+                val needed = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                    ContextCompat.checkSelfPermission(appContext, Manifest.permission.POST_NOTIFICATIONS) !=
+                    PackageManager.PERMISSION_GRANTED
+                if (needed) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS) else step = 1
+            }
+            1 -> {
+                val pm = appContext.getSystemService(PowerManager::class.java)
+                if (pm.isIgnoringBatteryOptimizations(appContext.packageName)) {
+                    step = 2
+                } else {
+                    val launched = runCatching {
+                        batteryRequest.launch(
+                            Intent(
+                                Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                                Uri.parse("package:${appContext.packageName}"),
+                            ),
+                        )
+                    }.isSuccess
+                    if (!launched) step = 2
                 }
-                settingsVm.finishOnboarding(accepted = true)
-            },
+            }
+        }
+    }
+    if (onboarding && step >= 2) {
+        OnboardingDialog(
+            onAccept = { settingsVm.finishOnboarding(accepted = true) },
             onSkip = { settingsVm.finishOnboarding(accepted = false) },
         )
     }
@@ -270,6 +305,7 @@ private fun AppRoot(sharedUrl: String?, onSharedConsumed: () -> Unit) {
             composable(SettingsRoutes.GUIDE) { GuideScreen { nav.popBackStack() } }
             composable(SettingsRoutes.COOKIES) {
                 CookiesScreen(
+                    vm = settingsVm,
                     onOpenLogin = { nav.navigate(SettingsRoutes.login(it)) },
                     onBack = { nav.popBackStack() },
                 )

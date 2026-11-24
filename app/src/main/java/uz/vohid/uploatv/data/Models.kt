@@ -35,6 +35,7 @@ data class AppSettings(
     val incognito: Boolean = false,
     /** Uploat-V yangi versiyasini GitHub'dan avtomatik tekshirish. */
     val autoUpdateApp: Boolean = false,
+    val autoCookies: Boolean = false,
     val lastAppCheckMs: Long = 0L,
 )
 
