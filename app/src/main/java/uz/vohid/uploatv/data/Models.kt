@@ -33,10 +33,8 @@ data class AppSettings(
     /** Inkognito: yuklab olish tarixi saqlanmaydi. */
     val incognito: Boolean = false,
     /** Uploat-V yangi versiyasini GitHub'dan avtomatik tekshirish. */
-    val autoUpdateApp: Boolean = false,
     val autoCookies: Boolean = false,
     val ytdlpNightly: Boolean = false,
-    val lastAppCheckMs: Long = 0L,
 )
 
 /** Havola bo'yicha yt-dlp qaytargan qisqa ma'lumot. */

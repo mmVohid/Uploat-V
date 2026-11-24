@@ -130,8 +130,11 @@ object DownloadManager {
         launchJob(id)
     }
 
+    private fun tmpDir(id: String) = File(app.getExternalFilesDir(null) ?: app.filesDir, "tmp/$id")
+
     fun remove(id: String) {
         if (get(id)?.isActive == true) cancel(id)
+        scope.launch { tmpDir(id).deleteRecursively() }
         _items.update { list -> list.filterNot { it.id == id } }
         persist()
     }
@@ -145,6 +148,7 @@ object DownloadManager {
     }
 
     fun clearFinished() {
+        _items.value.filter { !it.isActive }.forEach { item -> scope.launch { tmpDir(item.id).deleteRecursively() } }
         _items.update { list -> list.filter { it.isActive } }
         persist()
     }
@@ -193,6 +197,8 @@ object DownloadManager {
         }
     }
 
+    private val attempts = HashMap<String, Int>()
+
     private suspend fun processOnce(id: String) {
         val item = get(id) ?: return
         if (item.status == Status.CANCELED) return
@@ -200,14 +206,23 @@ object DownloadManager {
         mutate(id) { it.copy(status = Status.RUNNING, progress = 0f, detail = "Boshlanmoqda…", error = null) }
         val dir = File(app.getExternalFilesDir(null) ?: app.filesDir, "tmp/$id")
 
+        // 1-urinish: noldan; 2-urinish: yarim fayldan davom; 3-urinish: eskisi buzuq bo'lishi mumkin, noldan
+        val attempt = (attempts[id] ?: 0) + 1
+        attempts[id] = attempt
+        if (attempt >= 3) {
+            dir.deleteRecursively()
+            attempts[id] = 1
+        }
+
         try {
+            Preflight.requireOnline()
+            Preflight.requireStorage()
             UploatApp.engineReady.await()
             EngineUpdater.waitIdle()
             CookieStore.prepareIfEnabled(item.url)
 
             // yt-dlp eskirgan bo'lsa (sayt o'zgargan), dvigatel yangilanib bir marta qayta uriniladi
             EngineUpdater.healing(cancelled = { get(id)?.status == Status.CANCELED }) {
-                dir.deleteRecursively()
                 dir.mkdirs()
                 mutate(id) { it.copy(progress = 0f, detail = "Boshlanmoqda…") }
 
@@ -261,7 +276,11 @@ object DownloadManager {
                 mutate(id) { it.copy(status = Status.FAILED, error = friendlyError(e), errorDetail = rawError(e)) }
             }
         } finally {
-            dir.deleteRecursively()
+            // Xato bo'lsa yarim fayllar saqlanadi: "Qayta urinish" qolgan joyidan davom etadi
+            if (get(id)?.status != Status.FAILED) {
+                dir.deleteRecursively()
+                attempts.remove(id)
+            }
             persist()
         }
     }

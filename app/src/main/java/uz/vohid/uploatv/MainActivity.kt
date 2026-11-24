@@ -44,7 +44,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.ui.platform.LocalContext
-import uz.vohid.uploatv.download.AppUpdater
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -216,25 +215,7 @@ private fun AppRoot(sharedUrl: String?, onSharedConsumed: () -> Unit) {
         )
     }
 
-    // Uploat-V yangilanishini avtomatik tekshirish (yoqilgan bo'lsa, kuniga bir marta)
     val context = LocalContext.current
-    LaunchedEffect(settings.loaded, settings.autoUpdateApp) {
-        if (settings.loaded && settings.autoUpdateApp) AppUpdater.checkIfDue(context.applicationContext)
-    }
-    val available by AppUpdater.available.collectAsStateWithLifecycle()
-    LaunchedEffect(available?.tag) {
-        val update = available ?: return@LaunchedEffect
-        val action = snackbar.showSnackbar(
-            message = "Uploat-V yangi versiyasi bor: ${update.tag}",
-            actionLabel = "Yuklab olish",
-            duration = SnackbarDuration.Long,
-        )
-        if (action == SnackbarResult.ActionPerformed) {
-            context.startActivity(
-                Intent(Intent.ACTION_VIEW, Uri.parse(update.url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            )
-        }
-    }
 
     LaunchedEffect(sharedUrl) {
         sharedUrl?.let {

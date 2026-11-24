@@ -16,7 +16,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import uz.vohid.uploatv.UploatApp
 import uz.vohid.uploatv.download.AppCheck
-import uz.vohid.uploatv.download.AppUpdater
 import uz.vohid.uploatv.download.DownloadManager
 import uz.vohid.uploatv.download.EngineUpdater
 import uz.vohid.uploatv.download.formatBytes
@@ -39,11 +38,6 @@ data class CacheUi(
     val message: String? = null,
 )
 
-data class AppUpdateUi(
-    val checking: Boolean = false,
-    val result: AppCheck? = null,
-)
-
 class SettingsViewModel(app: Application) : AndroidViewModel(app) {
 
     private val repo = SettingsRepository(app)
@@ -57,9 +51,6 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     private val _cache = MutableStateFlow(CacheUi())
     val cache: StateFlow<CacheUi> = _cache.asStateFlow()
 
-    private val _appUpdate = MutableStateFlow(AppUpdateUi())
-    val appUpdate: StateFlow<AppUpdateUi> = _appUpdate.asStateFlow()
-
     init {
         loadVersion()
     }
@@ -69,20 +60,8 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     fun setNotifyOnDone(on: Boolean) = viewModelScope.launch { repo.setNotifyOnDone(on) }
     fun setSaveTree(uri: String?) = viewModelScope.launch { repo.setSaveTree(uri) }
     fun setIncognito(on: Boolean) = viewModelScope.launch { repo.setIncognito(on) }
-    fun setAutoUpdateApp(on: Boolean) = viewModelScope.launch { repo.setAutoUpdateApp(on) }
     fun setYtdlpNightly(on: Boolean) = viewModelScope.launch { repo.setYtdlpNightly(on) }
     fun setAutoCookies(on: Boolean) = viewModelScope.launch { repo.setAutoCookies(on) }
-
-    // ---------- Uploat-V yangilanishi ----------
-
-    fun checkAppNow() {
-        if (_appUpdate.value.checking) return
-        _appUpdate.update { it.copy(checking = true) }
-        viewModelScope.launch {
-            val result = AppUpdater.check(getApplication())
-            _appUpdate.update { AppUpdateUi(checking = false, result = result) }
-        }
-    }
 
     // ---------- Kesh ----------
 

@@ -18,6 +18,7 @@ class UploatApp : Application() {
         super.onCreate()
         createChannels()
         uz.vohid.uploatv.download.CookieStore.init(this)
+        uz.vohid.uploatv.download.Preflight.init(this)
         DownloadManager.init(this)
         EngineUpdater.init(this)
 
@@ -41,14 +42,16 @@ class UploatApp : Application() {
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL_PROGRESS, "Yuklash jarayoni", NotificationManager.IMPORTANCE_LOW)
         )
+        // Eski "done" kanali (oddiy muhimlik) o'chiriladi: yangisi ekranda banner bo'lib chiqadi (SMS kabi)
+        nm.deleteNotificationChannel("done")
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_DONE, "Yuklash yakunlandi", NotificationManager.IMPORTANCE_DEFAULT)
+            NotificationChannel(CHANNEL_DONE, "Yuklash natijasi", NotificationManager.IMPORTANCE_HIGH)
         )
     }
 
     companion object {
         const val CHANNEL_PROGRESS = "progress"
-        const val CHANNEL_DONE = "done"
+        const val CHANNEL_DONE = "done_v2"
 
         /** Dvigatel tayyor bo'lganda yakunlanadi. */
         val engineReady = CompletableDeferred<Unit>()

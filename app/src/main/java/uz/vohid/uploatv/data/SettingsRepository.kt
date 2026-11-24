@@ -23,10 +23,8 @@ class SettingsRepository(private val context: Context) {
         val YTDLP_VERSION = stringPreferencesKey("ytdlp_version")
         val NOTIFY_DONE = booleanPreferencesKey("notify_on_done")
         val INCOGNITO = booleanPreferencesKey("incognito")
-        val AUTO_UPDATE_APP = booleanPreferencesKey("auto_update_app")
         val AUTO_COOKIES = booleanPreferencesKey("auto_cookies")
         val YTDLP_NIGHTLY = booleanPreferencesKey("ytdlp_nightly")
-        val LAST_APP_CHECK = longPreferencesKey("last_app_check_ms")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { p ->
@@ -41,10 +39,8 @@ class SettingsRepository(private val context: Context) {
             ytdlpVersion = p[Keys.YTDLP_VERSION],
             notifyOnDone = p[Keys.NOTIFY_DONE] ?: true,
             incognito = p[Keys.INCOGNITO] ?: false,
-            autoUpdateApp = p[Keys.AUTO_UPDATE_APP] ?: false,
             autoCookies = p[Keys.AUTO_COOKIES] ?: false,
             ytdlpNightly = p[Keys.YTDLP_NIGHTLY] ?: false,
-            lastAppCheckMs = p[Keys.LAST_APP_CHECK] ?: 0L,
         )
     }
 
@@ -60,8 +56,6 @@ class SettingsRepository(private val context: Context) {
     suspend fun setAutoUpdate(on: Boolean) = context.dataStore.edit { it[Keys.AUTO_UPDATE] = on }
     suspend fun setLastUpdate(ms: Long) = context.dataStore.edit { it[Keys.LAST_UPDATE] = ms }
     suspend fun setIncognito(on: Boolean) = context.dataStore.edit { it[Keys.INCOGNITO] = on }
-    suspend fun setAutoUpdateApp(on: Boolean) = context.dataStore.edit { it[Keys.AUTO_UPDATE_APP] = on }
-    suspend fun setLastAppCheck(ms: Long) = context.dataStore.edit { it[Keys.LAST_APP_CHECK] = ms }
     suspend fun setNotifyOnDone(on: Boolean) = context.dataStore.edit { it[Keys.NOTIFY_DONE] = on }
     suspend fun setYtdlpVersion(v: String) = context.dataStore.edit { it[Keys.YTDLP_VERSION] = v }
 

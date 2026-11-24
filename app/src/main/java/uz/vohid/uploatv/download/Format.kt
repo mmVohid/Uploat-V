@@ -35,6 +35,7 @@ fun describeTree(tree: android.net.Uri): String {
 
 /** yt-dlp xatosini foydalanuvchiga tushunarli qisqa matnga aylantiradi. */
 fun friendlyError(e: Throwable): String {
+    if (e is OfflineException || e is StorageLowException) return e.message.orEmpty()
     val msg = e.message.orEmpty()
     return when {
         isLoginError(msg) ->

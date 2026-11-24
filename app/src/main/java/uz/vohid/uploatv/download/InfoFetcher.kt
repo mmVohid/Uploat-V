@@ -22,6 +22,7 @@ object InfoFetcher {
         processId: String = PROCESS_ID,
         cancelled: () -> Boolean = { false },
     ): MediaInfo = withContext(Dispatchers.IO) {
+        Preflight.requireOnline()
         UploatApp.engineReady.await()
         EngineUpdater.waitIdle()
         CookieStore.prepareIfEnabled(url)

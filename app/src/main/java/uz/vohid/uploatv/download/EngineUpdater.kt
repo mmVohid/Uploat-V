@@ -60,22 +60,9 @@ object EngineUpdater {
             try {
                 UploatApp.engineReady.await()
                 updateDirect(context, repo)
-            } catch (direct: Throwable) {
-                if (direct is CancellationException) throw direct
-                try {
-                    val status = YoutubeDL.getInstance().updateYoutubeDL(context)
-                    repo.setLastUpdate(System.currentTimeMillis())
-                    val upToDate = status?.toString()?.contains("ALREADY", ignoreCase = true) == true
-                    if (!upToDate) epoch++
-                    UpdateResult(
-                        message = if (upToDate) "Allaqachon eng so'nggi versiya" else "Yangilandi",
-                        ok = true,
-                        updated = !upToDate,
-                    )
-                } catch (fallback: Throwable) {
-                    if (fallback is CancellationException) throw fallback
-                    UpdateResult("Yangilab bo'lmadi: ${reason(direct)}", ok = false, updated = false)
-                }
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+                UpdateResult("Yangilab bo'lmadi: ${reason(e)}", ok = false, updated = false)
             }
         }
     }

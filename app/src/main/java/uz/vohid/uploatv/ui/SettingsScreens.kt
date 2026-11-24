@@ -443,7 +443,6 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
 @Composable
 fun AboutScreen(vm: SettingsViewModel, onOpenGuide: () -> Unit, onBack: () -> Unit) {
     val settings by vm.settings.collectAsStateWithLifecycle()
-    val update by vm.appUpdate.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     SettingsPage(title = "Ilova haqida", onBack = onBack) {
@@ -459,49 +458,6 @@ fun AboutScreen(vm: SettingsViewModel, onOpenGuide: () -> Unit, onBack: () -> Un
                 hint = "Havola qo'shish, yuklash, akkauntlar va boshqalar",
                 onClick = onOpenGuide,
             )
-        }
-
-        SettingsCard {
-            SwitchRow(
-                title = "Avtomatik yangilash – Uploat-V",
-                subtitle = "GitHub'dan so'nggi versiyani avtomatik ravishda tekshiring.",
-                checked = settings.autoUpdateApp,
-                onChange = vm::setAutoUpdateApp,
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                val result = update.result
-                Text(
-                    text = result?.message ?: "Hali tekshirilmagan",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = when {
-                        result == null -> MaterialTheme.colorScheme.onSurfaceVariant
-                        result.ok -> MaterialTheme.colorScheme.primary
-                        else -> MaterialTheme.colorScheme.error
-                    },
-                    modifier = Modifier.weight(1f),
-                )
-                Spacer(Modifier.width(8.dp))
-                if (update.checking) {
-                    CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.5.dp)
-                } else {
-                    val found = result?.update
-                    if (found != null) {
-                        FilledTonalButton(onClick = {
-                            context.startActivity(
-                                Intent(Intent.ACTION_VIEW, Uri.parse(found.url))
-                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            )
-                        }) { Text("Yuklab olish") }
-                    } else {
-                        TextButton(onClick = vm::checkAppNow) { Text("Hozir tekshirish") }
-                    }
-                }
-            }
         }
     }
 }

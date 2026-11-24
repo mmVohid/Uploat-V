@@ -83,6 +83,10 @@ class DownloadService : Service() {
             .setContentTitle(if (ok) "Yuklandi" else "Yuklab bo'lmadi")
             .setContentText(name)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setAutoCancel(true)
             .setContentIntent(
                 PendingIntent.getActivity(
