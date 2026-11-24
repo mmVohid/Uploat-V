@@ -3,6 +3,7 @@ package uz.vohid.uploatv
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -75,6 +76,11 @@ class AppE2ETest {
 
     /** Belgi (badge) bor paytda tugma tavsifi birlashib ketadi, shuning uchun birlashmagan daraxtdan qidiriladi. */
     private fun openDownloads() {
+        // Klaviatura yopilguncha pastki panel ko'rinmasligi mumkin: paydo bo'lishini kutamiz
+        rule.waitUntil(15_000) {
+            rule.onAllNodesWithContentDescription("Yuklashlar", substring = true, useUnmergedTree = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
         rule.onNodeWithContentDescription("Yuklashlar", substring = true, useUnmergedTree = true).performClick()
     }
 
