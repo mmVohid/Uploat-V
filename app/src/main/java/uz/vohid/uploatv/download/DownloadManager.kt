@@ -178,7 +178,7 @@ object DownloadManager {
             } catch (e: Throwable) {
                 if (get(id)?.status != Status.CANCELED) {
                     mutate(id) { it.copy(status = Status.FAILED, error = friendlyError(e), errorDetail = rawError(e), detail = "") }
-                    ErrorLog.add(url, rawError(e))
+                    if (get(id)?.incognito != true) ErrorLog.add(url, rawError(e))
                     persist()
                 }
                 return@launch
@@ -188,6 +188,7 @@ object DownloadManager {
     }
 
     fun cancel(id: String) {
+        netWaiting.remove(id)
         mutate(id) { it.copy(status = Status.CANCELED, detail = "", error = null) }
         runCatching { YoutubeDL.destroyProcessById(id) }
         jobs[id]?.cancel()
@@ -195,6 +196,8 @@ object DownloadManager {
     }
 
     fun retry(id: String) {
+        netWaiting.remove(id)
+        loginRetried.remove(id)
         mutate(id) { it.copy(status = Status.QUEUED, progress = 0f, detail = "", error = null) }
         startService()
         launchJob(id)
@@ -204,6 +207,8 @@ object DownloadManager {
 
     fun remove(id: String) {
         if (get(id)?.isActive == true) cancel(id)
+        netWaiting.remove(id)
+        attempts.remove(id)
         scope.launch { tmpDir(id).deleteRecursively() }
         _items.update { list -> list.filterNot { it.id == id } }
         persist()
@@ -218,6 +223,7 @@ object DownloadManager {
     }
 
     fun clearFinished() {
+        _items.value.filter { !it.isActive }.forEach { netWaiting.remove(it.id); attempts.remove(it.id) }
         _items.value.filter { !it.isActive }.forEach { item -> scope.launch { tmpDir(item.id).deleteRecursively() } }
         _items.update { list -> list.filter { it.isActive } }
         persist()
@@ -232,7 +238,8 @@ object DownloadManager {
     }
 
     private fun startService() {
-        ContextCompat.startForegroundService(app, Intent(app, DownloadService::class.java))
+        // Ilova orqa fonda bo'lsa (masalan, tarmoq qaytganda) tizim xizmatni boshlashga ruxsat bermasligi mumkin
+        runCatching { ContextCompat.startForegroundService(app, Intent(app, DownloadService::class.java)) }
     }
 
     private fun persist() {
@@ -252,7 +259,7 @@ object DownloadManager {
         }
     }
 
-    private val loginRetried = mutableSetOf<String>()
+    private val loginRetried = ConcurrentHashMap.newKeySet<String>()
 
     /** Login/cookie xatosida: cookie'ni majburan yangilab, bir marta qayta uriniladi. */
     private suspend fun process(id: String) {
@@ -267,7 +274,7 @@ object DownloadManager {
         }
     }
 
-    private val attempts = HashMap<String, Int>()
+    private val attempts = ConcurrentHashMap<String, Int>()
 
     private suspend fun processOnce(id: String) {
         val item = get(id) ?: return
@@ -286,39 +293,45 @@ object DownloadManager {
         }
 
         try {
-            val s = SettingsRepository(app).settings.first()
-            Preflight.requireOnline(s.wifiOnly)
-            Preflight.requireStorage()
-            UploatApp.engineReady.await()
-            EngineUpdater.waitIdle()
-            CookieStore.prepareIfEnabled(item.url)
-
-            // yt-dlp eskirgan bo'lsa (sayt o'zgargan), dvigatel yangilanib bir marta qayta uriniladi
-            EngineUpdater.healing(cancelled = { get(id)?.status == Status.CANCELED }) {
+            val test = EngineHook.engine
+            if (test != null) {
                 dir.mkdirs()
-                mutate(id) { it.copy(progress = 0f, detail = "Boshlanmoqda…") }
+                test.download(item.url, dir) { p -> mutate(id) { it.copy(progress = maxOf(it.progress, p)) } }
+            } else {
+                val s = SettingsRepository(app).settings.first()
+                Preflight.requireOnline(s.wifiOnly)
+                Preflight.requireStorage()
+                UploatApp.engineReady.await()
+                EngineUpdater.waitIdle()
+                CookieStore.prepareIfEnabled(item.url)
 
-                var index = 1
-                var total = 1
-                var speed: String? = null
-                YoutubeDL.getInstance().execute(buildRequest(item, dir), id) { percent, eta, line ->
-                    ITEM_REGEX.find(line)?.let {
-                        index = it.groupValues[1].toInt()
-                        total = it.groupValues[2].toInt()
-                    }
-                    SPEED_REGEX.find(line)?.let { speed = it.groupValues[1].replace("iB", "B") }
-                    if (percent >= 0f) {
-                        val overall = if (total > 1) ((index - 1) + percent / 100f) / total else percent / 100f
-                        val parts = buildList {
-                            if (total > 1) add("$index/$total")
-                            speed?.let { add(it) }
-                            if (eta > 0) add("${formatEta(eta)} qoldi")
+                // yt-dlp eskirgan bo'lsa (sayt o'zgargan), dvigatel yangilanib bir marta qayta uriniladi
+                EngineUpdater.healing(cancelled = { get(id)?.status == Status.CANCELED }) {
+                    dir.mkdirs()
+                    mutate(id) { it.copy(progress = 0f, detail = "Boshlanmoqda…") }
+
+                    var index = 1
+                    var total = 1
+                    var speed: String? = null
+                    YoutubeDL.getInstance().execute(buildRequest(item, dir), id) { percent, eta, line ->
+                        ITEM_REGEX.find(line)?.let {
+                            index = it.groupValues[1].toInt()
+                            total = it.groupValues[2].toInt()
                         }
-                        mutate(id) {
-                            it.copy(
-                                progress = maxOf(it.progress, overall.coerceIn(0f, 1f)),
-                                detail = parts.joinToString(" · "),
-                            )
+                        SPEED_REGEX.find(line)?.let { speed = it.groupValues[1].replace("iB", "B") }
+                        if (percent >= 0f) {
+                            val overall = if (total > 1) ((index - 1) + percent / 100f) / total else percent / 100f
+                            val parts = buildList {
+                                if (total > 1) add("$index/$total")
+                                speed?.let { add(it) }
+                                if (eta > 0) add("${formatEta(eta)} qoldi")
+                            }
+                            mutate(id) {
+                                it.copy(
+                                    progress = maxOf(it.progress, overall.coerceIn(0f, 1f)),
+                                    detail = parts.joinToString(" · "),
+                                )
+                            }
                         }
                     }
                 }
@@ -345,13 +358,14 @@ object DownloadManager {
             throw e
         } catch (e: Throwable) {
             if (get(id)?.status != Status.CANCELED) {
-                mutate(id) { it.copy(status = Status.FAILED, error = friendlyError(e), errorDetail = rawError(e)) }
-                ErrorLog.add(item.url, rawError(e))
                 if (isNetworkFailure(e)) {
-                    // Internet muammosi: fayllar saqlanadi, urinish hisoblanmaydi, tarmoq qaytganda o'zi davom etadi
+                    // Internet muammosi: fayllar saqlanadi, urinish hisoblanmaydi, tarmoq qaytganda o'zi davom etadi.
+                    // Holat FAILED bo'lishidan oldin belgilanadi: xizmat va xabarlar shunga qarab ishlaydi.
                     attempts[id] = attempt - 1
                     if ((autoRetries[id] ?: 0) < 5) netWaiting.add(id)
                 }
+                if (!item.incognito) ErrorLog.add(item.url, rawError(e))
+                mutate(id) { it.copy(status = Status.FAILED, error = friendlyError(e), errorDetail = rawError(e)) }
             }
         } finally {
             // Xato bo'lsa yarim fayllar saqlanadi: "Qayta urinish" qolgan joyidan davom etadi

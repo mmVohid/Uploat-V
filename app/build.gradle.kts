@@ -18,7 +18,10 @@ android {
         versionName = "1.0.$build"
 
         // yt-dlp + Python + ffmpeg juda og'ir, shu sabab faqat arm64 (deyarli barcha zamonaviy telefonlar)
-        ndk { abiFilters += listOf("arm64-v8a") }
+        // Emulyatordagi E2E test uchun: ./gradlew ... -PtestAbi=x86_64
+        ndk { abiFilters += listOf((project.findProperty("testAbi") as String?) ?: "arm64-v8a") }
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -34,6 +37,8 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
+
+    testOptions { unitTests.isReturnDefaultValues = true }
 
     buildFeatures {
         compose = true
@@ -66,6 +71,14 @@ dependencies {
 
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("dev.chrisbanes.haze:haze:1.6.10")
+
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation(composeBom)
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 
     val ytdl = "0.17.3"
     implementation("io.github.junkfood02.youtubedl-android:library:$ytdl")

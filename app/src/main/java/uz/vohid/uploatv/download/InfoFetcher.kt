@@ -22,6 +22,7 @@ object InfoFetcher {
         processId: String = PROCESS_ID,
         cancelled: () -> Boolean = { false },
     ): MediaInfo = withContext(Dispatchers.IO) {
+        EngineHook.engine?.let { return@withContext it.fetch(url) }
         Preflight.requireOnline()
         UploatApp.engineReady.await()
         EngineUpdater.waitIdle()
@@ -45,7 +46,7 @@ object InfoFetcher {
         runCatching { YoutubeDL.destroyProcessById(PROCESS_ID) }
     }
 
-    private fun parse(raw: String): MediaInfo {
+    internal fun parse(raw: String): MediaInfo {
         val json = raw.lineSequence().map { it.trim() }.lastOrNull { it.startsWith("{") }
             ?: throw IllegalStateException("Ma'lumot olinmadi")
         val o = JSONObject(json)
@@ -70,7 +71,7 @@ object InfoFetcher {
     }
 
     /** Formatlar ro'yxatidan har sifat uchun taxminiy hajmni (video + audio) hisoblaydi. */
-    private fun estimateSizes(formats: org.json.JSONArray?): Map<Quality, Long> {
+    internal fun estimateSizes(formats: org.json.JSONArray?): Map<Quality, Long> {
         if (formats == null) return emptyMap()
         class F(val height: Int, val size: Long, val hasAudio: Boolean)
 

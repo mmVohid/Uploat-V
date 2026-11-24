@@ -61,9 +61,12 @@ class DownloadService : Service() {
             }
         }
 
-        if (active.isEmpty()) {
+        val waiting = items.count { it.status == Status.FAILED && DownloadManager.willAutoRetry(it.id) }
+        if (active.isEmpty() && waiting == 0) {
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
+        } else if (active.isEmpty()) {
+            nm.notify(NOTIF_ID, build("Internet kutilmoqda", "$waiting ta yuklash aloqa qaytganda davom etadi", 0))
         } else {
             val current = active.firstOrNull { it.status == Status.RUNNING } ?: active.first()
             val pct = (current.progress * 100).toInt()
