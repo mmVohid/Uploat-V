@@ -26,6 +26,8 @@ import kotlinx.coroutines.flow.first
 import uz.vohid.uploatv.UploatApp
 import uz.vohid.uploatv.data.SettingsRepository
 import java.io.File
+import java.io.FileOutputStream
+import java.io.FileInputStream
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -35,7 +37,7 @@ import java.util.concurrent.ConcurrentHashMap
  */
 object DownloadManager {
 
-    private const val MAX_PARALLEL = 2
+    private const val MAX_PARALLEL = 3
     private const val HISTORY_LIMIT = 100
     private val ITEM_REGEX = Regex("""Downloading item (\d+) of (\d+)""")
     private val SPEED_REGEX = Regex("""\bat\s+(\d+(?:\.\d+)?\s?[KMGT]?i?B/s)""")
@@ -258,6 +260,11 @@ object DownloadManager {
             addOption("--retries", "5")
             addOption("--fragment-retries", "5")
             addOption("--socket-timeout", "20")
+            // Tezlik sekinlashsa (<100 KB/s) yt-dlp havolani yangilab qayta urinadi
+            addOption("--throttled-rate", "100K")
+            // YouTube bo'laklab (chunk) yuklaganda tezlikni cheklashdan qochadi
+            val host = runCatching { Uri.parse(item.url).host?.lowercase() }.getOrNull().orEmpty()
+            if ("youtube" in host || "youtu.be" in host) addOption("--http-chunk-size", "10M")
             CookieStore.fileFor(item.url)?.let { addOption("--cookies", it.absolutePath) }
             addOption(if (item.playlist) "--yes-playlist" else "--no-playlist")
 
@@ -288,8 +295,7 @@ object DownloadManager {
             val mime = mimeOf(file)
             val target = DocumentsContract.createDocument(resolver, parent, mime, file.name)
                 ?: throw IllegalStateException("Tanlangan papkaga yozib bo'lmadi. Papkani qayta tanlang")
-            resolver.openOutputStream(target)?.use { out -> file.inputStream().use { it.copyTo(out) } }
-                ?: throw IllegalStateException("Faylni yozib bo'lmadi")
+            copyFast(file, target)
             target.toString() to mime
         }
     }
@@ -307,10 +313,38 @@ object DownloadManager {
             }
             val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
                 ?: throw IllegalStateException("Faylni saqlab bo'lmadi")
-            resolver.openOutputStream(uri)?.use { out -> file.inputStream().use { it.copyTo(out) } }
-                ?: throw IllegalStateException("Faylni yozib bo'lmadi")
+            copyFast(file, uri)
             resolver.update(uri, ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) }, null, null)
             uri.toString() to mime
         }
+    }
+
+    /** Faylni kernel darajasida (transferTo) ko'chiradi: oddiy oqim nusxasidan bir necha baravar tez. */
+    private fun copyFast(file: File, target: Uri) {
+        val resolver = app.contentResolver
+        val size = file.length()
+        var done = false
+        runCatching {
+            resolver.openFileDescriptor(target, "w")?.use { pfd ->
+                FileOutputStream(pfd.fileDescriptor).use { out ->
+                    FileInputStream(file).use { input ->
+                        val src = input.channel
+                        val dst = out.channel
+                        var pos = 0L
+                        while (pos < size) {
+                            val n = src.transferTo(pos, size - pos, dst)
+                            if (n <= 0) break
+                            pos += n
+                        }
+                        done = pos >= size
+                    }
+                }
+            }
+        }
+        if (done) return
+        // Zaxira yo'l: katta bufer bilan oddiy nusxa
+        resolver.openOutputStream(target, "wt")?.use { out ->
+            file.inputStream().use { it.copyTo(out, 1 shl 20) }
+        } ?: throw IllegalStateException("Faylni yozib bo'lmadi")
     }
 }
