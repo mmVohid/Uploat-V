@@ -132,6 +132,7 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     val clipboard = LocalClipboardManager.current
     val focus = LocalFocusManager.current
+    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
     val haptic = LocalHapticFeedback.current
     val engineState by produceState(0) {
         value = if (UploatApp.engineReady.isCompleted) 1 else 0
@@ -253,6 +254,7 @@ fun HomeScreen(
                                 interactionSource = dlSource,
                                 onClick = {
                                     focus.clearFocus()
+                                    keyboard?.hide()
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     vm.download()
                                 },
