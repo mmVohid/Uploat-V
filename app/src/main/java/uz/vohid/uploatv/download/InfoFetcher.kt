@@ -29,6 +29,8 @@ object InfoFetcher {
         EngineUpdater.healing(cancelled = { cancelled() || !ctx.isActive }) {
             val request = YoutubeDLRequest(url).apply {
                 addOption("--dump-single-json")
+                addOption("--socket-timeout", "20")
+                CookieStore.fileFor(url)?.let { addOption("--cookies", it.absolutePath) }
                 addOption("--flat-playlist")
                 addOption("--no-warnings")
                 if (noPlaylist) addOption("--no-playlist")

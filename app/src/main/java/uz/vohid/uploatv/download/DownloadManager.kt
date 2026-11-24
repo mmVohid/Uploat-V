@@ -253,7 +253,11 @@ object DownloadManager {
             addOption("-o", "${dir.absolutePath}/%(title).80s [%(id)s].%(ext)s")
             addOption("--no-mtime")
             addOption("--no-warnings")
-            addOption("--concurrent-fragments", "4")
+            addOption("--concurrent-fragments", "8")
+            addOption("--retries", "5")
+            addOption("--fragment-retries", "5")
+            addOption("--socket-timeout", "20")
+            CookieStore.fileFor(item.url)?.let { addOption("--cookies", it.absolutePath) }
             addOption(if (item.playlist) "--yes-playlist" else "--no-playlist")
 
             val h = item.quality.height

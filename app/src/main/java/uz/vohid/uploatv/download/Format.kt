@@ -36,7 +36,11 @@ fun describeTree(tree: android.net.Uri): String {
 /** yt-dlp xatosini foydalanuvchiga tushunarli qisqa matnga aylantiradi. */
 fun friendlyError(e: Throwable): String {
     val msg = e.message.orEmpty()
+    val low = msg.lowercase()
     return when {
+        "empty media response" in low || "login required" in low || "log in" in low ||
+            "logged-in" in low || "rate-limit reached" in low || "--cookies" in low ->
+            "Bu video uchun akkauntga kirish kerak. Sozlamalar → Akkauntlar bo'limidan kiring"
         "Unsupported URL" in msg -> "Bu havola qo'llab-quvvatlanmaydi"
         "Unable to resolve host" in msg || "Network is unreachable" in msg ||
             "Temporary failure" in msg || "timed out" in msg -> "Internet aloqasini tekshiring"

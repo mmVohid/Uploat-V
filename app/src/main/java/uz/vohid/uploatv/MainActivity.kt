@@ -59,6 +59,10 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.ui.unit.IntOffset
 import androidx.navigation.compose.NavHost
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import uz.vohid.uploatv.ui.AccountsScreen
+import uz.vohid.uploatv.ui.LoginWebScreen
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import uz.vohid.uploatv.ui.AboutScreen
@@ -252,6 +256,18 @@ private fun AppRoot(sharedUrl: String?, onSharedConsumed: () -> Unit) {
             composable(SettingsRoutes.ENGINE) { EngineScreen(settingsVm) { nav.popBackStack() } }
             composable(SettingsRoutes.DOWNLOAD) { DownloadSettingsScreen(settingsVm) { nav.popBackStack() } }
             composable(SettingsRoutes.ABOUT) { AboutScreen(settingsVm) { nav.popBackStack() } }
+            composable(SettingsRoutes.ACCOUNTS) {
+                AccountsScreen(
+                    onOpenLogin = { nav.navigate(SettingsRoutes.login(it)) },
+                    onBack = { nav.popBackStack() },
+                )
+            }
+            composable(
+                SettingsRoutes.LOGIN,
+                arguments = listOf(navArgument("site") { type = NavType.StringType }),
+            ) { entry ->
+                LoginWebScreen(siteKey = entry.arguments?.getString("site").orEmpty()) { nav.popBackStack() }
+            }
         }
     }
 }

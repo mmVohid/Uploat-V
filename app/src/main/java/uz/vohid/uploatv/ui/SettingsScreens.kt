@@ -37,6 +37,9 @@ import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material3.Card
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.rounded.AccountCircle
+import uz.vohid.uploatv.download.CookieStore
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -89,6 +92,9 @@ object SettingsRoutes {
     const val ENGINE = "settings/engine"
     const val DOWNLOAD = "settings/download"
     const val ABOUT = "settings/about"
+    const val ACCOUNTS = "settings/accounts"
+    const val LOGIN = "settings/login/{site}"
+    fun login(key: String) = "settings/login/$key"
 }
 
 // ======================= Asosiy ro'yxat =======================
@@ -124,6 +130,13 @@ fun SettingsMainScreen(vm: SettingsViewModel, onNavigate: (String) -> Unit, onBa
                     title = "Dvigatel",
                     subtitle = "yt-dlp ${engine.version ?: ""}".trim(),
                     onClick = { onNavigate(SettingsRoutes.ENGINE) },
+                )
+                CategoryDivider()
+                CategoryRow(
+                    icon = Icons.Rounded.AccountCircle,
+                    title = "Akkauntlar",
+                    subtitle = CookieStore.loggedCount().let { if (it == 0) "Instagram, Facebook, TikTok, X" else "$it ta akkaunt ulangan" },
+                    onClick = { onNavigate(SettingsRoutes.ACCOUNTS) },
                 )
                 CategoryDivider()
                 CategoryRow(
@@ -386,6 +399,34 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
             )
         }
 
+        SectionLabel("Fon rejimi")
+        SettingsCard {
+            val pm = remember { context.getSystemService(android.os.PowerManager::class.java) }
+            var unrestricted by remember { mutableStateOf(pm.isIgnoringBatteryOptimizations(context.packageName)) }
+            LifecycleResumeEffect(Unit) {
+                unrestricted = pm.isIgnoringBatteryOptimizations(context.packageName)
+                onPauseOrDispose { }
+            }
+            ClickableRow(
+                title = "Batareya cheklovisiz ishlash",
+                value = if (unrestricted) "Ruxsat berilgan" else "Cheklangan",
+                hint = "Ekran o'chiq paytda yuklash uzilib qolmasligi uchun ruxsat bering",
+                onClick = {
+                    if (!unrestricted) {
+                        val request = Intent(
+                            Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                            Uri.parse("package:${context.packageName}"),
+                        )
+                        runCatching { context.startActivity(request) }.onFailure {
+                            runCatching {
+                                context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                            }
+                        }
+                    }
+                },
+            )
+        }
+
         SectionLabel("Ma'lumotlar va xotira")
         SettingsCard {
             ClickableRow(
@@ -614,5 +655,114 @@ private fun InfoRow(title: String, value: String) {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+
+// ======================= Akkauntlar =======================
+
+@Composable
+fun AccountsScreen(onOpenLogin: (String) -> Unit, onBack: () -> Unit) {
+    var refresh by remember { mutableStateOf(0) }
+    LifecycleResumeEffect(Unit) {
+        refresh++
+        onPauseOrDispose { }
+    }
+    SettingsPage(title = "Akkauntlar", onBack = onBack) {
+        Text(
+            "Ba'zi saytlar (masalan Instagram) akkauntsiz video bermaydi. Shu yerda kirsangiz, " +
+                "ilova sizning nomingizdan yuklaydi. Parol saqlanmaydi, faqat kirish belgisi (cookie).",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 4.dp),
+        )
+        SettingsCard {
+            CookieStore.accounts.forEachIndexed { i, account ->
+                if (i > 0) HorizontalDivider(Modifier.padding(horizontal = 16.dp))
+                val logged = remember(refresh) { CookieStore.isLoggedIn(account) }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(account.name, style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            if (logged) "Kirilgan" else "Kirilmagan",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (logged) MaterialTheme.colorScheme.tertiary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    if (logged) {
+                        TextButton(onClick = {
+                            CookieStore.logout(account)
+                            refresh++
+                        }) { Text("Chiqish", color = MaterialTheme.colorScheme.error) }
+                    }
+                    FilledTonalButton(onClick = { onOpenLogin(account.key) }) {
+                        Text(if (logged) "Qayta kirish" else "Kirish")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LoginWebScreen(siteKey: String, onDone: () -> Unit) {
+    val account = CookieStore.byKey(siteKey)
+    val context = LocalContext.current
+    var failed by remember { mutableStateOf(false) }
+    if (account == null) {
+        LaunchedEffect(Unit) { onDone() }
+        return
+    }
+    Scaffold(
+        containerColor = Color.Transparent,
+        topBar = {
+            TopAppBar(
+                title = { Text(account.name) },
+                navigationIcon = {
+                    IconButton(onClick = onDone) {
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Orqaga")
+                    }
+                },
+                actions = {
+                    TextButton(onClick = {
+                        if (CookieStore.saveFromWebView(account)) onDone() else failed = true
+                    }) { Text("Tayyor") }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+            )
+        },
+    ) { pad ->
+        Column(Modifier.padding(pad).fillMaxSize()) {
+            if (failed) {
+                Text(
+                    "Hali kirilmagan ko'rinadi. Avval saytga kiring, so'ng \"Tayyor\" ni bosing.",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(16.dp, 4.dp),
+                )
+            }
+            androidx.compose.ui.viewinterop.AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { ctx ->
+                    android.webkit.WebView(ctx).apply {
+                        settings.javaScriptEnabled = true
+                        settings.domStorageEnabled = true
+                        val cm = android.webkit.CookieManager.getInstance()
+                        cm.setAcceptCookie(true)
+                        cm.setAcceptThirdPartyCookies(this, true)
+                        webViewClient = android.webkit.WebViewClient()
+                        loadUrl(account.loginUrl)
+                    }
+                },
+                onRelease = { it.destroy() },
+            )
+        }
     }
 }

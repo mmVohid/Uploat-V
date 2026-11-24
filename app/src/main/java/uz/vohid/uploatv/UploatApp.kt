@@ -17,6 +17,7 @@ class UploatApp : Application() {
     override fun onCreate() {
         super.onCreate()
         createChannels()
+        uz.vohid.uploatv.download.CookieStore.init(this)
         DownloadManager.init(this)
         EngineUpdater.init(this)
 
