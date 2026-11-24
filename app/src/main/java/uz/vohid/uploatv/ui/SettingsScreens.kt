@@ -837,22 +837,13 @@ fun PrivacyScreen(vm: SettingsViewModel, onOpenCookies: () -> Unit, onBack: () -
 // ======================= Foydalanish qo'llanmasi =======================
 
 private val GUIDE = listOf(
-    "1. Havola qo'shish" to "Videoning havolasini nusxalang. Uploat-V'da pastdagi «Havolani joylash» tugmasini bosing. " +
-        "Ilova videoni topadi va sifat tanlash ko'rinadi.",
-    "2. Ulashish orqali" to "Istalgan ilovada (YouTube, Instagram, brauzer…) «Ulashish» → «Uploat-V» ni tanlang: ilova ochiladi. " +
-        "«Tezkor yuklash» ni tanlasangiz, video orqa fonda avtomatik yuklanadi.",
-    "3. Sifat va hajm" to "Sifat tugmalarida taxminiy hajm ko'rsatiladi, masalan «720p · ~45 MB». Standart sifatni " +
-        "Ma'lumotlar va xotira bo'limidan o'zgartirasiz.",
-    "4. Playlist" to "Havola playlistga tegishli bo'lsa, «Butun playlistni yuklash» ni yoqing, aks holda faqat bitta video yuklanadi.",
-    "5. Yuklashlar ro'yxati" to "Kartochkada progress, tezlik va qolgan vaqt ko'rinadi. «Bekor qilish», «Qayta urinish» va «Ochish» " +
-        "tugmalari bor. Tugagan yuklashni chapga surib o'chirasiz, «Qaytarish» bilan tiklaysiz.",
-    "6. Saqlash joyi" to "Videolar standart holda Download/Uploat-V papkasiga tushadi. Boshqa papkani " +
-        "Ma'lumotlar va xotira → Saqlash joyi orqali tanlang.",
-    "7. Cookies (Instagram va boshqalar)" to "Ba'zi videolar akkauntsiz yuklanmaydi. Maxfiylik va xavfsizlik → Cookies " +
-        "bo'limida saytga kiring: shundan keyin o'sha saytning havolalari ishlaydi. Parol saqlanmaydi.",
-    "8. Xato chiqsa" to "Avval Dvigatel bo'limida yt-dlp'ni yangilang: saytlar tez-tez o'zgaradi. Keyin havolani qayta sinang.",
-    "9. Fonda uzilmasligi uchun" to "Ma'lumotlar va xotira → Batareya cheklovisiz ishlash ruxsatini bering, ekran o'chiq turganda ham yuklash davom etadi.",
-    "10. Maxfiylik" to "Inkognito yoqilsa, yuklashlar tarixda saqlanmaydi. Keshni Ma'lumotlar va xotira bo'limidan tozalaysiz.",
+    "1. Yuklash" to "Havolani nusxalang va «Havolani joylash» ni bosing, so'ng «Videoni yuklash». " +
+        "Yoki boshqa ilovada «Ulashish» → «Uploat-V».",
+    "2. Tezkor yuklash" to "Ulashishda «Tezkor yuklash» ni tanlasangiz, video ilovani ochmasdan fonda yuklanadi.",
+    "3. Yuklashlar" to "Pastdagi yuklashlar ikonkasi ro'yxatni ochadi. Bir vaqtda 2 ta video yuklanadi, qolganlari " +
+        "navbatda kutadi. Tugaganini chapga surib o'chirasiz.",
+    "4. Video ochilmasa" to "Instagram kabi saytlar uchun Maxfiylik va xavfsizlik → Cookies bo'limida saytga kiring.",
+    "5. Xato chiqsa" to "Dvigatel bo'limida yt-dlp'ni yangilang. Hal bo'lmasa, xatodagi «Nusxalash» ni bosib yuboring.",
 )
 
 @Composable

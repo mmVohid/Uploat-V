@@ -37,7 +37,7 @@ import java.util.concurrent.ConcurrentHashMap
  */
 object DownloadManager {
 
-    private const val MAX_PARALLEL = 5
+    private const val MAX_PARALLEL = 2
     private const val HISTORY_LIMIT = 100
     private val ITEM_REGEX = Regex("""Downloading item (\d+) of (\d+)""")
     private val SPEED_REGEX = Regex("""\bat\s+(\d+(?:\.\d+)?\s?[KMGT]?i?B/s)""")
@@ -271,17 +271,10 @@ object DownloadManager {
             addOption("-o", "${dir.absolutePath}/%(title).80s [%(id)s].%(ext)s")
             addOption("--no-mtime")
             addOption("--no-warnings")
-            // Bitta yuklashda to'liq tezlik (8 qism); bir nechta bo'lsa, tarmoq bo'linib ketmasligi uchun kamroq
-            val busy = _items.value.count { it.status == Status.RUNNING }
-            addOption("--concurrent-fragments", if (busy > 1) "4" else "8")
+            addOption("--concurrent-fragments", "4")
             addOption("--retries", "5")
             addOption("--fragment-retries", "5")
             addOption("--socket-timeout", "20")
-            // Tezlik sekinlashsa (<100 KB/s) yt-dlp havolani yangilab qayta urinadi
-            addOption("--throttled-rate", "100K")
-            // YouTube bo'laklab (chunk) yuklaganda tezlikni cheklashdan qochadi
-            val host = runCatching { Uri.parse(item.url).host?.lowercase() }.getOrNull().orEmpty()
-            if ("youtube" in host || "youtu.be" in host) addOption("--http-chunk-size", "10M")
             CookieStore.fileFor(item.url)?.let { addOption("--cookies", it.absolutePath) }
             addOption(if (item.playlist) "--yes-playlist" else "--no-playlist")
 
