@@ -67,6 +67,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import uz.vohid.uploatv.ui.CookiesScreen
+import uz.vohid.uploatv.ui.DownloadsScreen
 import uz.vohid.uploatv.ui.GuideScreen
 import uz.vohid.uploatv.ui.PrivacyScreen
 import uz.vohid.uploatv.ui.LoginWebScreen
@@ -276,9 +277,11 @@ private fun AppRoot(sharedUrl: String?, onSharedConsumed: () -> Unit) {
                 HomeScreen(
                     vm = homeVm,
                     snackbar = snackbar,
+                    onOpenDownloads = { nav.navigate("downloads") },
                     onOpenSettings = { nav.navigate(SettingsRoutes.MAIN) },
                 )
             }
+            composable("downloads") { DownloadsScreen(snackbar) { nav.popBackStack() } }
             composable(SettingsRoutes.MAIN) {
                 SettingsMainScreen(
                     vm = settingsVm,

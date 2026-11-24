@@ -113,6 +113,8 @@ import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.Tag
 import androidx.compose.material.icons.rounded.ThumbUp
 import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.runtime.produceState
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
@@ -128,7 +130,12 @@ import uz.vohid.uploatv.download.formatDuration
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(vm: HomeViewModel, snackbar: SnackbarHostState, onOpenSettings: () -> Unit) {
+fun HomeScreen(
+    vm: HomeViewModel,
+    snackbar: SnackbarHostState,
+    onOpenDownloads: () -> Unit,
+    onOpenSettings: () -> Unit,
+) {
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val ui by vm.ui.collectAsStateWithLifecycle()
     val items by DownloadManager.items.collectAsStateWithLifecycle()
@@ -141,7 +148,8 @@ fun HomeScreen(vm: HomeViewModel, snackbar: SnackbarHostState, onOpenSettings: (
         value = if (UploatApp.engineReady.isCompleted) 1 else 0
         value = if (runCatching { UploatApp.engineReady.await() }.isSuccess) 1 else 2
     }
-    val activeCount = items.count { it.isActive }
+    val activeItems = items.filter { it.isActive }
+    val activeCount = activeItems.size
     val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
 
     // Buferdagi havolani aniqlash (Android faqat oyna fokusda bo'lganda o'qishga ruxsat beradi)
@@ -179,7 +187,7 @@ fun HomeScreen(vm: HomeViewModel, snackbar: SnackbarHostState, onOpenSettings: (
             contentPadding = PaddingValues(
                 start = 16.dp,
                 end = 16.dp,
-                top = pad.calculateTopPadding() + 4.dp,
+                top = pad.calculateTopPadding() + 20.dp,
                 bottom = 104.dp + navBottom,
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -281,91 +289,26 @@ fun HomeScreen(vm: HomeViewModel, snackbar: SnackbarHostState, onOpenSettings: (
                 }
             }
 
-            item(key = "header") {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
+            if (activeItems.isNotEmpty()) {
+                item(key = "active-header") {
                     Text(
-                        text = "Yuklashlar",
+                        text = "Faol yuklashlar",
                         style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(start = 4.dp),
+                        modifier = Modifier.padding(start = 4.dp, top = 12.dp),
                     )
-                    if (items.any { !it.isActive }) {
-                        TextButton(onClick = DownloadManager::clearFinished) { Text("Tozalash") }
-                    }
                 }
-            }
-
-            if (items.isEmpty()) {
-                item(key = "empty") { EmptyState() }
-            } else {
-                itemsIndexed(items, key = { _, it -> it.id }) { index, item ->
-                    val dismissState = rememberSwipeToDismissBoxState(
-                        confirmValueChange = { value ->
-                            if (value == SwipeToDismissBoxValue.EndToStart && !item.isActive) {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                DownloadManager.remove(item.id)
-                                scope.launch {
-                                    val result = snackbar.showSnackbar(
-                                        message = "O'chirildi",
-                                        actionLabel = "Qaytarish",
-                                        duration = SnackbarDuration.Short,
-                                    )
-                                    if (result == SnackbarResult.ActionPerformed) DownloadManager.restore(item)
-                                }
-                                true
-                            } else {
-                                false
-                            }
-                        },
-                    )
-                    SwipeToDismissBox(
-                        state = dismissState,
+                items(activeItems, key = { it.id }) { item ->
+                    DownloadRow(
+                        item = item,
+                        onCancel = { DownloadManager.cancel(item.id) },
+                        onRetry = { DownloadManager.retry(item.id) },
+                        onOpen = { openFile(context, item) },
+                        onRemove = { DownloadManager.remove(item.id) },
                         modifier = Modifier.animateItem(),
-                        enableDismissFromStartToEnd = false,
-                        enableDismissFromEndToStart = !item.isActive,
-                        backgroundContent = {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .background(MaterialTheme.colorScheme.errorContainer)
-                                    .padding(end = 24.dp),
-                                contentAlignment = Alignment.CenterEnd,
-                            ) {
-                                Icon(
-                                    Icons.Rounded.Delete,
-                                    contentDescription = "O'chirish",
-                                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                                )
-                            }
-                        },
-                    ) {
-                        var shown by rememberSaveable(item.id) { mutableStateOf(index > 6) }
-                        LaunchedEffect(item.id) {
-                            if (!shown) {
-                                delay(index * 60L)
-                                shown = true
-                            }
-                        }
-                        AnimatedVisibility(
-                            visible = shown,
-                            enter = fadeIn(tween(350)) + slideInVertically(tween(350)) { it / 4 },
-                        ) {
-                            DownloadRow(
-                                item = item,
-                                onCancel = { DownloadManager.cancel(item.id) },
-                                onRetry = { DownloadManager.retry(item.id) },
-                                onOpen = { openFile(context, item) },
-                                onRemove = { DownloadManager.remove(item.id) },
-                            )
-                        }
-                    }
+                    )
                 }
+            } else if (ui.info == null && !ui.fetching && ui.error == null) {
+                item(key = "empty") { EmptyState() }
             }
         }
         AnimatedVisibility(
@@ -374,7 +317,13 @@ fun HomeScreen(vm: HomeViewModel, snackbar: SnackbarHostState, onOpenSettings: (
             enter = fadeIn() + slideInVertically { it },
             exit = fadeOut() + slideOutVertically { it },
         ) {
-            FloatingBar(onPaste = pasteFromClipboard, onSettings = onOpenSettings, hazeState = listHaze)
+            FloatingBar(
+                onPaste = pasteFromClipboard,
+                onDownloads = onOpenDownloads,
+                onSettings = onOpenSettings,
+                activeCount = activeCount,
+                hazeState = listHaze,
+            )
         }
       }
     }
@@ -555,9 +504,16 @@ private fun HomeHeader(engineState: Int, activeCount: Int) {
 }
 
 @Composable
-private fun FloatingBar(onPaste: () -> Unit, onSettings: () -> Unit, hazeState: HazeState) {
+private fun FloatingBar(
+    onPaste: () -> Unit,
+    onDownloads: () -> Unit,
+    onSettings: () -> Unit,
+    activeCount: Int,
+    hazeState: HazeState,
+) {
     val pasteSource = remember { MutableInteractionSource() }
     val setSource = remember { MutableInteractionSource() }
+    val dlSource = remember { MutableInteractionSource() }
     Row(
         modifier = Modifier
             .navigationBarsPadding()
@@ -578,7 +534,18 @@ private fun FloatingBar(onPaste: () -> Unit, onSettings: () -> Unit, hazeState: 
         ) {
             Icon(Icons.Rounded.ContentPaste, contentDescription = null)
             Spacer(Modifier.width(8.dp))
-            Text("Havolani joylash", style = MaterialTheme.typography.titleMedium)
+            Text("Havolani joylash", style = MaterialTheme.typography.titleMedium, maxLines = 1)
+        }
+        FilledTonalIconButton(
+            onClick = onDownloads,
+            interactionSource = dlSource,
+            modifier = Modifier
+                .size(52.dp)
+                .pressScale(dlSource),
+        ) {
+            BadgedBox(badge = { if (activeCount > 0) Badge { Text("$activeCount") } }) {
+                Icon(Icons.Rounded.Download, contentDescription = "Yuklashlar")
+            }
         }
         FilledTonalIconButton(
             onClick = onSettings,
@@ -689,7 +656,7 @@ private fun EmptyState() {
             )
         }
         Spacer(Modifier.height(4.dp))
-        Text("Hozircha yuklashlar yo'q", style = MaterialTheme.typography.titleMedium)
+        Text("Havola qo'shing", style = MaterialTheme.typography.titleMedium)
         Text(
             text = "Havolani nusxalang va pastdagi tugmani bosing yoki boshqa ilovadan «Ulashish» orqali yuboring",
             style = MaterialTheme.typography.bodyMedium,
@@ -700,7 +667,7 @@ private fun EmptyState() {
     }
 }
 
-private fun openFile(context: android.content.Context, item: DownloadItem) {
+internal fun openFile(context: android.content.Context, item: DownloadItem) {
     val uri = item.savedUri?.let(Uri::parse) ?: return
     val intent = Intent(Intent.ACTION_VIEW)
         .setDataAndType(uri, item.mime ?: "*/*")
