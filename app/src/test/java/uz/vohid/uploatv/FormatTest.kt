@@ -62,8 +62,8 @@ class FormatTest {
         assertEquals("Internet aloqasini tekshiring", err("Unable to resolve host \"x\""))
         assertTrue(isNetworkFailure(RuntimeException("Connection reset by peer")))
         assertTrue(isNetworkFailure(OfflineException()))
-        assertTrue(isNetworkFailure(NetworkModeException(NetworkMode.WIFI))
-        assertTrue(isNetworkFailure(NetworkModeException(NetworkMode.MOBILE))))
+        assertTrue(isNetworkFailure(NetworkModeException(NetworkMode.WIFI)))
+        assertTrue(isNetworkFailure(NetworkModeException(NetworkMode.MOBILE)))
         assertFalse(isNetworkFailure(RuntimeException("ERROR: Private video")))
     }
 
