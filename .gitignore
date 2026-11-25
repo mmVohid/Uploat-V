@@ -12,3 +12,7 @@ app/build/
 *.aab
 *.jks
 *.keystore
+/.kotlin/
+*.hprof
+*.log
+*.pcap
