@@ -522,6 +522,25 @@ fun AboutScreen(vm: SettingsViewModel, onOpenGuide: () -> Unit, onBack: () -> Un
     val context = LocalContext.current
 
     SettingsPage(title = "Ilova haqida", onBack = onBack) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            androidx.compose.foundation.Image(
+                painter = androidx.compose.ui.res.painterResource(uz.vohid.uploatv.R.drawable.vohid_logo),
+                contentDescription = "Vohid logosi",
+                modifier = Modifier.size(112.dp),
+                filterQuality = androidx.compose.ui.graphics.FilterQuality.None,
+            )
+            Text("Vohid", style = MaterialTheme.typography.headlineSmall)
+            Text(
+                "Uploat-V · ${BuildConfig.VERSION_NAME}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
         SettingsCard {
             InfoRow("Uploat-V", "Versiya ${BuildConfig.VERSION_NAME}")
             InfoRow("Dvigatel", "yt-dlp asosida video yuklovchi")

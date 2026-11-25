@@ -658,20 +658,13 @@ private fun EmptyState() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .size(88.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.CloudDownload,
-                contentDescription = null,
-                modifier = Modifier.size(44.dp),
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
-        }
+        androidx.compose.foundation.Image(
+            painter = androidx.compose.ui.res.painterResource(uz.vohid.uploatv.R.drawable.vohid_logo),
+            contentDescription = null,
+            modifier = Modifier.size(132.dp),
+            // Piksel uslubi tiniq qolishi uchun yumshatilmaydi
+            filterQuality = androidx.compose.ui.graphics.FilterQuality.None,
+        )
         Spacer(Modifier.height(4.dp))
         Text("Havola qo'shing", style = MaterialTheme.typography.titleMedium)
         Text(
