@@ -45,14 +45,3 @@ jobs:
           gh release create "v1.0.${{ github.run_number }}" Uploat-V.apk --latest \
             --title "Uploat-V 1.0.${{ github.run_number }}" \
             --notes "Avtomatik build: ${GITHUB_SHA::7}"
-
-      # feature/home-settings: bitta "beta" pre-release, har pushda yangilanadi.
-      - name: Publish beta
-        if: github.ref == 'refs/heads/feature/home-settings' && github.event_name == 'push'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release delete beta --cleanup-tag --yes || true
-          gh release create beta Uploat-V.apk --prerelease --target "$GITHUB_SHA" \
-            --title "Uploat-V beta (build ${{ github.run_number }})" \
-            --notes "Sinov versiyasi. Branch: feature/home-settings, commit: ${GITHUB_SHA::7}"

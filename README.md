@@ -59,11 +59,7 @@ JDK 17 kerak. Loyiha GitHub Actions'da avtomatik yig'iladi (`.github/workflows/b
 
 ## Branch va release
 
-| Branch | Natija |
-|---|---|
-| `main` | Har push uchun alohida release (`v1.0.<build>`), `latest` belgisi bilan |
-| `feature/home-settings` | Yagona `beta` pre-release, har push'da yangilanadi |
-| boshqalari | APK faqat Actions → Artifacts bo'limida |
+Loyihada bitta asosiy branch bor: `main`. Unga push qilinganda GitHub Actions testlarni o'tkazadi, APK yig'adi va **Releases** bo'limiga `v1.0.<build>` nomi bilan, `latest` belgisi bilan joylaydi. Boshqa branch'larda APK faqat Actions → Artifacts bo'limida bo'ladi.
 
 ## Tuzilma
 
