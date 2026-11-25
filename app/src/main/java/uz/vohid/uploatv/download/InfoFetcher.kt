@@ -22,7 +22,6 @@ object InfoFetcher {
         processId: String = PROCESS_ID,
         cancelled: () -> Boolean = { false },
     ): MediaInfo = withContext(Dispatchers.IO) {
-        EngineHook.engine?.let { return@withContext it.fetch(url) }
         Preflight.requireOnline()
         UploatApp.engineReady.await()
         EngineUpdater.waitIdle()

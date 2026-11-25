@@ -293,45 +293,39 @@ object DownloadManager {
         }
 
         try {
-            val test = EngineHook.engine
-            if (test != null) {
+            val s = SettingsRepository(app).settings.first()
+            Preflight.requireOnline(s.wifiOnly)
+            Preflight.requireStorage()
+            UploatApp.engineReady.await()
+            EngineUpdater.waitIdle()
+            CookieStore.prepareIfEnabled(item.url)
+
+            // yt-dlp eskirgan bo'lsa (sayt o'zgargan), dvigatel yangilanib bir marta qayta uriniladi
+            EngineUpdater.healing(cancelled = { get(id)?.status == Status.CANCELED }) {
                 dir.mkdirs()
-                test.download(item.url, dir) { p -> mutate(id) { it.copy(progress = maxOf(it.progress, p)) } }
-            } else {
-                val s = SettingsRepository(app).settings.first()
-                Preflight.requireOnline(s.wifiOnly)
-                Preflight.requireStorage()
-                UploatApp.engineReady.await()
-                EngineUpdater.waitIdle()
-                CookieStore.prepareIfEnabled(item.url)
+                mutate(id) { it.copy(progress = 0f, detail = "Boshlanmoqda…") }
 
-                // yt-dlp eskirgan bo'lsa (sayt o'zgargan), dvigatel yangilanib bir marta qayta uriniladi
-                EngineUpdater.healing(cancelled = { get(id)?.status == Status.CANCELED }) {
-                    dir.mkdirs()
-                    mutate(id) { it.copy(progress = 0f, detail = "Boshlanmoqda…") }
-
-                    var index = 1
-                    var total = 1
-                    var speed: String? = null
-                    YoutubeDL.getInstance().execute(buildRequest(item, dir), id) { percent, eta, line ->
-                        ITEM_REGEX.find(line)?.let {
-                            index = it.groupValues[1].toInt()
-                            total = it.groupValues[2].toInt()
+                var index = 1
+                var total = 1
+                var speed: String? = null
+                YoutubeDL.getInstance().execute(buildRequest(item, dir), id) { percent, eta, line ->
+                    ITEM_REGEX.find(line)?.let {
+                        index = it.groupValues[1].toInt()
+                        total = it.groupValues[2].toInt()
+                    }
+                    SPEED_REGEX.find(line)?.let { speed = it.groupValues[1].replace("iB", "B") }
+                    if (percent >= 0f) {
+                        val overall = if (total > 1) ((index - 1) + percent / 100f) / total else percent / 100f
+                        val parts = buildList {
+                            if (total > 1) add("$index/$total")
+                            speed?.let { add(it) }
+                            if (eta > 0) add("${formatEta(eta)} qoldi")
                         }
-                        SPEED_REGEX.find(line)?.let { speed = it.groupValues[1].replace("iB", "B") }
-                        if (percent >= 0f) {
-                            val overall = if (total > 1) ((index - 1) + percent / 100f) / total else percent / 100f
-                            val parts = buildList {
-                                if (total > 1) add("$index/$total")
-                                speed?.let { add(it) }
-                                if (eta > 0) add("${formatEta(eta)} qoldi")
-                            }
-                            mutate(id) {
-                                it.copy(
-                                    progress = maxOf(it.progress, overall.coerceIn(0f, 1f)),
-                                    detail = parts.joinToString(" · "),
-                                )
-                            }
+                        mutate(id) {
+                            it.copy(
+                                progress = maxOf(it.progress, overall.coerceIn(0f, 1f)),
+                                detail = parts.joinToString(" · "),
+                            )
                         }
                     }
                 }
