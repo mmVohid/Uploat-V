@@ -46,12 +46,14 @@
 
 <table>
   <tr>
-    <td align="center" valign="top"><img src="docs/screenshots/6-maxfiylik.jpg" width="220" alt="Maxfiylik va xavfsizlik"></td>
-    <td align="center" valign="top"><img src="docs/screenshots/7-dvigatel.jpg" width="220" alt="Dvigatel"></td>
-    <td align="center" valign="top"><img src="docs/screenshots/8-malumotlar.jpg" width="220" alt="Ma'lumotlar va xotira"></td>
-    <td align="center" valign="top"><img src="docs/screenshots/9-ilova-haqida.jpg" width="220" alt="Ilova haqida"></td>
+    <td align="center" valign="top"><img src="docs/screenshots/10-mavzu.jpg" width="170" alt="Mavzu"></td>
+    <td align="center" valign="top"><img src="docs/screenshots/6-maxfiylik.jpg" width="170" alt="Maxfiylik va xavfsizlik"></td>
+    <td align="center" valign="top"><img src="docs/screenshots/7-dvigatel.jpg" width="170" alt="Dvigatel"></td>
+    <td align="center" valign="top"><img src="docs/screenshots/8-malumotlar.jpg" width="170" alt="Ma'lumotlar va xotira"></td>
+    <td align="center" valign="top"><img src="docs/screenshots/9-ilova-haqida.jpg" width="170" alt="Ilova haqida"></td>
   </tr>
   <tr>
+    <td align="center">Mavzu</td>
     <td align="center">Maxfiylik va xavfsizlik</td>
     <td align="center">Dvigatel</td>
     <td align="center">Ma'lumotlar va xotira</td>
