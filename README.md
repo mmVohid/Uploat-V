@@ -49,7 +49,7 @@
   </tr>
 </table>
 
-<sub>Rasmlar GitHub mavzusiga qarab yorug' yoki qorong'i ko'rinadi.</sub>
+<sub>Rasmlar GitHub mavzusiga qarab yorug' yoki qorong'i ko'rinadi. Namuna video: Blender Foundation kanalidan.</sub>
 
 <details>
 <summary><b>Sozlamalar skrinshotlari</b></summary>
