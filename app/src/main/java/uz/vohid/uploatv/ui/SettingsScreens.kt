@@ -106,8 +106,22 @@ object SettingsRoutes {
 fun SettingsMainScreen(vm: SettingsViewModel, onNavigate: (String) -> Unit, onBack: () -> Unit) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val engine by vm.engine.collectAsStateWithLifecycle()
+    val banner by EngineWatch.banner.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    var batteryOk by remember { mutableStateOf(isBatteryUnrestricted(context)) }
+    LifecycleResumeEffect(Unit) {
+        batteryOk = isBatteryUnrestricted(context)
+        EngineWatch.check()
+        onPauseOrDispose { }
+    }
 
     SettingsPage(title = "Sozlamalar", onBack = onBack) {
+        if (!batteryOk) {
+            BatteryCard(onAllow = { requestBatteryUnrestricted(context) })
+        }
+        if (banner.phase != BannerPhase.HIDDEN) {
+            EngineBanner(state = banner, onUpdate = EngineWatch::update, onDismiss = EngineWatch::dismiss)
+        }
         Card(
             modifier = Modifier.fillMaxWidth().glass(RoundedCornerShape(28.dp)),
             shape = RoundedCornerShape(28.dp),
@@ -416,10 +430,9 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
 
         SectionLabel("Fon rejimi")
         SettingsCard {
-            val pm = remember { context.getSystemService(android.os.PowerManager::class.java) }
-            var unrestricted by remember { mutableStateOf(pm.isIgnoringBatteryOptimizations(context.packageName)) }
+            var unrestricted by remember { mutableStateOf(isBatteryUnrestricted(context)) }
             LifecycleResumeEffect(Unit) {
-                unrestricted = pm.isIgnoringBatteryOptimizations(context.packageName)
+                unrestricted = isBatteryUnrestricted(context)
                 onPauseOrDispose { }
             }
             SwitchRow(
@@ -432,15 +445,7 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
                 checked = unrestricted,
                 onChange = { want ->
                     if (want) {
-                        val request = Intent(
-                            Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
-                            Uri.parse("package:${context.packageName}"),
-                        )
-                        runCatching { context.startActivity(request) }.onFailure {
-                            runCatching {
-                                context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
-                            }
-                        }
+                        requestBatteryUnrestricted(context)
                     } else {
                         // Android ilovaga cheklovni o'zi qaytarishga ruxsat bermaydi: tizim ro'yxati ochiladi
                         runCatching {

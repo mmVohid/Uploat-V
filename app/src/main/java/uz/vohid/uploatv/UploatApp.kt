@@ -22,6 +22,7 @@ class UploatApp : Application() {
         uz.vohid.uploatv.download.ErrorLog.init(this)
         DownloadManager.init(this)
         EngineUpdater.init(this)
+        uz.vohid.uploatv.ui.EngineWatch.init(this)
 
         // Dvigatel (Python + yt-dlp + ffmpeg) birinchi ishga tushishda ochiladi, shu sabab fonda
         CoroutineScope(Dispatchers.IO).launch {
