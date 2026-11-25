@@ -49,11 +49,12 @@ jobs:
       - name: Imzo kalitini tayyorlash
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: |
           if [ -n "$KEYSTORE_BASE64" ]; then
             echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/uploatv.jks"
             echo "KEYSTORE_FILE=$RUNNER_TEMP/uploatv.jks" >> "$GITHUB_ENV"
-            echo "Doimiy kalit ishlatiladi"
+            echo "Doimiy kalit ishlatiladi (parol uzunligi: ${#KEYSTORE_PASSWORD}, kutilgan: 24)"
           else
             echo "::warning::KEYSTORE_BASE64 yo'q: debug kaliti ishlatiladi, yangilash o'rnatishda muammo bo'lishi mumkin"
           fi

@@ -25,7 +25,7 @@ android {
     // Doimiy imzo kaliti: CI uni GitHub Secrets'dan oladi (KEYSTORE_FILE, KEYSTORE_PASSWORD).
     // Kalit bo'lmasa (masalan, lokal build), debug kaliti ishlatiladi.
     val releaseKeystore = System.getenv("KEYSTORE_FILE")?.takeIf { it.isNotBlank() }?.let { file(it) }
-    val releasePassword = System.getenv("KEYSTORE_PASSWORD")?.takeIf { it.isNotBlank() }
+    val releasePassword = System.getenv("KEYSTORE_PASSWORD")?.trim()?.takeIf { it.isNotEmpty() }
     val hasReleaseKey = releaseKeystore?.exists() == true && releasePassword != null
 
     signingConfigs {
