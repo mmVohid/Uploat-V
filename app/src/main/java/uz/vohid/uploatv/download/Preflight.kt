@@ -4,10 +4,17 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.StatFs
+import uz.vohid.uploatv.data.NetworkMode
 
 class OfflineException : Exception("Internet yo'q. Ulanishni tekshiring")
 
-class WifiOnlyException : Exception("Faqat Wi‑Fi rejimi yoqilgan. Wi‑Fi'ga ulansangiz yuklash davom etadi")
+class NetworkModeException(val mode: NetworkMode) : Exception(
+    when (mode) {
+        NetworkMode.WIFI -> "Faqat Wi‑Fi rejimi yoqilgan. Wi‑Fi'ga ulansangiz yuklash davom etadi"
+        NetworkMode.MOBILE -> "Faqat mobil internet rejimi yoqilgan. Mobil internetni yoqsangiz yuklash davom etadi"
+        NetworkMode.ANY -> "Internet yo'q. Ulanishni tekshiring"
+    },
+)
 
 class StorageLowException(freeMb: Long) :
     Exception("Xotira yetarli emas: ${freeMb} MB bo'sh qoldi. Joy bo'shatib qayta urinib ko'ring")
@@ -21,11 +28,14 @@ object Preflight {
         app = context.applicationContext
     }
 
-    fun requireOnline(wifiOnly: Boolean = false) {
+    fun requireOnline(mode: NetworkMode = NetworkMode.ANY) {
         val cm = app.getSystemService(ConnectivityManager::class.java)
         val caps = cm.activeNetwork?.let { cm.getNetworkCapabilities(it) }
         if (caps == null || !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) throw OfflineException()
-        if (wifiOnly && !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)) throw WifiOnlyException()
+        val wifi = caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+        val mobile = caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+        if ((mode == NetworkMode.WIFI && !wifi) || (mode == NetworkMode.MOBILE && !mobile)) throw NetworkModeException(mode)
     }
 
     fun requireStorage() {

@@ -5,7 +5,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uz.vohid.uploatv.download.OfflineException
-import uz.vohid.uploatv.download.WifiOnlyException
+import uz.vohid.uploatv.data.NetworkMode
+import uz.vohid.uploatv.download.NetworkModeException
 import uz.vohid.uploatv.download.formatBytes
 import uz.vohid.uploatv.download.formatEta
 import uz.vohid.uploatv.download.friendlyError
@@ -61,7 +62,8 @@ class FormatTest {
         assertEquals("Internet aloqasini tekshiring", err("Unable to resolve host \"x\""))
         assertTrue(isNetworkFailure(RuntimeException("Connection reset by peer")))
         assertTrue(isNetworkFailure(OfflineException()))
-        assertTrue(isNetworkFailure(WifiOnlyException()))
+        assertTrue(isNetworkFailure(NetworkModeException(NetworkMode.WIFI))
+        assertTrue(isNetworkFailure(NetworkModeException(NetworkMode.MOBILE))))
         assertFalse(isNetworkFailure(RuntimeException("ERROR: Private video")))
     }
 

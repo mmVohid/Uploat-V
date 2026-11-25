@@ -294,7 +294,7 @@ object DownloadManager {
 
         try {
             val s = SettingsRepository(app).settings.first()
-            Preflight.requireOnline(s.wifiOnly)
+            Preflight.requireOnline(s.networkMode)
             Preflight.requireStorage()
             UploatApp.engineReady.await()
             EngineUpdater.waitIdle()

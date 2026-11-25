@@ -4,9 +4,25 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Bulut; ichidagi pastga o'q teshik (evenOdd) bo'lib, monoxrom rejimda ham o'qiladi -->
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:fillType="evenOdd"
-        android:pathData="M40,68 C31,68 25,62 25,55 C25,48 31,43 38,43 C40,35 47,30 55,30 C65,30 72,37 73,46 C80,47 84,52 84,58 C84,64 79,68 72,68 Z M50,40 L58,40 L58,54 L65,54 L54,65 L43,54 L50,54 Z" />
+    <!-- Kontur bulut va ikki yo'nalishli o'q (yuklash/yuborish). Chiziqli, monoxrom rejimda ham o'qiladi -->
+    <group android:translateX="-3">
+        <path
+            android:pathData="M35,69 L76,69 C85,69 90,63 90,56 C90,49 85,44 78,44 C76,35 68,29 58,29 C48,29 40,35 38,44 C30,44 24,49 24,57 C24,64 28,69 35,69 Z"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="4.6"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M45,63 L45,46 M39,52 L45,46 L51,52"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="4.6"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M65,46 L65,63 M59,57 L65,63 L71,57"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="4.6"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+    </group>
 </vector>

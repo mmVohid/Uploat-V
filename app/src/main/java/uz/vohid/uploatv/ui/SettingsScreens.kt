@@ -1,6 +1,10 @@
 package uz.vohid.uploatv.ui
 
 import android.content.Intent
+import androidx.core.app.ActivityCompat
+import android.os.Build
+import android.app.Activity
+import android.Manifest
 import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -208,40 +212,63 @@ private fun NotificationsSection(vm: SettingsViewModel) {
         onPauseOrDispose { }
     }
 
+    val openNotificationSettings = {
+        context.startActivity(
+            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+        )
+    }
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        enabled = NotificationManagerCompat.from(context).areNotificationsEnabled()
+        // Ikki marta rad etilgan bo'lsa tizim oynasi endi chiqmaydi: sozlamalar ochiladi
+        val activity = context as? Activity
+        if (!granted && activity != null &&
+            !ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.POST_NOTIFICATIONS)
+        ) openNotificationSettings()
+    }
+
     SectionLabel("Bildirishnomalar")
     run {
         SettingsCard {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text("Bildirishnoma ruxsati", style = MaterialTheme.typography.bodyLarge)
-                    Text(
-                        text = if (enabled) "Yoqilgan" else "O'chirilgan: yuklash jarayoni ko'rinmaydi",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (enabled) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.error
-                        },
-                    )
-                }
-                FilledTonalButton(onClick = {
-                    context.startActivity(
-                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                            .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    )
-                }) { Text("Sozlash") }
-            }
+            SwitchRow(
+                title = "Bildirishnoma ruxsati",
+                subtitle = if (enabled) "Yoqilgan" else "O'chirilgan: yuklash jarayoni ko'rinmaydi",
+                checked = enabled,
+                onChange = { want ->
+                    if (want && Build.VERSION.SDK_INT >= 33) {
+                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        openNotificationSettings()
+                    }
+                },
+            )
             SwitchRow(
                 title = "Yuklash tugaganda xabar berish",
                 subtitle = "Barcha yuklashlar tugagach bildirishnoma chiqadi",
                 checked = settings.notifyOnDone,
                 onChange = vm::setNotifyOnDone,
+            )
+        }
+    }
+}
+
+@Composable
+private fun NetworkChoiceRow(title: String, subtitle: String, selected: Boolean, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        androidx.compose.material3.RadioButton(selected = selected, onClick = onClick)
+        Column(Modifier.weight(1f).padding(start = 8.dp)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -395,12 +422,16 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
                 unrestricted = pm.isIgnoringBatteryOptimizations(context.packageName)
                 onPauseOrDispose { }
             }
-            ClickableRow(
+            SwitchRow(
                 title = "Batareya cheklovisiz ishlash",
-                value = if (unrestricted) "Ruxsat berilgan" else "Cheklangan",
-                hint = "Ekran o'chiq paytda yuklash uzilib qolmasligi uchun ruxsat bering",
-                onClick = {
-                    if (!unrestricted) {
+                subtitle = if (unrestricted) {
+                    "Yoqilgan. O'chirish uchun tizim ro'yxatidan «Optimallashtirish»ni tanlang"
+                } else {
+                    "Ekran o'chiq paytda yuklash uzilib qolmasligi uchun yoqing"
+                },
+                checked = unrestricted,
+                onChange = { want ->
+                    if (want) {
                         val request = Intent(
                             Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
                             Uri.parse("package:${context.packageName}"),
@@ -410,6 +441,11 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
                                 context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
                             }
                         }
+                    } else {
+                        // Android ilovaga cheklovni o'zi qaytarishga ruxsat bermaydi: tizim ro'yxati ochiladi
+                        runCatching {
+                            context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                        }
                     }
                 },
             )
@@ -417,12 +453,14 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
 
         SectionLabel("Tarmoq")
         SettingsCard {
-            SwitchRow(
-                title = "Faqat Wi‑Fi'da yuklash",
-                subtitle = "Mobil internet sarflanmaydi. Wi‑Fi'ga ulansangiz yuklash o'zi davom etadi",
-                checked = settings.wifiOnly,
-                onChange = vm::setWifiOnly,
-            )
+            uz.vohid.uploatv.data.NetworkMode.entries.forEach { mode ->
+                NetworkChoiceRow(
+                    title = mode.label,
+                    subtitle = mode.hint,
+                    selected = settings.networkMode == mode,
+                    onClick = { vm.setNetworkMode(mode) },
+                )
+            }
         }
 
         NotificationsSection(vm)

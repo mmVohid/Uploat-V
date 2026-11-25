@@ -14,6 +14,12 @@ enum class Quality(val label: String, val height: Int?) {
     P360("360p", 360),
 }
 
+enum class NetworkMode(val label: String, val hint: String) {
+    ANY("Wi‑Fi va mobil internet", "Qaysi biri ulangan bo'lsa, o'sha orqali yuklanadi"),
+    WIFI("Faqat Wi‑Fi", "Mobil internet sarflanmaydi. Wi‑Fi'ga ulansangiz yuklash davom etadi"),
+    MOBILE("Faqat mobil internet", "Wi‑Fi'da yuklanmaydi. Mobil internet yoqilganda davom etadi"),
+}
+
 enum class Retention(val label: String, val millis: Long?) {
     FOREVER("Cheksiz", null),
     DAYS_30("30 kun", 30L * 24 * 3600 * 1000),
@@ -44,8 +50,8 @@ data class AppSettings(
     val ytdlpNightly: Boolean = false,
     /** Foydalanuvchi yopib qo'ygan dvigatel versiyasi: shu versiya uchun taklif qayta chiqmaydi. */
     val engineBannerDismissed: String = "",
-    /** Faqat Wi‑Fi (o'lchanmaydigan tarmoq) orqali yuklash. */
-    val wifiOnly: Boolean = false,
+    /** Yuklash qaysi tarmoq orqali bo'lishi. */
+    val networkMode: NetworkMode = NetworkMode.ANY,
     /** Tugagan yuklashlar ro'yxati qancha vaqt saqlanadi. */
     val historyRetention: Retention = Retention.FOREVER,
 )

@@ -25,7 +25,8 @@ class SettingsRepository(private val context: Context) {
         val INCOGNITO = booleanPreferencesKey("incognito")
         val AUTO_COOKIES = booleanPreferencesKey("auto_cookies")
         val YTDLP_NIGHTLY = booleanPreferencesKey("ytdlp_nightly")
-        val WIFI_ONLY = booleanPreferencesKey("wifi_only")
+        val WIFI_ONLY = booleanPreferencesKey("wifi_only") // eski sozlama: faqat ko'chirish uchun
+        val NETWORK_MODE = stringPreferencesKey("network_mode")
         val ENGINE_BANNER_DISMISSED = stringPreferencesKey("engine_banner_dismissed")
         val RETENTION = stringPreferencesKey("history_retention")
     }
@@ -44,7 +45,9 @@ class SettingsRepository(private val context: Context) {
             incognito = p[Keys.INCOGNITO] ?: false,
             autoCookies = p[Keys.AUTO_COOKIES] ?: false,
             ytdlpNightly = p[Keys.YTDLP_NIGHTLY] ?: false,
-            wifiOnly = p[Keys.WIFI_ONLY] ?: false,
+            networkMode = p[Keys.NETWORK_MODE].toEnum(
+                if (p[Keys.WIFI_ONLY] == true) NetworkMode.WIFI else NetworkMode.ANY,
+            ),
             engineBannerDismissed = p[Keys.ENGINE_BANNER_DISMISSED] ?: "",
             historyRetention = p[Keys.RETENTION].toEnum(Retention.FOREVER),
         )
@@ -58,7 +61,7 @@ class SettingsRepository(private val context: Context) {
     }
     suspend fun setYtdlpNightly(on: Boolean) = context.dataStore.edit { it[Keys.YTDLP_NIGHTLY] = on }
     suspend fun setEngineBannerDismissed(tag: String) = context.dataStore.edit { it[Keys.ENGINE_BANNER_DISMISSED] = tag }
-    suspend fun setWifiOnly(on: Boolean) = context.dataStore.edit { it[Keys.WIFI_ONLY] = on }
+    suspend fun setNetworkMode(m: NetworkMode) = context.dataStore.edit { it[Keys.NETWORK_MODE] = m.name }
     suspend fun setRetention(r: Retention) = context.dataStore.edit { it[Keys.RETENTION] = r.name }
     suspend fun setAutoCookies(on: Boolean) = context.dataStore.edit { it[Keys.AUTO_COOKIES] = on }
 

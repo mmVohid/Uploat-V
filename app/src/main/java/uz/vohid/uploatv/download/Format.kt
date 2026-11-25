@@ -35,7 +35,7 @@ fun describeTree(tree: android.net.Uri): String {
 
 /** yt-dlp xatosini foydalanuvchiga tushunarli qisqa matnga aylantiradi. */
 fun friendlyError(e: Throwable): String {
-    if (e is OfflineException || e is StorageLowException || e is WifiOnlyException) return e.message.orEmpty()
+    if (e is OfflineException || e is StorageLowException || e is NetworkModeException) return e.message.orEmpty()
     val msg = e.message.orEmpty()
     val low = msg.lowercase()
     return when {
@@ -76,7 +76,7 @@ private fun isNetworkText(low: String) =
 
 /** Xato internet bilan bog'liqmi (shunda internet qaytganda yuklash o'zi davom etadi). */
 fun isNetworkFailure(e: Throwable): Boolean =
-    e is OfflineException || e is WifiOnlyException || isNetworkText(e.message.orEmpty().lowercase())
+    e is OfflineException || e is NetworkModeException || isNetworkText(e.message.orEmpty().lowercase())
 
 /** Sayt akkaunt/cookie talab qilgan xato belgilari. */
 fun isLoginError(msg: String): Boolean {
