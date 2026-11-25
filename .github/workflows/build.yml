@@ -6,19 +6,31 @@ on:
     tags: ["v*"]
   pull_request:
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Release versiyasi (masalan 1.0.0). Bo'sh qoldirilsa, faqat APK yig'iladi"
+        required: false
+        default: ""
 
 permissions:
   contents: write
-
-env:
-  # v1.0.0 tagi -> ilova versiyasi 1.0.0; tagsiz build'lar "dev.<raqam>" bo'ladi
-  VERSION_NAME: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '' }}
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # v1.0.0 tagi yoki qo'lda kiritilgan versiya -> ilova versiyasi 1.0.0 va release.
+      # Ikkalasi ham bo'lmasa, build "dev.<raqam>" versiyasi bilan faqat APK beradi.
+      - name: Versiyani aniqlash
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then V="${GITHUB_REF_NAME#v}"
+          else V="$INPUT_VERSION"; fi
+          [[ -z "$V" || "$V" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Versiya noto'g'ri: $V"; exit 1; }
+          echo "VERSION_NAME=$V" >> "$GITHUB_ENV"
 
       - uses: actions/setup-java@v4
         with:
@@ -41,20 +53,20 @@ jobs:
           name: Uploat-V-apk
           path: Uploat-V.apk
 
-      # Release faqat v* tag qo'yilganda chiqadi (masalan: git tag v1.0.1 && git push origin v1.0.1).
-      # main'ga oddiy push faqat APK yig'adi: Actions -> Artifacts. Shunda foydalanuvchilar
-      # sinalmagan o'zgarishlarni emas, oxirgi barqaror versiyani olaveradi.
+      # Release faqat versiya berilganda chiqadi: v* tag push qilinganda yoki Actions -> Run workflow
+      # orqali versiya kiritilganda. main'ga oddiy push faqat APK yig'adi (Actions -> Artifacts),
+      # shunda foydalanuvchilar sinalmagan o'zgarishlarni emas, oxirgi barqaror versiyani oladi.
       - name: Publish release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: ${{ env.VERSION_NAME != '' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ github.ref_name }}
         run: |
+          TAG="v$VERSION_NAME"
           # GitHub yuklashda vaqti-vaqti bilan xato beradi (APK katta): 3 marta urinadi
           for i in 1 2 3; do
-            if gh release create "$TAG" Uploat-V.apk --latest \
-                 --title "Uploat-V ${TAG#v}" \
-                 --notes "Barqaror versiya ${TAG#v}. Commit: ${GITHUB_SHA::7}"; then
+            if gh release create "$TAG" Uploat-V.apk --latest --target "$GITHUB_SHA" \
+                 --title "Uploat-V $VERSION_NAME" \
+                 --notes "Barqaror versiya $VERSION_NAME. Commit: ${GITHUB_SHA::7}"; then
               exit 0
             fi
             echo "Urinish $i muvaffaqiyatsiz, qayta urinaman"

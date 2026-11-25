@@ -62,7 +62,7 @@ JDK 17 kerak. Loyiha GitHub Actions'da avtomatik yig'iladi (`.github/workflows/b
 ## Versiyalar va release
 
 - `main` ga push qilinganda GitHub Actions testlarni o'tkazadi va APK yig'adi. APK **Actions → Artifacts** bo'limida bo'ladi, release chiqmaydi.
-- Release faqat `v*` tag bilan chiqadi: `git tag v1.0.1 && git push origin v1.0.1`. Tag nomi ilova versiyasiga aylanadi.
+- Release faqat qo'lda chiqariladi: **Actions → Build APK → Run workflow** da versiyani yozing (masalan `1.0.1`), yoki `git tag v1.0.1 && git push origin v1.0.1`. Kiritilgan versiya ilova versiyasiga aylanadi.
 - Versiya raqamlari: `v1.0.1` kichik tuzatish, `v1.1.0` yangi imkoniyat, `v2.0.0` katta o'zgarish.
 
 ## Tuzilma
