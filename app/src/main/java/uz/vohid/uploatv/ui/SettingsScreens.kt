@@ -245,23 +245,26 @@ private fun NotificationsSection(vm: SettingsViewModel) {
     SectionLabel("Bildirishnomalar")
     run {
         SettingsCard {
+            // Android ilovaga tizim ruxsatini o'zi qaytarib olishga ruxsat bermaydi, shuning uchun
+            // "o'chirish" ilova ichida (natija xabarlarini to'xtatish) bajariladi, tizim sozlamalari ochilmaydi.
             SwitchRow(
                 title = "Bildirishnoma ruxsati",
-                subtitle = if (enabled) "Yoqilgan" else "O'chirilgan: yuklash jarayoni ko'rinmaydi",
-                checked = enabled,
+                subtitle = when {
+                    !enabled -> "Tizimda o'chirilgan. Yoqish uchun bosing"
+                    settings.notifyOnDone -> "Yuklash tugaganda xabar chiqadi"
+                    else -> "O'chirilgan: natija xabari chiqmaydi"
+                },
+                checked = enabled && settings.notifyOnDone,
                 onChange = { want ->
-                    if (want && Build.VERSION.SDK_INT >= 33) {
-                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    } else {
-                        openNotificationSettings()
+                    vm.setNotifyOnDone(want)
+                    if (want && !enabled) {
+                        if (Build.VERSION.SDK_INT >= 33) {
+                            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        } else {
+                            openNotificationSettings()
+                        }
                     }
                 },
-            )
-            SwitchRow(
-                title = "Yuklash tugaganda xabar berish",
-                subtitle = "Barcha yuklashlar tugagach bildirishnoma chiqadi",
-                checked = settings.notifyOnDone,
-                onChange = vm::setNotifyOnDone,
             )
         }
     }
