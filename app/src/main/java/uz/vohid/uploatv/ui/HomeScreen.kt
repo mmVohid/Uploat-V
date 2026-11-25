@@ -100,7 +100,6 @@ import androidx.compose.material3.BadgedBox
 import androidx.compose.runtime.produceState
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -497,7 +496,7 @@ private fun HomeHeader(engineState: Int, activeCount: Int) {
         Text(
             text = "Uploat-V",
             style = MaterialTheme.typography.headlineLarge.copy(
-                brush = Brush.linearGradient(listOf(scheme.primary, Color(0xFF38BDF8))),
+                color = scheme.onSurface,
                 fontWeight = FontWeight.ExtraBold,
             ),
             modifier = Modifier.weight(1f),
