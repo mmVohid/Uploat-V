@@ -52,6 +52,10 @@ Yuklangan videolar `Download/Uploat-V` papkasida bo'ladi.
 
 JDK 17 kerak. Yangi versiya chiqarish: Actions → Build APK → Run workflow, versiyani yozing (masalan `1.0.1`).
 
+## Litsenziya
+
+[GPL-3.0](LICENSE)
+
 ## Minnatdorchilik
 
 [yt-dlp](https://github.com/yt-dlp/yt-dlp), [youtubedl-android](https://github.com/JunkFood02/youtubedl-android), [Haze](https://github.com/chrisbanes/haze), [Coil](https://github.com/coil-kt/coil), [Seal](https://github.com/JunkFood02/Seal) (ilhom manbai).
