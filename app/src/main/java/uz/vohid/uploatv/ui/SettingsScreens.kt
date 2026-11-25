@@ -1,6 +1,7 @@
 package uz.vohid.uploatv.ui
 
 import android.content.Intent
+import androidx.compose.ui.res.imageResource
 import androidx.core.app.ActivityCompat
 import android.os.Build
 import android.app.Activity
@@ -528,7 +529,7 @@ fun AboutScreen(vm: SettingsViewModel, onOpenGuide: () -> Unit, onBack: () -> Un
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             androidx.compose.foundation.Image(
-                painter = androidx.compose.ui.res.painterResource(uz.vohid.uploatv.R.drawable.vohid_logo),
+                bitmap = androidx.compose.ui.graphics.ImageBitmap.imageResource(uz.vohid.uploatv.R.drawable.vohid_logo),
                 contentDescription = "Vohid logosi",
                 modifier = Modifier.size(112.dp),
                 filterQuality = androidx.compose.ui.graphics.FilterQuality.None,

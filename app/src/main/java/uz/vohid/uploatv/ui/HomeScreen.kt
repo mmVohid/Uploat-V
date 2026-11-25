@@ -2,6 +2,7 @@ package uz.vohid.uploatv.ui
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import androidx.compose.ui.res.imageResource
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
@@ -659,7 +660,7 @@ private fun EmptyState() {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         androidx.compose.foundation.Image(
-            painter = androidx.compose.ui.res.painterResource(uz.vohid.uploatv.R.drawable.vohid_logo),
+            bitmap = androidx.compose.ui.graphics.ImageBitmap.imageResource(uz.vohid.uploatv.R.drawable.vohid_logo),
             contentDescription = null,
             modifier = Modifier.size(132.dp),
             // Piksel uslubi tiniq qolishi uchun yumshatilmaydi
