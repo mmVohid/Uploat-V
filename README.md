@@ -137,6 +137,19 @@ O'zbekcha (mavjud) · English (tez orada)
 
 Talablar: Android 10 va undan yuqori, arm64 qurilma.
 
+<details>
+<summary><b>APK haqiqiyligini tekshirish</b></summary>
+
+Rasmiy relizlar doimiy kalit bilan imzolangan. Imzo barmoq izi (SHA-256):
+
+```
+CD:2D:5B:34:FD:78:C5:77:71:EC:37:63:94:63:0F:55:DC:0F:56:72:89:E3:90:57:CC:EC:89:A8:78:FD:BD:FD
+```
+
+Tekshirish: `apksigner verify --print-certs Uploat-V.apk`. Boshqa barmoq izi chiqsa, bu rasmiy APK emas, o'rnatmang.
+
+</details>
+
 **Yangilash:** yangi APK'ni yuklab, eskisining ustiga o'rnating. Tarix va sozlamalar saqlanadi.
 
 <details>
@@ -154,6 +167,8 @@ JDK 17 kerak. Yangi versiya chiqarish: Actions → Build APK → Run workflow, v
 ## Litsenziya
 
 [GPL-3.0](LICENSE)
+
+Uploat-V faqat shaxsiy foydalanish uchun. Videolarni yuklashda kontent egalarining huquqlari va saytlarning foydalanish qoidalariga rioya qiling: mas'uliyat foydalanuvchida.
 
 ## Minnatdorchilik
 
