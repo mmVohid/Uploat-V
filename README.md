@@ -10,8 +10,15 @@
 </p>
 
 <p align="center">
-  <a href="../../actions/workflows/build.yml"><img alt="Build" src="../../actions/workflows/build.yml/badge.svg"></a>
+  <a href="../../releases/latest/download/Uploat-V.apk"><img alt="APK yuklab olish" src="https://img.shields.io/badge/APK_yuklab_olish-Uploat--V-3DDC84?style=for-the-badge&logo=android&logoColor=white"></a>
+</p>
+
+<p align="center">
+  <a href="../../releases/latest"><img alt="Versiya" src="https://img.shields.io/github/v/release/mmVohid/Uploat-V?label=versiya"></a>
   <img alt="Android 10+" src="https://img.shields.io/badge/Android-10%2B-3DDC84?logo=android&logoColor=white">
+  <a href="LICENSE"><img alt="Litsenziya" src="https://img.shields.io/github/license/mmVohid/Uploat-V?label=litsenziya"></a>
+  <a href="../../stargazers"><img alt="Star" src="https://img.shields.io/github/stars/mmVohid/Uploat-V?style=flat"></a>
+  <a href="../../actions/workflows/build.yml"><img alt="Build" src="https://github.com/mmVohid/Uploat-V/actions/workflows/build.yml/badge.svg"></a>
 </p>
 
 ---
@@ -25,6 +32,33 @@
 - Tarmoq rejimi: Wi-Fi va mobil internet / faqat Wi-Fi / faqat mobil internet
 - Yuklash tarixini avtomatik tozalash (cheksiz, 30 kun, 7 kun yoki 24 soat)
 - Yorug' va qorong'i mavzu
+
+## Qanday ishlatiladi
+
+1. Videoning havolasini nusxalang (YouTube, Instagram va boshqa ilovada «Havolani nusxalash»).
+2. Uploat-V'ni oching: havola avtomatik qo'yiladi, yoki o'zingiz joylang. Boshqa ilovadan «Ulashish» → Uploat-V ham ishlaydi.
+3. Sifatni tanlab «Yuklash» ni bosing. Tugagach bildirishnoma keladi, video `Download/Uploat-V` papkasida bo'ladi.
+
+## Qaysi saytlar ishlaydi
+
+YouTube, Instagram, TikTok, Facebook, X (Twitter), Vimeo, Reddit va yt-dlp qo'llab-quvvatlaydigan boshqa ko'plab saytlar ([to'liq ro'yxat](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md)). Saytlar o'zgarib turgani uchun ba'zan biror sayt vaqtincha ishlamay qolishi mumkin: bunday paytda yt-dlp ni yangilash yordam beradi.
+
+## Tez-tez so'raladigan savollar
+
+**Instagram yoki boshqa sayt «kirish kerak» deydi.**
+Sozlamalar → Cookies bo'limida o'sha saytga kiring. Ilova sizning nomingizdan yuklaydi. Parol saqlanmaydi, faqat kirish belgisi (cookie) saqlanadi.
+
+**Video yuklanmayapti yoki «xato» chiqyapti.**
+Sozlamalardan yt-dlp ni yangilang (bosh sahifadagi sariq kartochka ham shuni qiladi). Yordam bermasa, Sozlamalar → Ilova haqida → «Xato jurnali» → Nusxalash va [shu yerga](../../issues/new/choose) yuboring.
+
+**Nega ilova bildirishnoma va batareya ruxsatini so'raydi?**
+Bildirishnoma yuklash tugaganini bildirish uchun. Batareya cheklovisiz ishlash esa ekran o'chiq paytda yuklash to'xtab qolmasligi uchun. Ikkalasini ham Sozlamalardan o'chirib qo'yish mumkin.
+
+**Internet uzilib qolsa nima bo'ladi?**
+Yuklash to'xtaydi va internet qaytganda o'zi davom etadi, boshidan boshlamaydi.
+
+**Videolar qayerda saqlanadi?**
+`Download/Uploat-V` papkasida. Sozlamalarda boshqa papkani tanlash mumkin.
 
 ## Tillar
 
@@ -40,8 +74,6 @@
 Talablar: Android 10 va undan yuqori, arm64 qurilma.
 
 **Yangilash:** yangi APK'ni yuklab, eskisining ustiga o'rnating. Tarix va sozlamalar saqlanadi.
-
-Yuklangan videolar `Download/Uploat-V` papkasida bo'ladi.
 
 ## Dasturchilar uchun
 
