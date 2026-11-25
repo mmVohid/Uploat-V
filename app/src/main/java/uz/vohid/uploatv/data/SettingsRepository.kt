@@ -26,6 +26,7 @@ class SettingsRepository(private val context: Context) {
         val AUTO_COOKIES = booleanPreferencesKey("auto_cookies")
         val YTDLP_NIGHTLY = booleanPreferencesKey("ytdlp_nightly")
         val WIFI_ONLY = booleanPreferencesKey("wifi_only")
+        val ENGINE_BANNER_DISMISSED = stringPreferencesKey("engine_banner_dismissed")
         val RETENTION = stringPreferencesKey("history_retention")
     }
 
@@ -44,6 +45,7 @@ class SettingsRepository(private val context: Context) {
             autoCookies = p[Keys.AUTO_COOKIES] ?: false,
             ytdlpNightly = p[Keys.YTDLP_NIGHTLY] ?: false,
             wifiOnly = p[Keys.WIFI_ONLY] ?: false,
+            engineBannerDismissed = p[Keys.ENGINE_BANNER_DISMISSED] ?: "",
             historyRetention = p[Keys.RETENTION].toEnum(Retention.FOREVER),
         )
     }
@@ -55,6 +57,7 @@ class SettingsRepository(private val context: Context) {
         it[Keys.AUTO_COOKIES] = autoCookies
     }
     suspend fun setYtdlpNightly(on: Boolean) = context.dataStore.edit { it[Keys.YTDLP_NIGHTLY] = on }
+    suspend fun setEngineBannerDismissed(tag: String) = context.dataStore.edit { it[Keys.ENGINE_BANNER_DISMISSED] = tag }
     suspend fun setWifiOnly(on: Boolean) = context.dataStore.edit { it[Keys.WIFI_ONLY] = on }
     suspend fun setRetention(r: Retention) = context.dataStore.edit { it[Keys.RETENTION] = r.name }
     suspend fun setAutoCookies(on: Boolean) = context.dataStore.edit { it[Keys.AUTO_COOKIES] = on }

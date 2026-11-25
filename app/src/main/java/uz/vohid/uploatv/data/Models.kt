@@ -39,9 +39,11 @@ data class AppSettings(
     val notifyOnDone: Boolean = true,
     /** Inkognito: yuklab olish tarixi saqlanmaydi. */
     val incognito: Boolean = false,
-    /** Uploat-V yangi versiyasini GitHub'dan avtomatik tekshirish. */
+    /** Cookie'larni avtomatik boshqarish. */
     val autoCookies: Boolean = false,
     val ytdlpNightly: Boolean = false,
+    /** Foydalanuvchi yopib qo'ygan dvigatel versiyasi: shu versiya uchun taklif qayta chiqmaydi. */
+    val engineBannerDismissed: String = "",
     /** Faqat Wi‑Fi (o'lchanmaydigan tarmoq) orqali yuklash. */
     val wifiOnly: Boolean = false,
     /** Tugagan yuklashlar ro'yxati qancha vaqt saqlanadi. */

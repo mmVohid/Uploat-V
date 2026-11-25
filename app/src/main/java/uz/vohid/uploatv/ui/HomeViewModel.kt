@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import uz.vohid.uploatv.download.EngineUpdater
 import kotlinx.coroutines.launch
 import uz.vohid.uploatv.data.MediaInfo
 import uz.vohid.uploatv.data.Quality
@@ -47,6 +48,10 @@ data class HomeUi(
         }
 }
 
+enum class BannerPhase { HIDDEN, AVAILABLE, UPDATING, DONE, FAILED }
+
+data class EngineBannerUi(val phase: BannerPhase = BannerPhase.HIDDEN, val tag: String = "", val message: String = "")
+
 class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     private val settings = SettingsRepository(app)
@@ -55,17 +60,76 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private var fetchJob: Job? = null
     private var incognito = false
 
+    private val _banner = MutableStateFlow(EngineBannerUi())
+    val banner: StateFlow<EngineBannerUi> = _banner.asStateFlow()
+    private var lastEngineCheck = 0L
+
     init {
         viewModelScope.launch {
             var first = true
+            var onboarded = false
             settings.settings.collect { s ->
                 incognito = s.incognito
                 if (first) {
                     first = false
                     _ui.update { it.copy(quality = s.defaultQuality) }
                 }
+                // Ruxsatlar va kelishuv oynalaridan keyin dvigatel yangiligi tekshiriladi
+                if (s.onboardingDone && !onboarded) {
+                    onboarded = true
+                    checkEngine(force = true)
+                }
             }
         }
+        // Yuklash dvigatel/sayt bilan bog'liq sabab bilan yiqilsa, yangi versiya bor-yo'qligi darhol tekshiriladi
+        viewModelScope.launch {
+            var prev = 0
+            DownloadManager.items.collect { list ->
+                val failed = list.count { it.status == Status.FAILED && !DownloadManager.willAutoRetry(it.id) }
+                if (failed > prev) checkEngine(force = true)
+                prev = failed
+            }
+        }
+    }
+
+    /** Yangi yt-dlp bor bo'lsa, sariq taklif kartochkasini ko'rsatadi (6 soatda bir martadan ko'p tekshirmaydi). */
+    fun checkEngine(force: Boolean = false) {
+        viewModelScope.launch {
+            val now = System.currentTimeMillis()
+            if (_banner.value.phase == BannerPhase.UPDATING) return@launch
+            if (!force && now - lastEngineCheck < 6L * 3600 * 1000) return@launch
+            val s = settings.settings.first()
+            if (!s.onboardingDone) return@launch
+            val latest = EngineUpdater.latestVersion() ?: return@launch
+            lastEngineCheck = now
+            if (latest == s.ytdlpVersion || latest == s.engineBannerDismissed) {
+                if (_banner.value.phase == BannerPhase.AVAILABLE) _banner.value = EngineBannerUi()
+            } else if (_banner.value.phase == BannerPhase.HIDDEN || _banner.value.phase == BannerPhase.FAILED) {
+                _banner.value = EngineBannerUi(BannerPhase.AVAILABLE, latest)
+            }
+        }
+    }
+
+    fun updateEngineNow() {
+        val tag = _banner.value.tag
+        if (_banner.value.phase == BannerPhase.UPDATING) return
+        _banner.value = EngineBannerUi(BannerPhase.UPDATING, tag)
+        viewModelScope.launch {
+            val r = EngineUpdater.update(getApplication())
+            if (r.ok) {
+                _banner.value = EngineBannerUi(BannerPhase.DONE, tag)
+                delay(2500)
+                _banner.value = EngineBannerUi()
+            } else {
+                _banner.value = EngineBannerUi(BannerPhase.FAILED, tag, r.message)
+            }
+        }
+    }
+
+    fun dismissBanner() {
+        val tag = _banner.value.tag
+        _banner.value = EngineBannerUi()
+        viewModelScope.launch { settings.setEngineBannerDismissed(tag) }
     }
 
     fun onUrlChange(value: String, immediate: Boolean = false) {

@@ -118,6 +118,7 @@ fun HomeScreen(
 ) {
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val ui by vm.ui.collectAsStateWithLifecycle()
+    val banner by vm.banner.collectAsStateWithLifecycle()
     if (ui.duplicate) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = vm::dismissDuplicate,
@@ -189,6 +190,16 @@ fun HomeScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            if (banner.phase != BannerPhase.HIDDEN) {
+                item(key = "engine") {
+                    EngineBanner(
+                        state = banner,
+                        onUpdate = vm::updateEngineNow,
+                        onDismiss = vm::dismissBanner,
+                        modifier = Modifier.animateItem(),
+                    )
+                }
+            }
             item(key = "url") {
                 OutlinedTextField(
                     value = ui.url,

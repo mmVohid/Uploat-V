@@ -1,6 +1,7 @@
 package uz.vohid.uploatv
 
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -41,6 +42,11 @@ class AppE2ETest {
     private var scenario: ActivityScenario<MainActivity>? = null
 
     private val fake = object : TestEngine {
+        /** null: yangilash taklifi chiqmaydi. */
+        var version: String? = null
+
+        override suspend fun engineVersion(): String? = version
+
         override suspend fun fetch(url: String): MediaInfo {
             delay(200)
             if (url.contains("bad")) throw RuntimeException("ERROR: [youtube] x: Private video")
@@ -69,7 +75,10 @@ class AppE2ETest {
         }
         runBlocking {
             // Birinchi ochilish oynalari testga xalaqit bermasligi uchun onboarding tugagan deb belgilanadi
-            SettingsRepository(ctx).finishOnboarding(autoUpdate = false, autoCookies = false)
+            val repo = SettingsRepository(ctx)
+            repo.finishOnboarding(autoUpdate = false, autoCookies = false)
+            repo.setYtdlpVersion("eski-versiya")
+            repo.setEngineBannerDismissed("")
         }
         DownloadManager.clearFinished()
         EngineHook.engine = fake
@@ -164,6 +173,40 @@ class AppE2ETest {
     @Test fun infoErrorIsShownOnHome() {
         enterUrl("https://example.com/watch?v=bad1")
         waitText("Bu video yopiq (maxfiy)")
+    }
+
+    private fun relaunch(version: String?) {
+        scenario?.close()
+        fake.version = version
+        scenario = ActivityScenario.launch(MainActivity::class.java)
+    }
+
+    @Test fun engineBannerOffersUpdateAndFinishes() {
+        relaunch("2099.01.01")
+        waitText("Dvigatelni yangilang")
+        rule.onNodeWithText("Yangilash").performClick()
+        waitText("Yangilandi")
+    }
+
+    @Test fun engineBannerIsHiddenWhenAlreadyLatest() {
+        relaunch("eski-versiya")
+        waitText("Havola qo'shing")
+        rule.onAllNodes(hasText("Dvigatelni yangilang")).assertCountEquals(0)
+    }
+
+    @Test fun dismissedBannerDoesNotComeBackForSameVersion() {
+        relaunch("2099.02.02")
+        waitText("Dvigatelni yangilang")
+        rule.onNodeWithContentDescription("Yopish").performClick()
+        rule.waitUntil(5_000) {
+            rule.onAllNodes(hasText("Dvigatelni yangilang")).fetchSemanticsNodes().isEmpty()
+        }
+        relaunch("2099.02.02")
+        waitText("Havola qo'shing")
+        rule.onAllNodes(hasText("Dvigatelni yangilang")).assertCountEquals(0)
+        // Yangi versiya chiqsa taklif yana ko'rinadi
+        relaunch("2099.03.03")
+        waitText("Dvigatelni yangilang")
     }
 
     @Test fun settingsScreensOpen() {

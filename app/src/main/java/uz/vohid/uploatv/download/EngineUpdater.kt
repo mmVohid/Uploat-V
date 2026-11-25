@@ -56,6 +56,10 @@ object EngineUpdater {
     suspend fun update(context: Context): UpdateResult = mutex.withLock {
         withContext(Dispatchers.IO) {
             val repo = SettingsRepository(context)
+            EngineHook.engine?.engineVersion()?.let { v ->
+                repo.setYtdlpVersion(v)
+                return@withContext UpdateResult("Yangilandi: $v", ok = true, updated = true)
+            }
             try {
                 UploatApp.engineReady.await()
                 updateDirect(context, repo)
@@ -64,6 +68,12 @@ object EngineUpdater {
                 UpdateResult("Yangilab bo'lmadi: ${reason(e)}", ok = false, updated = false)
             }
         }
+    }
+
+    /** Eng so'nggi versiya yorlig'i; tarmoq bo'lmasa yoki xato bo'lsa null. */
+    suspend fun latestVersion(): String? = withContext(Dispatchers.IO) {
+        EngineHook.engine?.let { return@withContext it.engineVersion() }
+        runCatching { latestTag(SettingsRepository(app).settings.first().ytdlpNightly) }.getOrNull()
     }
 
     fun updateInBackground(context: Context) {
