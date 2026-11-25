@@ -83,7 +83,7 @@ class DownloadService : Service() {
         val name = if (item.incognito) "Video" else item.title
         val text = if (ok) name else "$name\n${item.error ?: "Yuklab bo'lmadi"}"
         return NotificationCompat.Builder(this, UploatApp.CHANNEL_DONE)
-            .setSmallIcon(R.drawable.ic_stat_download)
+            .setSmallIcon(R.drawable.ic_stat_penguin)
             .setContentTitle(if (ok) "Yuklandi" else "Yuklab bo'lmadi")
             .setContentText(name)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
@@ -104,7 +104,7 @@ class DownloadService : Service() {
 
     private fun build(title: String, text: String?, percent: Int, done: Boolean = false) =
         NotificationCompat.Builder(this, if (done) UploatApp.CHANNEL_DONE else UploatApp.CHANNEL_PROGRESS)
-            .setSmallIcon(R.drawable.ic_stat_download)
+            .setSmallIcon(R.drawable.ic_stat_penguin)
             .setContentTitle(title)
             .setContentText(text)
             .setOnlyAlertOnce(true)
