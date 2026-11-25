@@ -23,6 +23,25 @@
 
 ---
 
+## Ilova ko'rinishi
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/1-bosh-sahifa.jpg" width="190" alt="Bosh sahifa"></td>
+    <td align="center"><img src="docs/screenshots/2-sifat.jpg" width="190" alt="Sifat tanlash"></td>
+    <td align="center"><img src="docs/screenshots/3-yuklash.jpg" width="190" alt="Yuklash jarayoni"></td>
+    <td align="center"><img src="docs/screenshots/4-yuklashlar.jpg" width="190" alt="Yuklashlar ro'yxati"></td>
+    <td align="center"><img src="docs/screenshots/5-sozlamalar.jpg" width="190" alt="Sozlamalar"></td>
+  </tr>
+  <tr>
+    <td align="center">Bosh sahifa</td>
+    <td align="center">Sifat tanlash</td>
+    <td align="center">Yuklash jarayoni</td>
+    <td align="center">Yuklashlar</td>
+    <td align="center">Sozlamalar</td>
+  </tr>
+</table>
+
 ## Imkoniyatlar
 
 - Havola orqali video yuklash, boshqa ilovadan «Ulashish» ham ishlaydi
