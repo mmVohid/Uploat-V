@@ -26,6 +26,11 @@
 - Yuklash tarixini avtomatik tozalash (cheksiz, 30 kun, 7 kun yoki 24 soat)
 - Yorug' va qorong'i mavzu
 
+## Tillar
+
+- O'zbekcha: mavjud
+- English: tez orada
+
 ## O'rnatish
 
 1. [**Releases**](../../releases/latest) bo'limidan `Uploat-V.apk` ni yuklab oling.
@@ -51,4 +56,4 @@ JDK 17 kerak. Yangi versiya chiqarish: Actions → Build APK → Run workflow, v
 
 [yt-dlp](https://github.com/yt-dlp/yt-dlp), [youtubedl-android](https://github.com/JunkFood02/youtubedl-android), [Haze](https://github.com/chrisbanes/haze), [Coil](https://github.com/coil-kt/coil), [Seal](https://github.com/JunkFood02/Seal) (ilhom manbai).
 
-Faqat o'zingizga ruxsat etilgan yoki erkin tarqatiladigan kontentni yuklang.
+⭐ Ilova yoqqan bo'lsa, loyihaga **Star** bosib qo'llab-quvvatlang. Oldindan rahmat!
