@@ -543,8 +543,28 @@ fun AboutScreen(vm: SettingsViewModel, onOpenGuide: () -> Unit, onBack: () -> Un
         }
 
         SettingsCard {
-            InfoRow("Uploat-V", "Versiya ${BuildConfig.VERSION_NAME}")
             InfoRow("Dvigatel", "yt-dlp asosida video yuklovchi")
+        }
+
+        SettingsCard {
+            ClickableRow(
+                title = "Eng so'nggi versiya",
+                value = "GitHub'da ochish",
+                hint = "Yangi APK'ni yuklab olish sahifasi",
+                onClick = { openUrl(context, "$REPO_URL/releases/latest") },
+            )
+            ClickableRow(
+                title = "O'zgarishlar va versiyalar",
+                value = "Barcha versiyalar ro'yxati",
+                hint = "Har bir versiyada nima yangilangani",
+                onClick = { openUrl(context, "$REPO_URL/releases") },
+            )
+            ClickableRow(
+                title = "Muammo haqida xabar berish",
+                value = "GitHub'da yozish",
+                hint = "Xatolik yoki taklifni Issues bo'limiga yuboring",
+                onClick = { openUrl(context, "$REPO_URL/issues/new/choose") },
+            )
         }
 
         SettingsCard {
@@ -577,6 +597,16 @@ fun AboutScreen(vm: SettingsViewModel, onOpenGuide: () -> Unit, onBack: () -> Un
                 onClick = onOpenGuide,
             )
         }
+    }
+}
+
+private const val REPO_URL = "https://github.com/mmVohid/Uploat-V"
+
+private fun openUrl(context: android.content.Context, url: String) {
+    runCatching {
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }.onFailure {
+        android.widget.Toast.makeText(context, "Brauzer topilmadi", android.widget.Toast.LENGTH_SHORT).show()
     }
 }
 
