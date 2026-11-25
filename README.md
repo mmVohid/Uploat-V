@@ -36,7 +36,7 @@
 ## Qanday ishlatiladi
 
 1. Videoning havolasini nusxalang (YouTube, Instagram va boshqa ilovada «Havolani nusxalash»).
-2. Uploat-V'ni oching: havola avtomatik qo'yiladi, yoki o'zingiz joylang. Boshqa ilovadan «Ulashish» → Uploat-V ham ishlaydi.
+2. Uploat-V'ni oching: nusxalangan havolani ilova o'zi taklif qiladi, yoki o'zingiz joylang. Boshqa ilovadan «Ulashish» → «Tezkor yuklash» ni tanlasangiz, Uploat-V ochilmasdan fonda yuklaydi.
 3. Sifatni tanlab «Yuklash» ni bosing. Tugagach bildirishnoma keladi, video `Download/Uploat-V` papkasida bo'ladi.
 
 ## Qaysi saytlar ishlaydi
