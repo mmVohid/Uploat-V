@@ -42,8 +42,31 @@ jobs:
       - name: Unit testlar
         run: ./gradlew testDebugUnitTest --no-daemon --stacktrace
 
+      # Doimiy imzo kaliti (Settings -> Secrets and variables -> Actions):
+      #   KEYSTORE_BASE64   - kalit fayli, base64 ko'rinishida
+      #   KEYSTORE_PASSWORD - kalit paroli
+      # Secret'lar yo'q bo'lsa (masalan, fork'dan PR), debug kaliti bilan yig'iladi.
+      - name: Imzo kalitini tayyorlash
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/uploatv.jks"
+            echo "KEYSTORE_FILE=$RUNNER_TEMP/uploatv.jks" >> "$GITHUB_ENV"
+            echo "Doimiy kalit ishlatiladi"
+          else
+            echo "::warning::KEYSTORE_BASE64 yo'q: debug kaliti ishlatiladi, yangilash o'rnatishda muammo bo'lishi mumkin"
+          fi
+
       - name: Build release APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: APK imzosini ko'rsatish
+        run: |
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BT/apksigner" verify --print-certs app/build/outputs/apk/release/app-release.apk | grep "SHA-256"
 
       - name: Rename APK
         run: cp app/build/outputs/apk/release/app-release.apk Uploat-V.apk

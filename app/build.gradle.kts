@@ -22,11 +22,27 @@ android {
         ndk { abiFilters += listOf("arm64-v8a") }
     }
 
+    // Doimiy imzo kaliti: CI uni GitHub Secrets'dan oladi (KEYSTORE_FILE, KEYSTORE_PASSWORD).
+    // Kalit bo'lmasa (masalan, lokal build), debug kaliti ishlatiladi.
+    val releaseKeystore = System.getenv("KEYSTORE_FILE")?.takeIf { it.isNotBlank() }?.let { file(it) }
+    val releasePassword = System.getenv("KEYSTORE_PASSWORD")?.takeIf { it.isNotBlank() }
+    val hasReleaseKey = releaseKeystore?.exists() == true && releasePassword != null
+
+    signingConfigs {
+        if (hasReleaseKey) {
+            create("uploatv") {
+                storeFile = releaseKeystore
+                storePassword = releasePassword
+                keyAlias = "uploatv"
+                keyPassword = releasePassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
-            // Alohida kalit yo'q: APK debug kaliti bilan imzolanadi va to'g'ridan-to'g'ri o'rnatiladi
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName(if (hasReleaseKey) "uploatv" else "debug")
         }
     }
 
