@@ -42,7 +42,9 @@
   </tr>
 </table>
 
-### Sozlamalar
+<details>
+<summary><b>Sozlamalar skrinshotlari</b></summary>
+<br>
 
 <table>
   <tr>
@@ -60,6 +62,8 @@
     <td align="center">Ilova haqida</td>
   </tr>
 </table>
+
+</details>
 
 ## Imkoniyatlar
 
@@ -97,6 +101,14 @@ Yuklash to'xtaydi va internet qaytganda o'zi davom etadi, boshidan boshlamaydi.
 
 **Videolar qayerda saqlanadi?**
 `Download/Uploat-V` papkasida. Sozlamalarda boshqa papkani tanlash mumkin.
+
+## Cheklovlar
+
+- **APK hajmi taxminan 80 MB:** ichida yt-dlp va ffmpeg bor.
+- **Faqat arm64 qurilmalar** (deyarli barcha zamonaviy telefonlar) va Android 10 yoki yangisi.
+- **Instagram kabi saytlar** ba'zan kirishni talab qiladi: Sozlamalar → Cookies orqali kirsangiz ishlaydi. Saytlar o'zgarib turgani uchun ba'zan yt-dlp yangilanishini kutish kerak bo'ladi.
+- **Faqat video yuklanadi**, alohida audio yuklash yo'q.
+- **Play Market'da yo'q:** ilova o'zi yangilanmaydi, yangi versiyani Releases'dan qo'lda yuklaysiz.
 
 ## Tillar
 
