@@ -49,6 +49,6 @@ JDK 17 kerak. Yangi versiya chiqarish: Actions → Build APK → Run workflow, v
 
 ## Minnatdorchilik
 
-[yt-dlp](https://github.com/yt-dlp/yt-dlp), [youtubedl-android](https://github.com/JunkFood02/youtubedl-android), [Seal](https://github.com/JunkFood02/Seal) (ilhom manbai), [Haze](https://github.com/chrisbanes/haze), [Coil](https://github.com/coil-kt/coil).
+[yt-dlp](https://github.com/yt-dlp/yt-dlp), [youtubedl-android](https://github.com/JunkFood02/youtubedl-android), [Haze](https://github.com/chrisbanes/haze), [Coil](https://github.com/coil-kt/coil), [Seal](https://github.com/JunkFood02/Seal) (ilhom manbai).
 
 Faqat o'zingizga ruxsat etilgan yoki erkin tarqatiladigan kontentni yuklang.
