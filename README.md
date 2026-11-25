@@ -65,6 +65,46 @@
 
 </details>
 
+<details>
+<summary><b>Qorong'i mavzu</b></summary>
+<br>
+
+<table>
+  <tr>
+    <td align="center" valign="top"><img src="docs/screenshots/dark-1-bosh-sahifa.jpg" width="190" alt="Bosh sahifa"></td>
+    <td align="center" valign="top"><img src="docs/screenshots/dark-2-sifat.jpg" width="190" alt="Sifat tanlash"></td>
+    <td align="center" valign="top"><img src="docs/screenshots/dark-3-yuklash.jpg" width="190" alt="Yuklash jarayoni"></td>
+    <td align="center" valign="top"><img src="docs/screenshots/dark-4-yuklashlar.jpg" width="190" alt="Yuklashlar"></td>
+    <td align="center" valign="top"><img src="docs/screenshots/dark-5-sozlamalar.jpg" width="190" alt="Sozlamalar"></td>
+  </tr>
+  <tr>
+    <td align="center">Bosh sahifa</td>
+    <td align="center">Sifat tanlash</td>
+    <td align="center">Yuklash jarayoni</td>
+    <td align="center">Yuklashlar</td>
+    <td align="center">Sozlamalar</td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td align="center" valign="top"><img src="docs/screenshots/dark-6-maxfiylik.jpg" width="190" alt="Maxfiylik va xavfsizlik"></td>
+    <td align="center" valign="top"><img src="docs/screenshots/dark-7-dvigatel.jpg" width="190" alt="Dvigatel"></td>
+    <td align="center" valign="top"><img src="docs/screenshots/dark-8a-malumotlar-1.jpg" width="190" alt="Ma'lumotlar va xotira (1)"></td>
+    <td align="center" valign="top"><img src="docs/screenshots/dark-8b-malumotlar-2.jpg" width="190" alt="Ma'lumotlar va xotira (2)"></td>
+    <td align="center" valign="top"><img src="docs/screenshots/dark-9-ilova-haqida.jpg" width="190" alt="Ilova haqida"></td>
+  </tr>
+  <tr>
+    <td align="center">Maxfiylik va xavfsizlik</td>
+    <td align="center">Dvigatel</td>
+    <td align="center">Ma'lumotlar va xotira (1)</td>
+    <td align="center">Ma'lumotlar va xotira (2)</td>
+    <td align="center">Ilova haqida</td>
+  </tr>
+</table>
+
+</details>
+
 ## Imkoniyatlar
 
 - Havola orqali video yuklash, boshqa ilovadan «Ulashish» ham ishlaydi
