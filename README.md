@@ -48,6 +48,12 @@
 
 Talablar: Android 10 (API 29) va undan yuqori, arm64 qurilma.
 
+### Yangilash
+
+Ilova doimiy imzo kaliti bilan imzolanadi, shuning uchun yangi versiyani eskisining **ustiga o'rnatish** mumkin: ilovani o'chirish shart emas, tarix va sozlamalar saqlanadi. Yangisini yuklab, APK'ni oching va «Yangilash» ni bosing.
+
+> **Eslatma:** doimiy kalit bilan imzolangan birinchi versiya `v1.0.0` dir. Undan oldingi sinov build'lari (masalan, `v1.0.95`) boshqa kalit bilan imzolangan. Ularni o'rnatgan bo'lsangiz, ilovani **bir marta o'chirib**, `v1.0.0` ni o'rnating (tarix va sozlamalar o'chadi). Shundan keyin hamma yangilanishlar ustiga o'rnatiladi.
+
 **Barqaror versiya: [v1.0.0](../../releases/tag/v1.0.0).** Dasturchi yangi o'zgarishlarni sinab ko'rayotgan paytda ham sizga shu sinalgan versiya beriladi. Yangisi tayyor bo'lgach, alohida versiya (v1.0.1, v1.1.0...) chiqadi va Releases'da ko'rinadi.
 
 ## Build qilish
@@ -63,6 +69,7 @@ JDK 17 kerak. Loyiha GitHub Actions'da avtomatik yig'iladi (`.github/workflows/b
 
 - `main` ga push qilinganda GitHub Actions testlarni o'tkazadi va APK yig'adi. APK **Actions → Artifacts** bo'limida bo'ladi, release chiqmaydi.
 - Release faqat qo'lda chiqariladi: **Actions → Build APK → Run workflow** da versiyani yozing (masalan `1.0.1`), yoki `git tag v1.0.1 && git push origin v1.0.1`. Kiritilgan versiya ilova versiyasiga aylanadi.
+- Imzo kaliti GitHub Secrets'da saqlanadi (`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`). Kalit yo'qolsa yoki almashtirilsa, foydalanuvchilar ilovani o'chirib qayta o'rnatishga majbur bo'ladi, shuning uchun kalit fayli zaxirada turishi kerak.
 - Versiya raqamlari: `v1.0.1` kichik tuzatish, `v1.1.0` yangi imkoniyat, `v2.0.0` katta o'zgarish.
 
 ## Tuzilma
