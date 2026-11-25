@@ -12,10 +12,11 @@ android {
         applicationId = "uz.vohid.uploatv"
         minSdk = 29
         targetSdk = 35
-        // CI'da build raqami versionCode bo'ladi: yangilanish tekshiruvi shu raqamni solishtiradi
+        // versionCode: CI build raqami (har build'da oshadi, eski versiya ustiga o'rnatish mumkin).
+        // versionName: release tagidan (masalan v1.0.0 -> 1.0.0). Tag bo'lmasa, sinov build'i.
         val build = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
         versionCode = build
-        versionName = "1.0.$build"
+        versionName = System.getenv("VERSION_NAME")?.takeIf { it.isNotBlank() } ?: "dev.$build"
 
         // yt-dlp + Python + ffmpeg juda og'ir, shu sabab faqat arm64 (deyarli barcha zamonaviy telefonlar)
         ndk { abiFilters += listOf("arm64-v8a") }

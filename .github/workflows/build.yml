@@ -3,11 +3,16 @@ name: Build APK
 on:
   push:
     branches: ["**"]
+    tags: ["v*"]
   pull_request:
   workflow_dispatch:
 
 permissions:
   contents: write
+
+env:
+  # v1.0.0 tagi -> ilova versiyasi 1.0.0; tagsiz build'lar "dev.<raqam>" bo'ladi
+  VERSION_NAME: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '' }}
 
 jobs:
   build:
@@ -36,12 +41,24 @@ jobs:
           name: Uploat-V-apk
           path: Uploat-V.apk
 
-      # main'ga push: har build alohida release (v1.0.<build raqami>), "latest" belgisi bilan.
+      # Release faqat v* tag qo'yilganda chiqadi (masalan: git tag v1.0.1 && git push origin v1.0.1).
+      # main'ga oddiy push faqat APK yig'adi: Actions -> Artifacts. Shunda foydalanuvchilar
+      # sinalmagan o'zgarishlarni emas, oxirgi barqaror versiyani olaveradi.
       - name: Publish release
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
         run: |
-          gh release create "v1.0.${{ github.run_number }}" Uploat-V.apk --latest \
-            --title "Uploat-V 1.0.${{ github.run_number }}" \
-            --notes "Avtomatik build: ${GITHUB_SHA::7}"
+          # GitHub yuklashda vaqti-vaqti bilan xato beradi (APK katta): 3 marta urinadi
+          for i in 1 2 3; do
+            if gh release create "$TAG" Uploat-V.apk --latest \
+                 --title "Uploat-V ${TAG#v}" \
+                 --notes "Barqaror versiya ${TAG#v}. Commit: ${GITHUB_SHA::7}"; then
+              exit 0
+            fi
+            echo "Urinish $i muvaffaqiyatsiz, qayta urinaman"
+            gh release delete "$TAG" --yes || true
+            sleep 20
+          done
+          exit 1

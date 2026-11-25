@@ -42,11 +42,13 @@
 
 ## O'rnatish
 
-1. [**Releases**](../../releases) bo'limidan oxirgi `Uploat-V.apk` ni yuklab oling.
+1. [**Releases → Latest**](../../releases/latest) dan `Uploat-V.apk` ni yuklab oling.
 2. Telefonda «Noma'lum manbalardan o'rnatish» ruxsatini bering va APK'ni oching.
 3. Birinchi ochilganda ilova bildirishnoma va xotira ruxsatlarini so'raydi.
 
 Talablar: Android 10 (API 29) va undan yuqori, arm64 qurilma.
+
+**Barqaror versiya: [v1.0.0](../../releases/tag/v1.0.0).** Dasturchi yangi o'zgarishlarni sinab ko'rayotgan paytda ham sizga shu sinalgan versiya beriladi. Yangisi tayyor bo'lgach, alohida versiya (v1.0.1, v1.1.0...) chiqadi va Releases'da ko'rinadi.
 
 ## Build qilish
 
@@ -57,9 +59,11 @@ Talablar: Android 10 (API 29) va undan yuqori, arm64 qurilma.
 
 JDK 17 kerak. Loyiha GitHub Actions'da avtomatik yig'iladi (`.github/workflows/build.yml`): avval testlar, so'ng APK.
 
-## Branch va release
+## Versiyalar va release
 
-Loyihada bitta asosiy branch bor: `main`. Unga push qilinganda GitHub Actions testlarni o'tkazadi, APK yig'adi va **Releases** bo'limiga `v1.0.<build>` nomi bilan, `latest` belgisi bilan joylaydi. Boshqa branch'larda APK faqat Actions → Artifacts bo'limida bo'ladi.
+- `main` ga push qilinganda GitHub Actions testlarni o'tkazadi va APK yig'adi. APK **Actions → Artifacts** bo'limida bo'ladi, release chiqmaydi.
+- Release faqat `v*` tag bilan chiqadi: `git tag v1.0.1 && git push origin v1.0.1`. Tag nomi ilova versiyasiga aylanadi.
+- Versiya raqamlari: `v1.0.1` kichik tuzatish, `v1.1.0` yangi imkoniyat, `v2.0.0` katta o'zgarish.
 
 ## Tuzilma
 
