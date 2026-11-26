@@ -82,6 +82,8 @@
 - Uzilgan yuklash davom etadi, internet qaytganda avtomatik qayta urinadi
 - Tarmoq rejimi: Wi-Fi va mobil internet / faqat Wi-Fi / faqat mobil internet
 - Yuklash tarixini avtomatik tozalash (cheksiz, 30 kun, 7 kun yoki 24 soat)
+- Buferdan yuklash: Tezkor sozlamalardagi plitka yoki bildirishnomadagi tugma (v1.1.0)
+- Tajribaviy: havola nusxalanganda «Yuklaymi?» bildirishnomasi o'zi chiqadi (v1.1.0)
 - Yorug' va qorong'i mavzu
 
 ## Qanday ishlatiladi
@@ -89,6 +91,13 @@
 1. Videoning havolasini nusxalang (YouTube, Instagram va boshqa ilovada «Havolani nusxalash»).
 2. Uploat-V'ni oching: nusxalangan havolani ilova o'zi taklif qiladi, yoki o'zingiz joylang. Boshqa ilovadan «Ulashish» → «Tezkor yuklash» ni tanlasangiz, Uploat-V ochilmasdan fonda yuklaydi.
 3. Sifatni tanlab «Yuklash» ni bosing. Tugagach bildirishnoma keladi, video `Download/Uploat-V` papkasida bo'ladi.
+
+### Buferdan yuklash (v1.1.0)
+
+Android 10+ orqa fondagi ilovaga buferni o'qishga ruxsat bermaydi, shu sabab ikki yo'l bor:
+
+- **Oddiy (tavsiya):** Sozlamalar → Maxfiylik → «Bildirishnomada tugma» ni yoqing yoki Tezkor sozlamalarga «Buferdan yuklash» plitkasini qo'shing. Havolani nusxalab, shuni bosasiz va «Yuklaymi?» savoliga «Ha» deysiz.
+- **Tajribaviy avtomatik:** Android «Maxsus imkoniyatlar»da «Uploat-V: havolani aniqlash» ni yoqsangiz, havola nusxalanishi bilan tepada «Yuklaymi?» bildirishnomasi chiqadi. Xizmat ekran tarkibini o'qimaydi, faqat bufer o'zgarganini kuzatadi; hech narsa saqlanmaydi va yuborilmaydi. Ba'zi telefonlarda ishlamasligi mumkin.
 
 ## Qaysi saytlar ishlaydi
 
