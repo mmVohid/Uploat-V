@@ -44,8 +44,6 @@
             android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
-        <receiver android:name=".quick.ClipAskReceiver" android:exported="false" />
-
         <receiver android:name=".quick.ClipBootReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
@@ -63,18 +61,6 @@
             </intent-filter>
         </service>
 
-        <service
-            android:name=".quick.ClipboardWatcherService"
-            android:exported="false"
-            android:label="Uploat-V: havolani aniqlash"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/clipboard_watcher" />
-        </service>
 
         <!-- Ulashish menyusida alohida "Tezkor yuklash" varianti: ilovani ochmasdan fonda yuklaydi -->
         <activity
