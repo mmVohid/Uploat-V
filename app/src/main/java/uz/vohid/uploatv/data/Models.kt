@@ -48,6 +48,8 @@ data class AppSettings(
     /** Cookie'larni avtomatik boshqarish. */
     val autoCookies: Boolean = false,
     val ytdlpNightly: Boolean = false,
+    /** Bildirishnoma panelida doimiy "Buferdan yuklash" tugmasi. */
+    val clipShortcut: Boolean = false,
     /** Foydalanuvchi yopib qo'ygan dvigatel versiyasi: shu versiya uchun taklif qayta chiqmaydi. */
     val engineBannerDismissed: String = "",
     /** Yuklash qaysi tarmoq orqali bo'lishi. */

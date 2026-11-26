@@ -49,6 +49,7 @@ class UploatApp : Application() {
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL_DONE, "Yuklash natijasi", NotificationManager.IMPORTANCE_HIGH)
         )
+        uz.vohid.uploatv.quick.QuickNotifications.createChannels(nm)
     }
 
     companion object {

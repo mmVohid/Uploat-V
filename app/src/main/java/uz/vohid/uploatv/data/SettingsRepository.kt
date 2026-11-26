@@ -29,6 +29,7 @@ class SettingsRepository(private val context: Context) {
         val NETWORK_MODE = stringPreferencesKey("network_mode")
         val ENGINE_BANNER_DISMISSED = stringPreferencesKey("engine_banner_dismissed")
         val RETENTION = stringPreferencesKey("history_retention")
+        val CLIP_SHORTCUT = booleanPreferencesKey("clip_shortcut")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { p ->
@@ -50,6 +51,7 @@ class SettingsRepository(private val context: Context) {
             ),
             engineBannerDismissed = p[Keys.ENGINE_BANNER_DISMISSED] ?: "",
             historyRetention = p[Keys.RETENTION].toEnum(Retention.FOREVER),
+            clipShortcut = p[Keys.CLIP_SHORTCUT] ?: false,
         )
     }
 
@@ -63,6 +65,7 @@ class SettingsRepository(private val context: Context) {
     suspend fun setEngineBannerDismissed(tag: String) = context.dataStore.edit { it[Keys.ENGINE_BANNER_DISMISSED] = tag }
     suspend fun setNetworkMode(m: NetworkMode) = context.dataStore.edit { it[Keys.NETWORK_MODE] = m.name }
     suspend fun setRetention(r: Retention) = context.dataStore.edit { it[Keys.RETENTION] = r.name }
+    suspend fun setClipShortcut(on: Boolean) = context.dataStore.edit { it[Keys.CLIP_SHORTCUT] = on }
     suspend fun setAutoCookies(on: Boolean) = context.dataStore.edit { it[Keys.AUTO_COOKIES] = on }
 
     suspend fun setAutoUpdate(on: Boolean) = context.dataStore.edit { it[Keys.AUTO_UPDATE] = on }

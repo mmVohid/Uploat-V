@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Uploat-V</string>
+    <string name="watcher_desc">Nusxalangan video havolasini aniqlab, «Yuklaymi?» deb so\'raydi. Ekran tarkibi o\'qilmaydi, hech narsa saqlanmaydi va yuborilmaydi.</string>
 </resources>

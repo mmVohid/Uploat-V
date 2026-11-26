@@ -917,6 +917,12 @@ fun LoginWebScreen(startUrl: String, onDone: () -> Unit) {
 @Composable
 fun PrivacyScreen(vm: SettingsViewModel, onOpenCookies: () -> Unit, onBack: () -> Unit) {
     val settings by vm.settings.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    var watcherOn by remember { mutableStateOf(uz.vohid.uploatv.quick.QuickNotifications.isWatcherEnabled(context)) }
+    LifecycleResumeEffect(Unit) {
+        watcherOn = uz.vohid.uploatv.quick.QuickNotifications.isWatcherEnabled(context)
+        onPauseOrDispose { }
+    }
     SettingsPage(title = "Maxfiylik va xavfsizlik", onBack = onBack) {
         SettingsCard {
             SwitchRow(
@@ -924,6 +930,22 @@ fun PrivacyScreen(vm: SettingsViewModel, onOpenCookies: () -> Unit, onBack: () -
                 subtitle = "Yuklab olish tarixini o'chirib qo'ying: yuklashlar tarixga saqlanmaydi",
                 checked = settings.incognito,
                 onChange = vm::setIncognito,
+            )
+        }
+        SectionLabel("Buferdan yuklash")
+        SettingsCard {
+            SwitchRow(
+                title = "Bildirishnomada tugma",
+                subtitle = "Havolani nusxalang, panelni tushirib «Buferdan yuklash» ni bosing. Tezkor sozlamalarga ham plitka qo'shishingiz mumkin",
+                checked = settings.clipShortcut,
+                onChange = vm::setClipShortcut,
+            )
+            ClickableRow(
+                title = "Avtomatik aniqlash (tajribaviy)",
+                value = if (watcherOn) "Yoqilgan" else "O'chiq",
+                hint = "Havola nusxalanganda «Yuklaymi?» bildirishnomasi o'zi chiqadi. Android'ning «Maxsus imkoniyatlar» ruxsatini talab qiladi. " +
+                    "Ekran tarkibi o'qilmaydi, hech narsa saqlanmaydi va yuborilmaydi",
+                onClick = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) },
             )
         }
         SectionLabel("Cookies")

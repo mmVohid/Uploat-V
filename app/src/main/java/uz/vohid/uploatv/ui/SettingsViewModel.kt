@@ -60,6 +60,10 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     fun setSaveTree(uri: String?) = viewModelScope.launch { repo.setSaveTree(uri) }
     fun setIncognito(on: Boolean) = viewModelScope.launch { repo.setIncognito(on) }
     fun setYtdlpNightly(on: Boolean) = viewModelScope.launch { repo.setYtdlpNightly(on) }
+    fun setClipShortcut(on: Boolean) = viewModelScope.launch {
+        repo.setClipShortcut(on)
+        uz.vohid.uploatv.quick.QuickNotifications.syncShortcut(getApplication(), on)
+    }
     fun setAutoCookies(on: Boolean) = viewModelScope.launch { repo.setAutoCookies(on) }
     fun setNetworkMode(m: uz.vohid.uploatv.data.NetworkMode) = viewModelScope.launch { repo.setNetworkMode(m) }
     fun setRetention(r: uz.vohid.uploatv.data.Retention) = viewModelScope.launch {
