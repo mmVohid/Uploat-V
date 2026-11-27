@@ -27,6 +27,23 @@ enum class Retention(val label: String, val millis: Long?) {
     HOURS_24("24 soat", 24L * 3600 * 1000),
 }
 
+/** Har bir yuklash uchun tezlik chegarasi (yt-dlp --limit-rate). */
+enum class SpeedLimit(val label: String, val arg: String?) {
+    NONE("Cheksiz", null),
+    MB5("5 MB/s", "5M"),
+    MB2("2 MB/s", "2M"),
+    MB1("1 MB/s", "1M"),
+    KB500("500 KB/s", "500K"),
+}
+
+/** Fayl nomi shabloni (yt-dlp chiqish shabloni, kengaytmasiz). */
+enum class FileNameTemplate(val label: String, val example: String, val pattern: String) {
+    TITLE_ID("Sarlavha [id]", "Video nomi [dQw4w9WgXcQ].mp4", "%(title).80s [%(id)s]"),
+    TITLE("Faqat sarlavha", "Video nomi.mp4", "%(title).80s"),
+    UPLOADER_TITLE("Muallif – Sarlavha", "Kanal nomi - Video nomi.mp4", "%(uploader|Noma'lum).40s - %(title).80s"),
+    DATE_TITLE("Sana – Sarlavha", "2026-11-27 - Video nomi.mp4", "%(upload_date>%Y-%m-%d|Sanasiz)s - %(title).80s"),
+}
+
 data class AppSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val defaultQuality: Quality = Quality.BEST,
@@ -56,6 +73,10 @@ data class AppSettings(
     val networkMode: NetworkMode = NetworkMode.ANY,
     /** Tugagan yuklashlar ro'yxati qancha vaqt saqlanadi. */
     val historyRetention: Retention = Retention.FOREVER,
+    /** Bir vaqtda nechta video yuklanadi (qolganlari navbatda kutadi). */
+    val maxParallel: Int = 2,
+    val speedLimit: SpeedLimit = SpeedLimit.NONE,
+    val fileNameTemplate: FileNameTemplate = FileNameTemplate.TITLE_ID,
 )
 
 /** Havola bo'yicha yt-dlp qaytargan qisqa ma'lumot. */

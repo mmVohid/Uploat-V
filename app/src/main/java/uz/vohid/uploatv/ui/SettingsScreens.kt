@@ -29,6 +29,8 @@ import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.ContentPaste
 import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material.icons.rounded.Folder
+import androidx.compose.material.icons.rounded.Layers
+import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.HighQuality
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Notifications
@@ -592,6 +594,76 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
             }
         }
 
+        SectionLabel("Tezlik")
+        SettingsCard {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RowIcon(Icons.Rounded.Layers)
+                    Spacer(Modifier.width(16.dp))
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text("Bir vaqtda yuklashlar", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            "Qolganlari navbatda kutadi",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                val counts = listOf(1, 2, 3)
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    counts.forEachIndexed { i, n ->
+                        SegmentedButton(
+                            selected = settings.maxParallel == n,
+                            onClick = { vm.setMaxParallel(n) },
+                            shape = SegmentedButtonDefaults.itemShape(i, counts.size),
+                            icon = {},
+                        ) { Text("$n ta", maxLines = 1) }
+                    }
+                }
+            }
+            RowDivider()
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RowIcon(Icons.Rounded.Speed)
+                    Spacer(Modifier.width(16.dp))
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text("Tezlik chegarasi", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            "Har bir yuklash uchun alohida",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    uz.vohid.uploatv.data.SpeedLimit.entries.forEach { l ->
+                        FilterChip(
+                            selected = settings.speedLimit == l,
+                            onClick = { vm.setSpeedLimit(l) },
+                            label = { Text(l.label) },
+                        )
+                    }
+                }
+            }
+        }
+
+        SectionLabel("Fayl nomi")
+        SettingsCard {
+            uz.vohid.uploatv.data.FileNameTemplate.entries.forEachIndexed { i, t ->
+                if (i > 0) RowDivider()
+                ChoiceRow(
+                    title = t.label,
+                    subtitle = t.example,
+                    selected = settings.fileNameTemplate == t,
+                    onClick = { vm.setFileNameTemplate(t) },
+                )
+            }
+        }
+        Caption("Playlistda nomlar takrorlanmasligi uchun oxiriga [id] qo'shiladi. O'zgarish keyingi yuklashlarga ta'sir qiladi")
+
         SectionLabel("Qulaylik")
         SettingsCard {
             var unrestricted by remember { mutableStateOf(isBatteryUnrestricted(context)) }
@@ -890,6 +962,32 @@ private fun RowIcon(icon: ImageVector) {
             modifier = Modifier.size(22.dp),
             tint = MaterialTheme.colorScheme.onPrimaryContainer,
         )
+    }
+}
+
+/** Bitta variantni tanlash qatori (radio). */
+@Composable
+private fun ChoiceRow(title: String, subtitle: String, selected: Boolean, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 64.dp)
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        androidx.compose.material3.RadioButton(selected = selected, onClick = null)
+        Spacer(Modifier.width(16.dp))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 

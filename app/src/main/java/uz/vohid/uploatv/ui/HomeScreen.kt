@@ -677,6 +677,20 @@ private fun EmptyState() {
     }
 }
 
+internal fun shareFile(context: android.content.Context, item: DownloadItem) {
+    val uri = item.savedUri?.let(Uri::parse) ?: return
+    val send = Intent(Intent.ACTION_SEND)
+        .setType(item.mime ?: "video/*")
+        .putExtra(Intent.EXTRA_STREAM, uri)
+        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    val chooser = Intent.createChooser(send, "Ulashish").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    try {
+        context.startActivity(chooser)
+    } catch (_: ActivityNotFoundException) {
+        Toast.makeText(context, "Ulashish uchun ilova topilmadi", Toast.LENGTH_SHORT).show()
+    }
+}
+
 internal fun openFile(context: android.content.Context, item: DownloadItem) {
     val uri = item.savedUri?.let(Uri::parse) ?: return
     val intent = Intent(Intent.ACTION_VIEW)

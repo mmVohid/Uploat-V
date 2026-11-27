@@ -22,8 +22,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
+import uz.vohid.uploatv.data.AppSettings
 import kotlinx.coroutines.flow.first
 import uz.vohid.uploatv.UploatApp
 import kotlinx.coroutines.delay
@@ -35,19 +37,18 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * Yuklashlar navbati. Bir vaqtda 2 tagacha yuklash ishlaydi.
+ * Yuklashlar navbati. Bir vaqtda nechta yuklash ishlashi sozlamalardan olinadi (1–3, standart 2).
  * Natija telefonning `Download/Uploat-V` papkasiga saqlanadi.
  */
 object DownloadManager {
 
-    private const val MAX_PARALLEL = 2
     private const val HISTORY_LIMIT = 100
     private val ITEM_REGEX = Regex("""Downloading item (\d+) of (\d+)""")
     private val SPEED_REGEX = Regex("""\bat\s+(\d+(?:\.\d+)?\s?[KMGT]?i?B/s)""")
 
     private lateinit var app: Context
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val gate = Semaphore(MAX_PARALLEL)
+    private val running = MutableStateFlow(0)
     private val jobs = ConcurrentHashMap<String, Job>()
 
     private val _items = MutableStateFlow<List<DownloadItem>>(emptyList())
@@ -209,6 +210,7 @@ object DownloadManager {
         if (get(id)?.isActive == true) cancel(id)
         netWaiting.remove(id)
         attempts.remove(id)
+        autoRetries.remove(id)
         scope.launch { tmpDir(id).deleteRecursively() }
         _items.update { list -> list.filterNot { it.id == id } }
         persist()
@@ -252,11 +254,43 @@ object DownloadManager {
     private fun launchJob(id: String) {
         jobs[id] = scope.launch {
             try {
-                gate.withPermit { process(id) }
+                acquireSlot()
+                try {
+                    process(id)
+                } finally {
+                    releaseSlot()
+                }
             } finally {
                 jobs.remove(id)
             }
         }
+    }
+
+    /** Bo'sh joy chiqquncha kutadi. Chegara sozlamalardan o'qiladi, shuning uchun o'zgarsa darrov hisobga olinadi. */
+    private suspend fun acquireSlot() {
+        val repo = SettingsRepository(app)
+        while (true) {
+            combine(running, repo.settings.map { it.maxParallel }) { r, m -> r < m }.first { it }
+            val cur = running.value
+            val max = repo.settings.first().maxParallel
+            if (cur < max && running.compareAndSet(cur, cur + 1)) return
+        }
+    }
+
+    private fun releaseSlot() {
+        running.update { (it - 1).coerceAtLeast(0) }
+    }
+
+    /** Yuklangan faylni telefondan o'chiradi. Ro'yxatdan olib tashlash alohida [remove] bilan. */
+    suspend fun deleteFile(id: String): Boolean = withContext(Dispatchers.IO) {
+        val uri = get(id)?.savedUri?.let(Uri::parse) ?: return@withContext false
+        runCatching {
+            if (DocumentsContract.isDocumentUri(app, uri)) {
+                DocumentsContract.deleteDocument(app.contentResolver, uri)
+            } else {
+                app.contentResolver.delete(uri, null, null) > 0
+            }
+        }.getOrDefault(false)
     }
 
     private val loginRetried = ConcurrentHashMap.newKeySet<String>()
@@ -308,7 +342,7 @@ object DownloadManager {
                 var index = 1
                 var total = 1
                 var speed: String? = null
-                YoutubeDL.getInstance().execute(buildRequest(item, dir), id) { percent, eta, line ->
+                YoutubeDL.getInstance().execute(buildRequest(item, dir, s), id) { percent, eta, line ->
                     ITEM_REGEX.find(line)?.let {
                         index = it.groupValues[1].toInt()
                         total = it.groupValues[2].toInt()
@@ -338,6 +372,7 @@ object DownloadManager {
             val saved = if (treeUri != null) saveToTree(dir, Uri.parse(treeUri)) else saveToDownloads(dir)
             if (saved.isEmpty()) throw IllegalStateException("Fayl topilmadi")
 
+            autoRetries.remove(id)
             mutate(id) {
                 it.copy(
                     status = Status.DONE,
@@ -371,9 +406,13 @@ object DownloadManager {
         }
     }
 
-    private fun buildRequest(item: DownloadItem, dir: File): YoutubeDLRequest =
+    private fun buildRequest(item: DownloadItem, dir: File, s: AppSettings): YoutubeDLRequest =
         YoutubeDLRequest(item.url).apply {
-            addOption("-o", "${dir.absolutePath}/%(title).80s [%(id)s].%(ext)s")
+            // Playlistda bir xil sarlavhalar bir-birini bosib ketmasligi uchun shablonda [id] bo'lmasa, qo'shiladi
+            val base = s.fileNameTemplate.pattern
+            val name = if (item.playlist && "%(id)s" !in base) "$base [%(id)s]" else base
+            addOption("-o", "${dir.absolutePath}/$name.%(ext)s")
+            s.speedLimit.arg?.let { addOption("--limit-rate", it) }
             addOption("--no-mtime")
             addOption("--no-warnings")
             addOption("--concurrent-fragments", "4")

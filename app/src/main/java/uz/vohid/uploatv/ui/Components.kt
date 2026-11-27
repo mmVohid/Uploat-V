@@ -16,6 +16,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.DeleteForever
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
+import uz.vohid.uploatv.download.DownloadManager
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Refresh
@@ -119,13 +131,65 @@ fun DownloadRow(
                         Text("Bekor qilish")
                     }
                     Status.DONE -> {
+                        var menuOpen by remember { mutableStateOf(false) }
+                        var confirmDelete by remember { mutableStateOf(false) }
+                        val scope = rememberCoroutineScope()
                         FilledTonalButton(onClick = onOpen) {
                             Icon(Icons.Rounded.PlayArrow, null, Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))
                             Text("Ochish")
                         }
-                        IconButton(onClick = onRemove) {
-                            Icon(Icons.Rounded.Delete, contentDescription = "Ro'yxatdan olib tashlash")
+                        IconButton(onClick = { shareFile(context, item) }) {
+                            Icon(Icons.Rounded.Share, contentDescription = "Ulashish")
+                        }
+                        Box {
+                            IconButton(onClick = { menuOpen = true }) {
+                                Icon(Icons.Rounded.MoreVert, contentDescription = "Boshqa amallar")
+                            }
+                            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                                DropdownMenuItem(
+                                    text = { Text("Ro'yxatdan olib tashlash") },
+                                    leadingIcon = { Icon(Icons.Rounded.Delete, contentDescription = null) },
+                                    onClick = {
+                                        menuOpen = false
+                                        onRemove()
+                                    },
+                                )
+                                if (!item.playlist) {
+                                    DropdownMenuItem(
+                                        text = { Text("Telefondan ham o'chirish") },
+                                        leadingIcon = { Icon(Icons.Rounded.DeleteForever, contentDescription = null) },
+                                        onClick = {
+                                            menuOpen = false
+                                            confirmDelete = true
+                                        },
+                                    )
+                                }
+                            }
+                        }
+                        if (confirmDelete) {
+                            AlertDialog(
+                                onDismissRequest = { confirmDelete = false },
+                                title = { Text("Faylni o'chirasizmi?") },
+                                text = { Text("«${item.title}» telefondan butunlay o'chadi. Buni qaytarib bo'lmaydi.") },
+                                confirmButton = {
+                                    TextButton(onClick = {
+                                        confirmDelete = false
+                                        scope.launch {
+                                            val ok = DownloadManager.deleteFile(item.id)
+                                            Toast.makeText(
+                                                context,
+                                                if (ok) "Fayl o'chirildi" else "Faylni o'chirib bo'lmadi",
+                                                Toast.LENGTH_SHORT,
+                                            ).show()
+                                            if (ok) onRemove()
+                                        }
+                                    }) { Text("O'chirish", color = MaterialTheme.colorScheme.error) }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = { confirmDelete = false }) { Text("Bekor qilish") }
+                                },
+                            )
                         }
                     }
                     Status.FAILED, Status.CANCELED -> {

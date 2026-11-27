@@ -64,6 +64,9 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         repo.setClipShortcut(on)
         uz.vohid.uploatv.quick.QuickNotifications.syncShortcut(getApplication(), on)
     }
+    fun setMaxParallel(n: Int) = viewModelScope.launch { repo.setMaxParallel(n) }
+    fun setSpeedLimit(l: uz.vohid.uploatv.data.SpeedLimit) = viewModelScope.launch { repo.setSpeedLimit(l) }
+    fun setFileNameTemplate(t: uz.vohid.uploatv.data.FileNameTemplate) = viewModelScope.launch { repo.setFileNameTemplate(t) }
     fun setAutoCookies(on: Boolean) = viewModelScope.launch { repo.setAutoCookies(on) }
     fun setNetworkMode(m: uz.vohid.uploatv.data.NetworkMode) = viewModelScope.launch { repo.setNetworkMode(m) }
     fun setRetention(r: uz.vohid.uploatv.data.Retention) = viewModelScope.launch {
