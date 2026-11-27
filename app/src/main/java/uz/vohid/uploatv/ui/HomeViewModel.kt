@@ -54,6 +54,11 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val _ui = MutableStateFlow(HomeUi())
     val ui: StateFlow<HomeUi> = _ui.asStateFlow()
     private var fetchJob: Job? = null
+
+    /** Oxirgi havolalar ma'lumoti (xotirada, 10 daqiqa): bir xil havola qayta kiritilsa, bir zumda chiqadi. */
+    private val infoCache = object : LinkedHashMap<String, Pair<Long, MediaInfo>>(16, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Pair<Long, MediaInfo>>) = size > 10
+    }
     private var incognito = false
 
     val banner: StateFlow<EngineBannerUi> = EngineWatch.banner
@@ -138,23 +143,36 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         return true
     }
 
+    private fun applyInfo(info: MediaInfo) {
+        _ui.update { cur ->
+            val max = info.maxHeight
+            val allowed = Quality.entries.filter { q ->
+                val h = q.height
+                h == null || max == null || h <= max
+            }
+            val q = if (cur.quality in allowed) cur.quality else allowed.firstOrNull { it.height != null } ?: Quality.BEST
+            cur.copy(fetching = false, info = info, quality = q)
+        }
+    }
+
     private fun startFetch(immediate: Boolean) {
         fetchJob = viewModelScope.launch {
-            if (!immediate) delay(700)
             val s = _ui.value
             val url = s.url.trim()
+            val noPlaylist = s.hasVideoAndList && !s.wholePlaylist
+            val key = "$url|$noPlaylist"
+            infoCache[key]?.let { (time, cached) ->
+                if (System.currentTimeMillis() - time < INFO_TTL_MS) {
+                    applyInfo(cached)
+                    return@launch
+                }
+            }
+            if (!immediate) delay(700)
             _ui.update { it.copy(fetching = true, error = null) }
             try {
-                val info = InfoFetcher.fetch(url, noPlaylist = s.hasVideoAndList && !s.wholePlaylist)
-                _ui.update { cur ->
-                    val max = info.maxHeight
-                    val allowed = Quality.entries.filter { q ->
-                        val h = q.height
-                        h == null || max == null || h <= max
-                    }
-                    val q = if (cur.quality in allowed) cur.quality else allowed.firstOrNull { it.height != null } ?: Quality.BEST
-                    cur.copy(fetching = false, info = info, quality = q)
-                }
+                val info = InfoFetcher.fetch(url, noPlaylist = noPlaylist)
+                infoCache[key] = System.currentTimeMillis() to info
+                applyInfo(info)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
@@ -163,6 +181,10 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                 _ui.update { it.copy(fetching = false, error = friendlyError(e), errorDetail = rawError(e)) }
             }
         }
+    }
+
+    private companion object {
+        const val INFO_TTL_MS = 10 * 60 * 1000L
     }
 
     private fun looksLikeUrl(text: String) =

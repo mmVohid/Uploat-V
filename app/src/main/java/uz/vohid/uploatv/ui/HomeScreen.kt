@@ -6,6 +6,17 @@ import androidx.compose.ui.res.imageResource
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -126,7 +137,12 @@ fun HomeScreen(
             dismissButton = { TextButton(onClick = vm::dismissDuplicate) { Text("Bekor qilish") } },
         )
     }
-    val items by DownloadManager.items.collectAsStateWithLifecycle()
+    // Faqat faol yuklashlar id ro'yxati kuzatiladi: progress o'zgarganda butun sahifa emas, faqat o'sha qator qayta chiziladi
+    val activeIds by remember {
+        DownloadManager.items
+            .map { list -> list.filter { it.isActive }.map { it.id } }
+            .distinctUntilChanged()
+    }.collectAsStateWithLifecycle(initialValue = emptyList())
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val clipboard = LocalClipboardManager.current
@@ -144,19 +160,8 @@ fun HomeScreen(
         value = if (UploatApp.engineReady.isCompleted) 1 else 0
         value = if (runCatching { UploatApp.engineReady.await() }.isSuccess) 1 else 2
     }
-    val activeItems = items.filter { it.isActive }
-    val activeCount = activeItems.size
+    val activeCount = activeIds.size
     val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
-
-    // Buferdagi havolani aniqlash (Android faqat oyna fokusda bo'lganda o'qishga ruxsat beradi)
-    val windowFocused = LocalWindowInfo.current.isWindowFocused
-    var clipUrl by remember { mutableStateOf<String?>(null) }
-    var dismissedClip by rememberSaveable { mutableStateOf<String?>(null) }
-    LaunchedEffect(windowFocused) {
-        if (windowFocused) clipUrl = URL_REGEX.find(clipboard.getText()?.text.orEmpty())?.value
-    }
-    val showClip = clipUrl != null && clipUrl != dismissedClip &&
-        ui.url.isEmpty() && ui.info == null && !ui.fetching
 
     val pasteFromClipboard: () -> Unit = {
         val url = URL_REGEX.find(clipboard.getText()?.text.orEmpty())?.value
@@ -171,7 +176,7 @@ fun HomeScreen(
     Scaffold(
         containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = { HomeHeader(engineState = engineState, activeCount = activeCount) },
+        topBar = { HomeHeader(engineState = engineState) },
     ) { pad ->
       Box(Modifier.fillMaxSize()) {
         LazyColumn(
@@ -210,19 +215,14 @@ fun HomeScreen(
                     label = { Text("Video havolasi") },
                     placeholder = { Text("https://…") },
                     leadingIcon = { PlatformBadge(ui.url) },
-                    trailingIcon = {
-                        if (ui.url.isEmpty()) {
-                            IconButton(onClick = {
-                                val text = clipboard.getText()?.text?.trim().orEmpty()
-                                if (text.isNotEmpty()) vm.onUrlChange(text, immediate = true)
-                            }) {
-                                Icon(Icons.Rounded.ContentPaste, contentDescription = "Joylash")
-                            }
-                        } else {
+                    trailingIcon = if (ui.url.isNotEmpty()) {
+                        {
                             IconButton(onClick = { vm.onUrlChange("") }) {
                                 Icon(Icons.Rounded.Close, contentDescription = "Tozalash")
                             }
                         }
+                    } else {
+                        null
                     },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(onSearch = {
@@ -232,23 +232,8 @@ fun HomeScreen(
                 )
             }
 
-            item(key = "clip") {
-                AnimatedVisibility(visible = showClip) {
-                    clipUrl?.let { url ->
-                        ClipCard(
-                            url = url,
-                            onUse = {
-                                dismissedClip = url
-                                vm.onUrlChange(url, immediate = true)
-                            },
-                            onDismiss = { dismissedClip = url },
-                        )
-                    }
-                }
-            }
-
             item(key = "loading") {
-                AnimatedVisibility(visible = ui.fetching) { LoadingCard() }
+                AnimatedVisibility(visible = ui.fetching) { SkeletonInfo() }
             }
 
             item(key = "error") {
@@ -263,36 +248,12 @@ fun HomeScreen(
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             InfoCard(info)
                             OptionsCard(ui = ui, vm = vm)
-                            val dlSource = remember { MutableInteractionSource() }
-                            Button(
-                                interactionSource = dlSource,
-                                onClick = {
-                                    focus.clearFocus()
-                                    keyboard?.hide()
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    vm.download()
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(56.dp)
-                                    .pressScale(dlSource),
-                            ) {
-                                Icon(Icons.Rounded.Download, contentDescription = null)
-                                Spacer(Modifier.width(8.dp))
-                                Text(
-                                    text = when {
-                                        info.isPlaylist -> "Playlistni yuklash (${info.entryCount})"
-                                        else -> "Videoni yuklash"
-                                    },
-                                    style = MaterialTheme.typography.titleMedium,
-                                )
-                            }
                         }
                     }
                 }
             }
 
-            if (activeItems.isNotEmpty()) {
+            if (activeIds.isNotEmpty()) {
                 item(key = "active-header") {
                     Text(
                         text = "Faol yuklashlar",
@@ -300,15 +261,8 @@ fun HomeScreen(
                         modifier = Modifier.padding(start = 4.dp, top = 12.dp),
                     )
                 }
-                items(activeItems, key = { it.id }) { item ->
-                    DownloadRow(
-                        item = item,
-                        onCancel = { DownloadManager.cancel(item.id) },
-                        onRetry = { DownloadManager.retry(item.id) },
-                        onOpen = { openFile(context, item) },
-                        onRemove = { DownloadManager.remove(item.id) },
-                        modifier = Modifier.animateItem(),
-                    )
+                items(activeIds, key = { it }) { id ->
+                    ActiveDownloadRow(id = id, modifier = Modifier.animateItem())
                 }
             } else if (ui.info == null && !ui.fetching && ui.error == null) {
                 item(key = "empty") { EmptyState() }
@@ -325,28 +279,96 @@ fun HomeScreen(
                 onDownloads = onOpenDownloads,
                 onSettings = onOpenSettings,
                 activeCount = activeCount,
+                downloadLabel = ui.info?.let { if (it.isPlaylist) "Playlistni yuklash (${it.entryCount})" else "Videoni yuklash" },
+                onDownload = {
+                    focus.clearFocus()
+                    keyboard?.hide()
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    vm.download()
+                },
             )
         }
       }
     }
 }
 
+/** Ma'lumot olinayotganda: tayyor kartalar shakli (joy-egalari). Kartalar chiqqanda sahifa sakramaydi. */
 @Composable
-private fun LoadingCard() {
-    Card(
-        modifier = Modifier.fillMaxWidth().glass(RoundedCornerShape(20.dp)),
-        shape = RoundedCornerShape(20.dp),
-        colors = glassCardColors(),
+private fun SkeletonInfo() {
+    val transition = rememberInfiniteTransition(label = "skeleton")
+    val pulse by transition.animateFloat(
+        initialValue = 0.45f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
+        label = "pulse",
+    )
+    val block = MaterialTheme.colorScheme.surfaceContainerHighest
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer { alpha = pulse }
+            .semantics { contentDescription = "Ma'lumot olinmoqda" },
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        Card(
+            modifier = Modifier.fillMaxWidth().glass(RoundedCornerShape(20.dp)),
+            shape = RoundedCornerShape(20.dp),
+            colors = glassCardColors(),
         ) {
-            CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.5.dp)
-            Spacer(Modifier.width(14.dp))
-            Text("Ma'lumot olinmoqda…", style = MaterialTheme.typography.bodyMedium)
+            Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(width = 128.dp, height = 72.dp).clip(RoundedCornerShape(12.dp)).background(block))
+                Spacer(Modifier.width(14.dp))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SkeletonLine(1f)
+                    SkeletonLine(0.6f)
+                    SkeletonLine(0.35f, 10.dp)
+                }
+            }
+        }
+        Card(
+            modifier = Modifier.fillMaxWidth().glass(RoundedCornerShape(20.dp)),
+            shape = RoundedCornerShape(20.dp),
+            colors = glassCardColors(),
+        ) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                SkeletonLine(0.3f, 12.dp)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    repeat(4) {
+                        Box(Modifier.size(width = 64.dp, height = 32.dp).clip(RoundedCornerShape(8.dp)).background(block))
+                    }
+                }
+            }
         }
     }
+}
+
+@Composable
+private fun SkeletonLine(fraction: Float, height: androidx.compose.ui.unit.Dp = 14.dp) {
+    Box(
+        Modifier
+            .fillMaxWidth(fraction)
+            .height(height)
+            .clip(RoundedCornerShape(6.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+    )
+}
+
+/** Faol yuklash qatori o'z holatini o'zi kuzatadi: progress o'zgarganda faqat shu qator qayta chiziladi. */
+@Composable
+private fun ActiveDownloadRow(id: String, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val item by remember(id) {
+        DownloadManager.items.map { list -> list.firstOrNull { it.id == id } }.distinctUntilChanged()
+    }.collectAsStateWithLifecycle(initialValue = DownloadManager.items.value.firstOrNull { it.id == id })
+    val current = item ?: return
+    DownloadRow(
+        item = current,
+        onCancel = { DownloadManager.cancel(id) },
+        onRetry = { DownloadManager.retry(id) },
+        onOpen = { openFile(context, current) },
+        onRemove = { DownloadManager.remove(id) },
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -479,7 +501,7 @@ private fun OptionsCard(ui: HomeUi, vm: HomeViewModel) {
 private val URL_REGEX = Regex("""https?://\S+""")
 
 @Composable
-private fun HomeHeader(engineState: Int, activeCount: Int) {
+private fun HomeHeader(engineState: Int) {
     val scheme = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
@@ -496,21 +518,18 @@ private fun HomeHeader(engineState: Int, activeCount: Int) {
             ),
             modifier = Modifier.weight(1f),
         )
-        val (label, dot) = when {
-            activeCount > 0 -> "$activeCount ta yuklash" to scheme.primary
-            engineState == 1 -> "Tayyor" to scheme.tertiary
-            engineState == 2 -> "Yuklovchi xatosi" to scheme.error
-            else -> "Yuklanmoqda…" to scheme.outline
-        }
-        Row(
-            modifier = Modifier
-                .glass(RoundedCornerShape(50), tintAlpha = 0.45f)
-                .padding(horizontal = 12.dp, vertical = 7.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(Modifier.size(8.dp).clip(CircleShape).background(dot))
-            Spacer(Modifier.width(8.dp))
-            Text(label, style = MaterialTheme.typography.labelLarge)
+        // Holat faqat muammo bo'lganda ko'rsatiladi
+        AnimatedVisibility(visible = engineState == 2, enter = fadeIn(), exit = fadeOut()) {
+            Row(
+                modifier = Modifier
+                    .glass(RoundedCornerShape(50), tintAlpha = 0.45f)
+                    .padding(horizontal = 12.dp, vertical = 7.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(Modifier.size(8.dp).clip(CircleShape).background(scheme.error))
+                Spacer(Modifier.width(8.dp))
+                Text("Yuklovchi xatosi", style = MaterialTheme.typography.labelLarge)
+            }
         }
     }
 }
@@ -521,8 +540,12 @@ private fun FloatingBar(
     onDownloads: () -> Unit,
     onSettings: () -> Unit,
     activeCount: Int,
+    /** null bo'lsa — oddiy panel; bo'lmasa asosiy tugma "yuklash" ga aylanadi. */
+    downloadLabel: String?,
+    onDownload: () -> Unit,
 ) {
     val pasteSource = remember { MutableInteractionSource() }
+    val downloadSource = remember { MutableInteractionSource() }
     val setSource = remember { MutableInteractionSource() }
     val dlSource = remember { MutableInteractionSource() }
     Row(
@@ -535,37 +558,56 @@ private fun FloatingBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Button(
-            onClick = onPaste,
-            interactionSource = pasteSource,
-            modifier = Modifier
-                .weight(1f)
-                .height(52.dp)
-                .pressScale(pasteSource),
-        ) {
-            Icon(Icons.Rounded.ContentPaste, contentDescription = null)
-            Spacer(Modifier.width(8.dp))
-            Text("Havolani joylash", style = MaterialTheme.typography.titleMedium, maxLines = 1)
-        }
-        FilledTonalIconButton(
-            onClick = onDownloads,
-            interactionSource = dlSource,
-            modifier = Modifier
-                .size(52.dp)
-                .pressScale(dlSource),
-        ) {
-            BadgedBox(badge = { if (activeCount > 0) Badge { Text("$activeCount") } }) {
-                Icon(Icons.Rounded.Download, contentDescription = "Yuklashlar")
+        Crossfade(targetState = downloadLabel, modifier = Modifier.weight(1f), label = "mainAction") { label ->
+            if (label == null) {
+                Button(
+                    onClick = onPaste,
+                    interactionSource = pasteSource,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                        .pressScale(pasteSource),
+                ) {
+                    Icon(Icons.Rounded.ContentPaste, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Havolani joylash", style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                }
+            } else {
+                Button(
+                    onClick = onDownload,
+                    interactionSource = downloadSource,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                        .pressScale(downloadSource),
+                ) {
+                    Icon(Icons.Rounded.Download, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(label, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                }
             }
         }
-        FilledTonalIconButton(
-            onClick = onSettings,
-            interactionSource = setSource,
-            modifier = Modifier
-                .size(52.dp)
-                .pressScale(setSource),
-        ) {
-            Icon(Icons.Rounded.Settings, contentDescription = "Sozlamalar")
+        if (downloadLabel == null) {
+            FilledTonalIconButton(
+                onClick = onDownloads,
+                interactionSource = dlSource,
+                modifier = Modifier
+                    .size(52.dp)
+                    .pressScale(dlSource),
+            ) {
+                BadgedBox(badge = { if (activeCount > 0) Badge { Text("$activeCount") } }) {
+                    Icon(Icons.Rounded.Download, contentDescription = "Yuklashlar")
+                }
+            }
+            FilledTonalIconButton(
+                onClick = onSettings,
+                interactionSource = setSource,
+                modifier = Modifier
+                    .size(52.dp)
+                    .pressScale(setSource),
+            ) {
+                Icon(Icons.Rounded.Settings, contentDescription = "Sozlamalar")
+            }
         }
     }
 }
@@ -592,53 +634,6 @@ private fun PlatformBadge(url: String) {
             contentAlignment = Alignment.Center,
         ) {
             Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-        }
-    }
-}
-
-@Composable
-private fun ClipCard(url: String, onUse: () -> Unit, onDismiss: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth().glass(
-            RoundedCornerShape(20.dp),
-            tint = MaterialTheme.colorScheme.secondaryContainer,
-            tintAlpha = 0.65f,
-        ),
-        shape = RoundedCornerShape(20.dp),
-        colors = glassCardColors(MaterialTheme.colorScheme.onSecondaryContainer),
-    ) {
-        Row(
-            modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                Icons.Rounded.ContentPaste,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSecondaryContainer,
-            )
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(
-                    "Buferda havola bor",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                )
-                Text(
-                    text = Uri.parse(url).host ?: url,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            TextButton(onClick = onUse) { Text("Ishlatish") }
-            IconButton(onClick = onDismiss) {
-                Icon(
-                    Icons.Rounded.Close,
-                    contentDescription = "Yopish",
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                )
-            }
         }
     }
 }
