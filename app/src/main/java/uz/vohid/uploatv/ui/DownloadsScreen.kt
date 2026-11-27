@@ -159,12 +159,13 @@ fun DownloadsScreen(
                 }
             }
         } else {
+            val side = adaptiveSidePadding()
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
+                    start = side,
+                    end = side,
                     top = pad.calculateTopPadding() + 8.dp,
                     bottom = 24.dp + navBottom,
                 ),

@@ -1062,6 +1062,7 @@ private fun openUrl(context: android.content.Context, url: String) {
 @Composable
 private fun SettingsPage(title: String, onBack: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     val scroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val side = adaptiveSidePadding()
 
     Scaffold(
         modifier = Modifier.nestedScroll(scroll.nestedScrollConnection),
@@ -1090,7 +1091,7 @@ private fun SettingsPage(title: String, onBack: () -> Unit, content: @Composable
                     .padding(top = pad.calculateTopPadding())
                     .verticalScroll(rememberScrollState())
                     .navigationBarsPadding()
-                    .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
+                    .padding(start = side, end = side, top = 4.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 content = content,
             )

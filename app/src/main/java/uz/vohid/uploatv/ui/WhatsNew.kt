@@ -75,6 +75,16 @@ object Changelog {
                     "Yuklangan videoni galereyaga o'tmay, Yuklashlar sahifasidagi «Ko'rish» tugmasi bilan ko'ring.",
                 ),
                 ChangeItem(
+                    Icons.Rounded.PlayCircle,
+                    "Boyitilgan pleer",
+                    "Ikki marta bosib 10 soniya oldinga yoki orqaga suring, tezlikni 0,5× dan 2× gacha tanlang, ekran ustida ijro (PiP) va gorizontal to'liq ekrandan foydalaning.",
+                ),
+                ChangeItem(
+                    Icons.Rounded.Link,
+                    "Playlist: faqat yangilari",
+                    "Playlistni qayta qo'ysangiz, avval yuklangan videolar o'tkazib yuboriladi.",
+                ),
+                ChangeItem(
                     Icons.Rounded.SwapVert,
                     "Navbatni boshqarish",
                     "Kutayotgan yuklashlarni sudrab tartiblang yoki «Birinchi» tugmasi bilan oldinga olib chiqing.",

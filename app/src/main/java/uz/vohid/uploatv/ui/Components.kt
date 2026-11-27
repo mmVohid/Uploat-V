@@ -3,6 +3,8 @@ package uz.vohid.uploatv.ui
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -390,4 +392,21 @@ private fun StatusLine(item: DownloadItem, queuePos: Int? = null) {
             overflow = TextOverflow.Ellipsis,
         )
     }
+}
+
+
+/** Kontent eng ko'pi bilan shu kenglikda markazda turadi (planshet, katlanuvchi va gorizontal ekranlar uchun). */
+private val MAX_CONTENT_WIDTH = 680.dp
+
+/**
+ * Ro'yxat va sozlamalar uchun yon chetlar: tor ekranda 16 dp, keng ekranda kontent markazga yig'iladi.
+ * Gorizontal holatda kesik (notch) va tizim panellari ostiga kirmaydi.
+ */
+@Composable
+fun adaptiveSidePadding(): androidx.compose.ui.unit.Dp {
+    val width = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp
+    val dir = androidx.compose.ui.platform.LocalLayoutDirection.current
+    val safe = androidx.compose.foundation.layout.WindowInsets.safeDrawing.asPaddingValues()
+    val inset = maxOf(safe.calculateStartPadding(dir), safe.calculateEndPadding(dir))
+    return maxOf(16.dp + inset, (width - MAX_CONTENT_WIDTH) / 2)
 }

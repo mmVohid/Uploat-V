@@ -207,14 +207,15 @@ fun HomeScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = { HomeHeader(engineState = engineState, hasNews = hasNews, onNews = { showNews = true }) },
     ) { pad ->
+      val side = adaptiveSidePadding()
       Box(Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .imePadding(),
             contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
+                start = side,
+                end = side,
                 top = pad.calculateTopPadding() + 20.dp,
                 bottom = 104.dp + navBottom,
             ),
@@ -674,10 +675,11 @@ private fun FloatingBar(
     val downloadSource = remember { MutableInteractionSource() }
     val setSource = remember { MutableInteractionSource() }
     val dlSource = remember { MutableInteractionSource() }
+    val side = adaptiveSidePadding()
     Row(
         modifier = Modifier
             .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .padding(horizontal = side, vertical = 12.dp)
             .fillMaxWidth()
             .glass(RoundedCornerShape(32.dp), tintAlpha = 0.88f)
             .padding(8.dp),
