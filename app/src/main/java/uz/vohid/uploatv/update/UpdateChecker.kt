@@ -13,8 +13,16 @@ object UpdateChecker {
 
     private const val API = "https://api.github.com/repos/mmVohid/Uploat-V/releases/latest"
 
-    /** Oxirgi reliz; tarmoq yo'q yoki xato bo'lsa null (xatolik foydalanuvchiga ko'rsatilmaydi). */
-    suspend fun fetchLatest(): Release? = withContext(Dispatchers.IO) {
+    sealed interface Result {
+        /** Yangi javob. [release] null bo'lishi mumkin (reliz yo'q yoki barqaror emas). */
+        data class Fresh(val release: Release?, val etag: String?) : Result
+        /** Oxirgi tekshiruvdan beri o'zgarish yo'q (304): trafik va GitHub limiti sarflanmaydi. */
+        data object NotModified : Result
+        data object Failed : Result
+    }
+
+    /** Oxirgi reliz. [etag] berilsa, o'zgarmagan bo'lsa [Result.NotModified] qaytadi; xato foydalanuvchiga ko'rsatilmaydi. */
+    suspend fun check(etag: String? = null): Result = withContext(Dispatchers.IO) {
         runCatching {
             val conn = URL(API).openConnection() as HttpURLConnection
             try {
@@ -22,12 +30,19 @@ object UpdateChecker {
                 conn.readTimeout = 8000
                 conn.setRequestProperty("Accept", "application/vnd.github+json")
                 conn.setRequestProperty("User-Agent", "Uploat-V")
-                if (conn.responseCode != 200) return@runCatching null
-                parseRelease(conn.inputStream.bufferedReader().use { it.readText() })
+                if (!etag.isNullOrBlank()) conn.setRequestProperty("If-None-Match", etag)
+                when (conn.responseCode) {
+                    200 -> Result.Fresh(
+                        release = parseRelease(conn.inputStream.bufferedReader().use { it.readText() }),
+                        etag = conn.getHeaderField("ETag"),
+                    )
+                    304 -> Result.NotModified
+                    else -> Result.Failed
+                }
             } finally {
                 conn.disconnect()
             }
-        }.getOrNull()
+        }.getOrDefault(Result.Failed)
     }
 
     internal fun parseRelease(json: String): Release? {

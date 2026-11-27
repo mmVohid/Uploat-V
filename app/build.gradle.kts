@@ -41,7 +41,9 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.getByName(if (hasReleaseKey) "uploatv" else "debug")
         }
     }
@@ -84,6 +86,8 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     implementation("io.coil-kt:coil-compose:2.7.0")
+    // Baseline Profile'ni o'rnatish (Play Store'siz o'rnatilganda ham ishlaydi)
+    implementation("androidx.profileinstaller:profileinstaller:1.4.1")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")

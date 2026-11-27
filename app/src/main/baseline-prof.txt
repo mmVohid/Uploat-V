@@ -1,0 +1,17 @@
+# Ilovaning o'z kodi
+HSPLuz/vohid/uploatv/**;->**(**)**
+Luz/vohid/uploatv/**;
+
+# Compose ish vaqti va asosiy UI qatlamlari (ishga tushish va aylantirish uchun)
+HSPLandroidx/compose/runtime/**;->**(**)**
+HSPLandroidx/compose/ui/**;->**(**)**
+HSPLandroidx/compose/foundation/**;->**(**)**
+HSPLandroidx/compose/material3/**;->**(**)**
+HSPLandroidx/compose/animation/**;->**(**)**
+HSPLandroidx/lifecycle/**;->**(**)**
+HSPLandroidx/activity/**;->**(**)**
+HSPLandroidx/datastore/**;->**(**)**
+Landroidx/compose/runtime/**;
+Landroidx/compose/ui/**;
+Landroidx/compose/foundation/**;
+Landroidx/compose/material3/**;

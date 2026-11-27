@@ -33,12 +33,15 @@ import uz.vohid.uploatv.download.DownloadManager
 import uz.vohid.uploatv.download.Status
 import uz.vohid.uploatv.download.InfoFetcher
 import uz.vohid.uploatv.download.friendlyError
+import androidx.compose.runtime.Immutable
 import uz.vohid.uploatv.download.rawError
 import java.util.UUID
 
 /** Bir nechta havola joylanganda ro'yxat holati. [selectable] bo'lsa, foydalanuvchi belgilaydi. */
+@Immutable
 data class BulkUi(val urls: List<String>, val selected: Set<Int>, val selectable: Boolean)
 
+@Immutable
 data class UpdateUi(val version: String, val url: String)
 
 private val URL_FIND = Regex("""https?://[^\s]+""")
@@ -51,6 +54,7 @@ internal fun extractUrls(text: String): List<String> =
         .distinct()
         .toList()
 
+@Immutable
 data class HomeUi(
     val url: String = "",
     val fetching: Boolean = false,
@@ -130,7 +134,11 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             val s = settings.settings.first()
             if (s.updateCheck && System.currentTimeMillis() - s.lastUpdateCheck > UPDATE_INTERVAL_MS) {
-                UpdateChecker.fetchLatest()?.let { settings.setLatestRelease(it.version, it.url) }
+                when (val r = UpdateChecker.check(s.latestEtag)) {
+                    is UpdateChecker.Result.Fresh -> r.release?.let { settings.setLatestRelease(it.version, it.url, r.etag) }
+                    UpdateChecker.Result.NotModified -> settings.touchUpdateCheck()
+                    UpdateChecker.Result.Failed -> Unit
+                }
             }
         }
         // Yuklash dvigatel/sayt bilan bog'liq sabab bilan yiqilsa, yangi versiya bor-yo'qligi darhol tekshiriladi

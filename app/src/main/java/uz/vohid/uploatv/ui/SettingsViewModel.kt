@@ -68,12 +68,23 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         if (_updateCheck.value.checking) return
         viewModelScope.launch {
             _updateCheck.value = UpdateCheckUi(checking = true)
-            val latest = uz.vohid.uploatv.update.UpdateChecker.fetchLatest()
+            val saved = repo.settings.first()
+            val latest = when (val r = uz.vohid.uploatv.update.UpdateChecker.check(saved.latestEtag)) {
+                is uz.vohid.uploatv.update.UpdateChecker.Result.Fresh -> r.release?.also {
+                    repo.setLatestRelease(it.version, it.url, r.etag)
+                }
+                uz.vohid.uploatv.update.UpdateChecker.Result.NotModified -> {
+                    repo.touchUpdateCheck()
+                    val v = saved.latestVersion
+                    val u = saved.latestUrl
+                    if (v != null && u != null) uz.vohid.uploatv.update.UpdateChecker.Release(v, u) else null
+                }
+                uz.vohid.uploatv.update.UpdateChecker.Result.Failed -> null
+            }
             val current = uz.vohid.uploatv.BuildConfig.VERSION_NAME
             val message = when {
                 latest == null -> "Tekshirib bo'lmadi. Internetni tekshiring"
                 else -> {
-                    repo.setLatestRelease(latest.version, latest.url)
                     when {
                         uz.vohid.uploatv.update.UpdateChecker.isNewer(latest.version, current) ->
                             "Yangi versiya bor: v${latest.version}"

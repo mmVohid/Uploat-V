@@ -129,7 +129,7 @@ fun DownloadsScreen(snackbar: SnackbarHostState, onBack: () -> Unit) {
                 ),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                itemsIndexed(items, key = { _, it -> it.id }) { index, item ->
+                itemsIndexed(items, key = { _, it -> it.id }, contentType = { _, _ -> "download" }) { index, item ->
                     SwipeDownloadRow(item = item, index = index, snackbar = snackbar, modifier = Modifier.animateItem())
                 }
             }

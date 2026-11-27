@@ -37,6 +37,7 @@ class SettingsRepository(private val context: Context) {
         val LAST_APP_UPDATE_CHECK = longPreferencesKey("last_app_update_check")
         val LATEST_VERSION = stringPreferencesKey("latest_version")
         val LATEST_URL = stringPreferencesKey("latest_url")
+        val LATEST_ETAG = stringPreferencesKey("latest_etag")
         val DISMISSED_VERSION = stringPreferencesKey("dismissed_version")
         val SPEED_LIMIT = stringPreferencesKey("speed_limit")
         val FILE_TEMPLATE = stringPreferencesKey("file_name_template")
@@ -68,6 +69,7 @@ class SettingsRepository(private val context: Context) {
             lastUpdateCheck = p[Keys.LAST_APP_UPDATE_CHECK] ?: 0L,
             latestVersion = p[Keys.LATEST_VERSION],
             latestUrl = p[Keys.LATEST_URL],
+            latestEtag = p[Keys.LATEST_ETAG],
             dismissedVersion = p[Keys.DISMISSED_VERSION],
             speedLimit = p[Keys.SPEED_LIMIT].toEnum(SpeedLimit.NONE),
             fileNameTemplate = p[Keys.FILE_TEMPLATE].toEnum(FileNameTemplate.TITLE_ID),
@@ -86,9 +88,15 @@ class SettingsRepository(private val context: Context) {
     suspend fun setRetention(r: Retention) = context.dataStore.edit { it[Keys.RETENTION] = r.name }
     suspend fun setBulkMode(m: BulkMode) = context.dataStore.edit { it[Keys.BULK_MODE] = m.name }
     suspend fun setUpdateCheck(on: Boolean) = context.dataStore.edit { it[Keys.UPDATE_CHECK] = on }
-    suspend fun setLatestRelease(version: String, url: String) = context.dataStore.edit {
+    suspend fun setLatestRelease(version: String, url: String, etag: String?) = context.dataStore.edit {
         it[Keys.LATEST_VERSION] = version
         it[Keys.LATEST_URL] = url
+        if (etag != null) it[Keys.LATEST_ETAG] = etag else it.remove(Keys.LATEST_ETAG)
+        it[Keys.LAST_APP_UPDATE_CHECK] = System.currentTimeMillis()
+    }
+
+    /** Tekshiruv bo'ldi, lekin o'zgarish yo'q: faqat vaqt belgilanadi. */
+    suspend fun touchUpdateCheck() = context.dataStore.edit {
         it[Keys.LAST_APP_UPDATE_CHECK] = System.currentTimeMillis()
     }
     suspend fun dismissUpdate(version: String) = context.dataStore.edit { it[Keys.DISMISSED_VERSION] = version }

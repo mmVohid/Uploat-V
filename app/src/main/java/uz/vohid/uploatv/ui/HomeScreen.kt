@@ -281,7 +281,7 @@ fun HomeScreen(
                         onNone = { vm.setAllBulk(false) },
                     )
                 }
-                items(bulk.urls.size, key = { "bulk-$it" }) { i ->
+                items(bulk.urls.size, key = { "bulk-$it" }, contentType = { "bulk-row" }) { i ->
                     BulkRow(
                         url = bulk.urls[i],
                         checked = i in bulk.selected,
@@ -311,7 +311,7 @@ fun HomeScreen(
                         modifier = Modifier.padding(start = 4.dp, top = 12.dp),
                     )
                 }
-                items(activeIds, key = { it }) { id ->
+                items(activeIds, key = { it }, contentType = { "download" }) { id ->
                     ActiveDownloadRow(id = id, modifier = Modifier.animateItem())
                 }
             } else if (ui.info == null && !ui.fetching && ui.error == null) {
@@ -849,7 +849,7 @@ private fun PlaylistPickerSheet(
                 TextButton(onClick = { selected = emptySet() }) { Text("Hech biri") }
             }
             LazyColumn(Modifier.weight(1f, fill = false)) {
-                items(entries, key = { it.index }) { e ->
+                items(entries, key = { it.index }, contentType = { "entry" }) { e ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()

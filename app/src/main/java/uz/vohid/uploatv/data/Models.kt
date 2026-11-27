@@ -1,5 +1,7 @@
 package uz.vohid.uploatv.data
 
+import androidx.compose.runtime.Immutable
+
 enum class ThemeMode(val label: String) {
     SYSTEM("Tizim"),
     LIGHT("Yorug'"),
@@ -52,6 +54,7 @@ enum class BulkMode(val label: String, val hint: String) {
 }
 
 /** Playlistdagi bitta video (tanlash oynasi uchun). [index] 1 dan boshlanadi. */
+@Immutable
 data class PlaylistEntry(val index: Int, val title: String, val durationSec: Long?)
 
 data class AppSettings(
@@ -93,11 +96,14 @@ data class AppSettings(
     val lastUpdateCheck: Long = 0L,
     val latestVersion: String? = null,
     val latestUrl: String? = null,
+    /** GitHub javobining ETag'i: o'zgarmagan bo'lsa qayta yuklanmaydi. */
+    val latestEtag: String? = null,
     /** Foydalanuvchi yopib qo'ygan versiya: shu versiya haqida qayta ko'rsatilmaydi. */
     val dismissedVersion: String? = null,
 )
 
 /** Havola bo'yicha yt-dlp qaytargan qisqa ma'lumot. */
+@Immutable
 data class MediaInfo(
     val title: String,
     val uploader: String?,
