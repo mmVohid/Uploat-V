@@ -1,6 +1,16 @@
 package uz.vohid.uploatv.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.runtime.remember
+import uz.vohid.uploatv.download.Status
+import androidx.compose.ui.zIndex
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.material.icons.rounded.DragHandle
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
@@ -65,8 +75,32 @@ import uz.vohid.uploatv.download.ErrorAction
 @Composable
 fun DownloadsScreen(snackbar: SnackbarHostState, onErrorAction: (ErrorAction, String) -> Unit, onBack: () -> Unit) {
     val items by DownloadManager.items.collectAsStateWithLifecycle()
+    val queue by DownloadManager.queue.collectAsStateWithLifecycle()
+    val currentQueue by rememberUpdatedState(queue)
+    val ordered = remember(items, queue) { orderForScreen(items, queue) }
+    val listState = rememberLazyListState()
+    var draggedId by remember { mutableStateOf<String?>(null) }
+    var dragOffset by remember { mutableFloatStateOf(0f) }
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
+    // Sudralayotgan qator boshqa navbatdagi qator ustiga yetganda ular o'rin almashadi
+    val onDragBy: (String, Float) -> Unit = { id, dy ->
+        dragOffset += dy
+        val infos = listState.layoutInfo.visibleItemsInfo
+        val me = infos.firstOrNull { it.key == id }
+        if (me != null) {
+            val center = me.offset + me.size / 2f + dragOffset
+            val q = currentQueue
+            val target = infos.firstOrNull { info ->
+                val k = info.key as? String
+                k != null && k != id && k in q && center >= info.offset && center <= info.offset + info.size
+            }
+            if (target != null) {
+                DownloadManager.moveInQueue(id, q.indexOf(target.key as String))
+                dragOffset -= (target.offset - me.offset)
+            }
+        }
+    }
     Scaffold(
         containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -121,6 +155,7 @@ fun DownloadsScreen(snackbar: SnackbarHostState, onErrorAction: (ErrorAction, St
             }
         } else {
             LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
                     start = 16.dp,
@@ -130,13 +165,43 @@ fun DownloadsScreen(snackbar: SnackbarHostState, onErrorAction: (ErrorAction, St
                 ),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                itemsIndexed(items, key = { _, it -> it.id }, contentType = { _, _ -> "download" }) { index, item ->
+                itemsIndexed(ordered, key = { _, it -> it.id }, contentType = { _, _ -> "download" }) { index, item ->
+                    val pos = queue.indexOf(item.id).takeIf { it >= 0 && item.status == Status.QUEUED }?.plus(1)
+                    val dragged = draggedId == item.id
+                    val handle: (@Composable () -> Unit)? = if (pos != null && queue.size > 1) {
+                        {
+                            DragHandleBox(
+                                onStart = {
+                                    draggedId = item.id
+                                    dragOffset = 0f
+                                },
+                                onDrag = { onDragBy(item.id, it) },
+                                onEnd = {
+                                    draggedId = null
+                                    dragOffset = 0f
+                                },
+                            )
+                        }
+                    } else {
+                        null
+                    }
                     SwipeDownloadRow(
                         item = item,
                         index = index,
                         snackbar = snackbar,
                         onErrorAction = { onErrorAction(it, item.id) },
-                        modifier = Modifier.animateItem(),
+                        queuePos = pos,
+                        onMoveToFront = { DownloadManager.moveToFront(item.id) },
+                        dragHandle = handle,
+                        modifier = if (dragged) {
+                            Modifier.zIndex(1f).graphicsLayer {
+                                translationY = dragOffset
+                                scaleX = 1.03f
+                                scaleY = 1.03f
+                            }
+                        } else {
+                            Modifier.animateItem()
+                        },
                     )
                 }
             }
@@ -150,6 +215,9 @@ private fun SwipeDownloadRow(
     index: Int,
     snackbar: SnackbarHostState,
     onErrorAction: (ErrorAction) -> Unit,
+    queuePos: Int?,
+    onMoveToFront: () -> Unit,
+    dragHandle: (@Composable () -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -217,7 +285,52 @@ private fun SwipeDownloadRow(
                 onOpen = { openFile(context, item) },
                 onRemove = { DownloadManager.remove(item.id) },
                 onErrorAction = onErrorAction,
+                queuePos = queuePos,
+                onMoveToFront = onMoveToFront,
+                dragHandle = dragHandle,
             )
         }
+    }
+}
+
+/** Ekrandagi tartib: avval ishlayotganlar, keyin navbat tartibida kutayotganlar, so'ng tugaganlar. */
+private fun orderForScreen(items: List<DownloadItem>, queue: List<String>): List<DownloadItem> {
+    val byId = items.associateBy { it.id }
+    val running = items.filter { it.status == Status.RUNNING }
+    val queued = queue.mapNotNull { byId[it] }.filter { it.status == Status.QUEUED }
+    val queuedIds = queued.map { it.id }.toSet()
+    // Ma'lumoti olinayotgan (hali navbatga kirmagan) yuklashlar navbat oxirida turadi
+    val pending = items.filter { it.status == Status.QUEUED && it.id !in queuedIds }
+    val rest = items.filter { !it.isActive }
+    return running + queued + pending + rest
+}
+
+/** Navbatdagi qatorni ushlab sudrash uchun tutqich. */
+@Composable
+private fun DragHandleBox(onStart: () -> Unit, onDrag: (Float) -> Unit, onEnd: () -> Unit) {
+    val start by rememberUpdatedState(onStart)
+    val drag by rememberUpdatedState(onDrag)
+    val end by rememberUpdatedState(onEnd)
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDragStart = { start() },
+                    onDrag = { change, amount ->
+                        change.consume()
+                        drag(amount.y)
+                    },
+                    onDragEnd = { end() },
+                    onDragCancel = { end() },
+                )
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            Icons.Rounded.DragHandle,
+            contentDescription = "Tartibni o'zgartirish (sudrang)",
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }

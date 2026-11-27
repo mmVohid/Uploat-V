@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
@@ -101,6 +102,10 @@ fun DownloadRow(
     onRemove: () -> Unit,
     modifier: Modifier = Modifier,
     onErrorAction: (ErrorAction) -> Unit = {},
+    /** Navbatdagi o'rni (1 dan); null bo'lsa ko'rsatilmaydi. */
+    queuePos: Int? = null,
+    onMoveToFront: (() -> Unit)? = null,
+    dragHandle: (@Composable () -> Unit)? = null,
 ) {
     val clipboard = LocalClipboardManager.current
     val context = LocalContext.current
@@ -120,7 +125,7 @@ fun DownloadRow(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    StatusLine(item)
+                    StatusLine(item, queuePos)
                     if (item.status == Status.QUEUED || item.status == Status.RUNNING) {
                         val bar by animateFloatAsState(item.progress, label = "bar")
                         val barModifier = Modifier.fillMaxWidth().padding(top = 4.dp).height(4.dp).clip(RoundedCornerShape(2.dp))
@@ -156,10 +161,20 @@ fun DownloadRow(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 when (item.status) {
-                    Status.QUEUED, Status.RUNNING -> TextButton(onClick = onCancel) {
-                        Icon(Icons.Rounded.Close, null, Modifier.size(18.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text("Bekor qilish")
+                    Status.QUEUED, Status.RUNNING -> {
+                        if (onMoveToFront != null && queuePos != null && queuePos > 1) {
+                            TextButton(onClick = onMoveToFront) {
+                                Icon(Icons.Rounded.ArrowUpward, null, Modifier.size(18.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text("Birinchi")
+                            }
+                        }
+                        TextButton(onClick = onCancel) {
+                            Icon(Icons.Rounded.Close, null, Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Bekor qilish")
+                        }
+                        dragHandle?.invoke()
                     }
                     Status.DONE -> {
                         var menuOpen by remember { mutableStateOf(false) }
@@ -319,10 +334,10 @@ private fun StatusBadge(icon: androidx.compose.ui.graphics.vector.ImageVector, c
 }
 
 @Composable
-private fun StatusLine(item: DownloadItem) {
+private fun StatusLine(item: DownloadItem, queuePos: Int? = null) {
     val scheme = MaterialTheme.colorScheme
     val (text, color) = when (item.status) {
-        Status.QUEUED -> "Navbatda" to scheme.onSurfaceVariant
+        Status.QUEUED -> (if (queuePos != null) "Navbatda · $queuePos-o'rin" else "Navbatda") to scheme.onSurfaceVariant
         Status.RUNNING -> {
             val pct = "${(item.progress * 100).toInt()}%"
             (if (item.detail.isBlank()) pct else "$pct · ${item.detail}") to scheme.primary

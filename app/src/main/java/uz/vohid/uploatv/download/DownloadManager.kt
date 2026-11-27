@@ -57,6 +57,22 @@ object DownloadManager {
     private val infoGate = Semaphore(2)
     private val jobs = ConcurrentHashMap<String, Job>()
 
+    /** Bo'sh joy kutayotgan yuklashlar tartibi (boshidagisi birinchi navbatda yuklanadi). */
+    private val waitQueue = MutableStateFlow<List<String>>(emptyList())
+    val queue: StateFlow<List<String>> = waitQueue.asStateFlow()
+
+    /** Navbatdagi yuklashni boshqa o'ringa o'tkazadi (sudrab tartiblash uchun). */
+    fun moveInQueue(id: String, toIndex: Int) = waitQueue.update { list ->
+        if (id !in list) return@update list
+        val m = list.toMutableList()
+        m.remove(id)
+        m.add(toIndex.coerceIn(0, m.size), id)
+        m
+    }
+
+    /** Yuklashni navbatning eng boshiga olib chiqadi: bo'sh joy chiqishi bilan birinchi bo'lib yuklanadi. */
+    fun moveToFront(id: String) = moveInQueue(id, 0)
+
     private val _items = MutableStateFlow<List<DownloadItem>>(emptyList())
     val items: StateFlow<List<DownloadItem>> = _items.asStateFlow()
 
@@ -270,7 +286,7 @@ object DownloadManager {
     private fun launchJob(id: String) {
         jobs[id] = scope.launch {
             try {
-                acquireSlot()
+                acquireSlot(id)
                 try {
                     process(id)
                 } finally {
@@ -283,12 +299,20 @@ object DownloadManager {
     }
 
     /** Bo'sh joy chiqquncha kutadi. Chegara sozlamalardan o'qiladi, shuning uchun o'zgarsa darrov hisobga olinadi. */
-    private suspend fun acquireSlot() {
-        val maxFlow = SettingsRepository(app).settings.map { it.maxParallel }
-        while (true) {
-            val max = combine(running, maxFlow) { r, m -> r to m }.first { (r, m) -> r < m }.second
-            val cur = running.value
-            if (cur < max && running.compareAndSet(cur, cur + 1)) return
+    private suspend fun acquireSlot(id: String) {
+        waitQueue.update { if (id in it) it else it + id }
+        try {
+            val maxFlow = SettingsRepository(app).settings.map { it.maxParallel }
+            while (true) {
+                // Faqat navbatda oldinda turganlar (bo'sh joylar soniga teng) joy oladi: tartib saqlanadi
+                val max = combine(running, maxFlow, waitQueue) { r, m, q -> Triple(r, m, q) }
+                    .first { (r, m, q) -> r < m && q.indexOf(id) in 0 until (m - r) }
+                    .second
+                val cur = running.value
+                if (cur < max && running.compareAndSet(cur, cur + 1)) return
+            }
+        } finally {
+            waitQueue.update { it - id }
         }
     }
 
