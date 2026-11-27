@@ -759,6 +759,11 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
 fun AboutScreen(vm: SettingsViewModel, onOpenGuide: () -> Unit, onBack: () -> Unit) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var showNews by remember { mutableStateOf(false) }
+    if (showNews) {
+        WhatsNewSheet(onSeen = vm::markNewsSeen, onDismiss = { showNews = false })
+    }
+    val hasNews = settings.loaded && settings.changelogSeen != Changelog.LATEST_ID
 
     SettingsPage(title = "Ilova haqida", onBack = onBack) {
         Column(
@@ -788,6 +793,13 @@ fun AboutScreen(vm: SettingsViewModel, onOpenGuide: () -> Unit, onBack: () -> Un
         SectionLabel("Yangilanishlar")
         SettingsCard {
             val check by vm.updateCheck.collectAsStateWithLifecycle()
+            ActionRow(
+                icon = Icons.Rounded.Notifications,
+                title = "Yangiliklar",
+                subtitle = if (hasNews) "Yangi xabar bor" else "Ilovada nimalar o'zgardi",
+                onClick = { showNews = true },
+            )
+            RowDivider()
             ActionRow(
                 icon = Icons.Rounded.Refresh,
                 title = "Yangilanishni tekshirish",

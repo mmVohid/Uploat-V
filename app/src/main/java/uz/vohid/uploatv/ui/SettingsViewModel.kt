@@ -60,6 +60,10 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         loadVersion()
     }
 
+    fun markNewsSeen() {
+        viewModelScope.launch { repo.setChangelogSeen(Changelog.LATEST_ID) }
+    }
+
     fun setBulkMode(m: uz.vohid.uploatv.data.BulkMode) = viewModelScope.launch { repo.setBulkMode(m) }
     fun setUpdateCheck(on: Boolean) = viewModelScope.launch { repo.setUpdateCheck(on) }
 
