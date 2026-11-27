@@ -14,6 +14,7 @@ import androidx.compose.foundation.background
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.border
+import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.ui.graphics.luminance
@@ -727,7 +728,33 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
                     }
                 }
             }
+            RowDivider()
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RowIcon(Icons.Rounded.Bolt)
+                    Spacer(Modifier.width(16.dp))
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text("Parcha oqimlari", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            "Bitta video bir vaqtda nechta parchada yuklanadi",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    uz.vohid.uploatv.data.FRAGMENT_OPTIONS.forEachIndexed { i, n ->
+                        SegmentedButton(
+                            selected = settings.fragmentThreads == n,
+                            onClick = { vm.setFragmentThreads(n) },
+                            shape = SegmentedButtonDefaults.itemShape(i, uz.vohid.uploatv.data.FRAGMENT_OPTIONS.size),
+                            icon = {},
+                        ) { Text(if (n == 4) "4 (tavsiya)" else "$n", maxLines = 1) }
+                    }
+                }
+            }
         }
+        Caption("Tez internetda katta videolar tezroq tushadi. Juda yuqori qiymatda sayt so'rovlarni cheklashi (429/403) mumkin. Xato chiqsa, 4 ga qaytaring")
 
         SectionLabel("Fayl nomi")
         SettingsCard {

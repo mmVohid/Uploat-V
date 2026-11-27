@@ -457,7 +457,7 @@ object DownloadManager {
             s.speedLimit.arg?.let { addOption("--limit-rate", it) }
             addOption("--no-mtime")
             addOption("--no-warnings")
-            addOption("--concurrent-fragments", "4")
+            addOption("--concurrent-fragments", s.fragmentThreads.toString())
             addOption("--retries", "5")
             addOption("--fragment-retries", "5")
             addOption("--socket-timeout", "20")

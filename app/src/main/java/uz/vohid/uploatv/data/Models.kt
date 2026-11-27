@@ -107,6 +107,8 @@ data class AppSettings(
     /** Bir vaqtda nechta video yuklanadi (qolganlari navbatda kutadi). */
     val maxParallel: Int = 2,
     val speedLimit: SpeedLimit = SpeedLimit.NONE,
+    /** Bitta yuklash ichida bir vaqtda yuklanadigan parchalar soni (4, 8 yoki 16). */
+    val fragmentThreads: Int = 4,
     val fileNameTemplate: FileNameTemplate = FileNameTemplate.TITLE_ID,
     val bulkMode: BulkMode = BulkMode.MANUAL,
     /** Yangi versiya haqida xabar berish (GitHub Releases tekshiriladi). */

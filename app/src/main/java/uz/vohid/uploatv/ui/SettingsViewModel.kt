@@ -68,6 +68,7 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { repo.setChangelogSeen(Changelog.LATEST_ID) }
     }
 
+    fun setFragmentThreads(n: Int) = viewModelScope.launch { repo.setFragmentThreads(n) }
     fun setBulkMode(m: uz.vohid.uploatv.data.BulkMode) = viewModelScope.launch { repo.setBulkMode(m) }
     fun setUpdateCheck(on: Boolean) = viewModelScope.launch { repo.setUpdateCheck(on) }
 
