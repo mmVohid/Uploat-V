@@ -100,6 +100,8 @@ data class AppSettings(
     val latestEtag: String? = null,
     /** Foydalanuvchi yopib qo'ygan versiya: shu versiya haqida qayta ko'rsatilmaydi. */
     val dismissedVersion: String? = null,
+    /** Oxirgi ko'rilgan "Yangiliklar" yozuvi (yangi yozuv chiqsa, belgi qayta paydo bo'ladi). */
+    val changelogSeen: String = "",
 )
 
 /** Havola bo'yicha yt-dlp qaytargan qisqa ma'lumot. */

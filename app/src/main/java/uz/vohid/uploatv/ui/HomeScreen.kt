@@ -137,6 +137,8 @@ fun HomeScreen(
     val banner by vm.banner.collectAsStateWithLifecycle()
     val update by vm.update.collectAsStateWithLifecycle()
     var showPicker by remember { mutableStateOf(false) }
+    var showNews by remember { mutableStateOf(false) }
+    val hasNews by vm.hasNews.collectAsStateWithLifecycle()
     if (ui.duplicate) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = vm::dismissDuplicate,
@@ -180,6 +182,10 @@ fun HomeScreen(
     }
     LaunchedEffect(Unit) { vm.events.collect { snackbar.showSnackbar(it) } }
 
+    if (showNews) {
+        WhatsNewSheet(onSeen = vm::markNewsSeen, onDismiss = { showNews = false })
+    }
+
     val pickInfo = ui.info
     if (showPicker && pickInfo != null && pickInfo.entries.isNotEmpty()) {
         PlaylistPickerSheet(
@@ -196,7 +202,7 @@ fun HomeScreen(
     Scaffold(
         containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = { HomeHeader(engineState = engineState) },
+        topBar = { HomeHeader(engineState = engineState, hasNews = hasNews, onNews = { showNews = true }) },
     ) { pad ->
       Box(Modifier.fillMaxSize()) {
         LazyColumn(
@@ -585,7 +591,7 @@ private fun OptionsCard(ui: HomeUi, vm: HomeViewModel, onPickEntries: () -> Unit
 private val URL_REGEX = Regex("""https?://\S+""")
 
 @Composable
-private fun HomeHeader(engineState: Int) {
+private fun HomeHeader(engineState: Int, hasNews: Boolean, onNews: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
@@ -604,17 +610,21 @@ private fun HomeHeader(engineState: Int) {
         )
         // Holat faqat muammo bo'lganda ko'rsatiladi
         AnimatedVisibility(visible = engineState == 2, enter = fadeIn(), exit = fadeOut()) {
-            Row(
-                modifier = Modifier
-                    .glass(RoundedCornerShape(50), tintAlpha = 0.45f)
-                    .padding(horizontal = 12.dp, vertical = 7.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Box(Modifier.size(8.dp).clip(CircleShape).background(scheme.error))
-                Spacer(Modifier.width(8.dp))
-                Text("Yuklovchi xatosi", style = MaterialTheme.typography.labelLarge)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier
+                        .glass(RoundedCornerShape(50), tintAlpha = 0.45f)
+                        .padding(horizontal = 12.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(Modifier.size(8.dp).clip(CircleShape).background(scheme.error))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Yuklovchi xatosi", style = MaterialTheme.typography.labelLarge)
+                }
+                Spacer(Modifier.width(10.dp))
             }
         }
+        NewsButton(hasNews = hasNews, onClick = onNews)
     }
 }
 

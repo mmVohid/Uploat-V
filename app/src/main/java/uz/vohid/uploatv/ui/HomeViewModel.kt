@@ -110,6 +110,16 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
+    /** "Yangiliklar" tugmasidagi nuqta: yangi yozuv hali ko'rilmagan. */
+    val hasNews: StateFlow<Boolean> = settings.settings
+        .map { it.loaded && it.changelogSeen != Changelog.LATEST_ID }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    fun markNewsSeen() {
+        viewModelScope.launch { settings.setChangelogSeen(Changelog.LATEST_ID) }
+    }
+
     val banner: StateFlow<EngineBannerUi> = EngineWatch.banner
 
     init {
