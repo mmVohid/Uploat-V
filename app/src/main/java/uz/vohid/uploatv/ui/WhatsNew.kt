@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentPaste
 import androidx.compose.material.icons.rounded.PlaylistAddCheck
 import androidx.compose.material.icons.rounded.SystemUpdate
@@ -162,6 +163,7 @@ fun WhatsNewSheet(onSeen: () -> Unit, onDismiss: () -> Unit) {
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = scheme.surface,
         shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        dragHandle = null,
     ) {
         Column(Modifier.fillMaxWidth()) {
             // Yumshoq rangli sarlavha
@@ -169,7 +171,7 @@ fun WhatsNewSheet(onSeen: () -> Unit, onDismiss: () -> Unit) {
                 Modifier
                     .fillMaxWidth()
                     .background(Brush.verticalGradient(listOf(scheme.primaryContainer.copy(alpha = 0.45f), Color.Transparent)))
-                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                    .padding(start = 24.dp, end = 16.dp, top = 24.dp, bottom = 12.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
@@ -179,12 +181,27 @@ fun WhatsNewSheet(onSeen: () -> Unit, onDismiss: () -> Unit) {
                         Icon(Icons.Rounded.Notifications, contentDescription = null, tint = scheme.onPrimaryContainer, modifier = Modifier.size(28.dp))
                     }
                     Spacer(Modifier.width(16.dp))
-                    Column {
+                    Column(Modifier.weight(1f)) {
                         Text("Yangiliklar", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold)
                         Text(
                             "Ilovada nimalar o'zgardi",
                             style = MaterialTheme.typography.bodyMedium,
                             color = scheme.onSurfaceVariant,
+                        )
+                    }
+                    Box(
+                        Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(scheme.onSurface.copy(alpha = 0.07f))
+                            .clickable(role = Role.Button, onClick = onDismiss),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            Icons.Rounded.Close,
+                            contentDescription = "Yopish",
+                            tint = scheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp),
                         )
                     }
                 }
@@ -226,7 +243,12 @@ private fun EntryCard(entry: ChangeEntry, isLatest: Boolean, modifier: Modifier 
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(entry.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f, fill = false))
+            Column(Modifier.weight(1f)) {
+                Text(entry.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                entry.date?.let {
+                    Text(it, style = MaterialTheme.typography.labelMedium, color = scheme.onSurfaceVariant)
+                }
+            }
             if (isLatest) {
                 Spacer(Modifier.width(10.dp))
                 Text(
@@ -238,10 +260,6 @@ private fun EntryCard(entry: ChangeEntry, isLatest: Boolean, modifier: Modifier 
                         .background(scheme.primaryContainer)
                         .padding(horizontal = 10.dp, vertical = 3.dp),
                 )
-            }
-            Spacer(Modifier.weight(1f))
-            entry.date?.let {
-                Text(it, style = MaterialTheme.typography.labelMedium, color = scheme.onSurfaceVariant)
             }
         }
         entry.items.forEach { item ->
