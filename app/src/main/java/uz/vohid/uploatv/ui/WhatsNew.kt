@@ -24,6 +24,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.Vibration
+import androidx.compose.material.icons.rounded.SwapVert
+import androidx.compose.material.icons.rounded.PlayCircle
+import androidx.compose.material.icons.rounded.Link
+import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentPaste
@@ -60,8 +65,45 @@ data class ChangeEntry(val id: String, val title: String, val date: String?, val
 object Changelog {
     val entries: List<ChangeEntry> = listOf(
         ChangeEntry(
+            id = "2026-11-28",
+            title = "Yangi imkoniyatlar",
+            date = "28-noyabr 2026",
+            items = listOf(
+                ChangeItem(
+                    Icons.Rounded.PlayCircle,
+                    "Ilova ichida pleer",
+                    "Yuklangan videoni galereyaga o'tmay, Yuklashlar sahifasidagi «Ko'rish» tugmasi bilan ko'ring.",
+                ),
+                ChangeItem(
+                    Icons.Rounded.SwapVert,
+                    "Navbatni boshqarish",
+                    "Kutayotgan yuklashlarni sudrab tartiblang yoki «Birinchi» tugmasi bilan oldinga olib chiqing.",
+                ),
+                ChangeItem(
+                    Icons.Rounded.ErrorOutline,
+                    "Xatolar tushunarli",
+                    "Xato sababi oddiy tilda yoziladi, yonida esa kerakli joyga olib boradigan tugma chiqadi.",
+                ),
+                ChangeItem(
+                    Icons.Rounded.Link,
+                    "Toza havolalar",
+                    "Havoladagi kuzatuv qismlari olib tashlanadi, bir xil video qayta yuklanmaydi.",
+                ),
+                ChangeItem(
+                    Icons.Rounded.Palette,
+                    "Aksent rang va AMOLED",
+                    "Tashqi ko'rinishda ilova rangini tanlang va qorong'i rejimda sof qora fonni yoqing.",
+                ),
+                ChangeItem(
+                    Icons.Rounded.Vibration,
+                    "Tugash tebranishi",
+                    "Hamma yuklashlar tugaganda telefon tebranadi. Sozlamalar → Yuklash bo'limida sozlanadi.",
+                ),
+            ),
+        ),
+        ChangeEntry(
             id = "2026-11-27",
-            title = "Oxirgi yangiliklar",
+            title = "Oldingi yangiliklar",
             date = "27-noyabr 2026",
             items = listOf(
                 ChangeItem(
