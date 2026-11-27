@@ -179,7 +179,12 @@ fun DownloadRow(
                         }
                         dragHandle?.invoke()
                     }
-                    Status.DONE -> {
+                    Status.DONE -> if (item.savedUri == null) {
+                        // Yangi video bo'lmagan: ochiladigan fayl yo'q, faqat ro'yxatdan olib tashlash
+                        IconButton(onClick = onRemove) {
+                            Icon(Icons.Rounded.Delete, contentDescription = "Ro'yxatdan olib tashlash")
+                        }
+                    } else {
                         var menuOpen by remember { mutableStateOf(false) }
                         var confirmDelete by remember { mutableStateOf(false) }
                         val scope = rememberCoroutineScope()
@@ -355,7 +360,9 @@ private fun StatusLine(item: DownloadItem, queuePos: Int? = null) {
             val pct = "${(item.progress * 100).toInt()}%"
             (if (item.detail.isBlank()) pct else "$pct · ${item.detail}") to scheme.primary
         }
-        Status.DONE -> {
+        Status.DONE -> if (item.savedUri == null) {
+            item.detail.ifBlank { "Tayyor" } to scheme.onSurfaceVariant
+        } else {
             val base = "${item.quality.label} · ${item.savedTo ?: DEFAULT_FOLDER}"
             (if (item.detail.isBlank()) base else "$base · ${item.detail}") to scheme.onSurfaceVariant
         }

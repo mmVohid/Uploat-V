@@ -109,6 +109,8 @@ data class AppSettings(
     val speedLimit: SpeedLimit = SpeedLimit.NONE,
     /** Bitta yuklash ichida bir vaqtda yuklanadigan parchalar soni (4, 8 yoki 16). */
     val fragmentThreads: Int = 4,
+    /** Playlistni qayta yuklaganda avval yuklangan videolarni o'tkazib yuborish. */
+    val skipDownloaded: Boolean = true,
     val fileNameTemplate: FileNameTemplate = FileNameTemplate.TITLE_ID,
     val bulkMode: BulkMode = BulkMode.MANUAL,
     /** Yangi versiya haqida xabar berish (GitHub Releases tekshiriladi). */

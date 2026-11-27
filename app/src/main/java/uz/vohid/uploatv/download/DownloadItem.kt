@@ -15,6 +15,8 @@ data class DownloadItem(
     val playlist: Boolean,
     /** Playlistdan tanlangan videolar, yt-dlp formatida ("1-3,5"); null = hammasi. */
     val playlistItems: String? = null,
+    /** Playlistda avval yuklangan videolar o'tkazib yuboriladi (faqat yangilari tushadi). */
+    val skipDownloaded: Boolean = false,
     val status: Status = Status.QUEUED,
     val progress: Float = 0f,
     val detail: String = "",
@@ -40,6 +42,7 @@ data class DownloadItem(
         put("quality", quality.name)
         put("playlist", playlist)
         put("playlistItems", playlistItems)
+        put("skipDownloaded", skipDownloaded)
         put("status", status.name)
         put("detail", detail)
         put("error", error)
@@ -62,6 +65,7 @@ data class DownloadItem(
                 quality = runCatching { Quality.valueOf(o.optString("quality")) }.getOrDefault(Quality.BEST),
                 playlist = o.optBoolean("playlist"),
                 playlistItems = s("playlistItems"),
+                skipDownloaded = o.optBoolean("skipDownloaded"),
                 status = runCatching { Status.valueOf(o.optString("status")) }.getOrDefault(Status.FAILED),
                 progress = if (o.optString("status") == Status.DONE.name) 1f else 0f,
                 detail = o.optString("detail"),

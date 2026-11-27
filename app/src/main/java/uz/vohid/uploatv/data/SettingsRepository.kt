@@ -45,6 +45,7 @@ class SettingsRepository(private val context: Context) {
         val DISMISSED_VERSION = stringPreferencesKey("dismissed_version")
         val SPEED_LIMIT = stringPreferencesKey("speed_limit")
         val FRAGMENT_THREADS = intPreferencesKey("fragment_threads")
+        val SKIP_DOWNLOADED = booleanPreferencesKey("skip_downloaded")
         val FILE_TEMPLATE = stringPreferencesKey("file_name_template")
     }
 
@@ -81,6 +82,7 @@ class SettingsRepository(private val context: Context) {
             latestEtag = p[Keys.LATEST_ETAG],
             dismissedVersion = p[Keys.DISMISSED_VERSION],
             speedLimit = p[Keys.SPEED_LIMIT].toEnum(SpeedLimit.NONE),
+            skipDownloaded = p[Keys.SKIP_DOWNLOADED] ?: true,
             fragmentThreads = (p[Keys.FRAGMENT_THREADS] ?: 4).takeIf { it in FRAGMENT_OPTIONS } ?: 4,
             fileNameTemplate = p[Keys.FILE_TEMPLATE].toEnum(FileNameTemplate.TITLE_ID),
         )
@@ -116,6 +118,7 @@ class SettingsRepository(private val context: Context) {
     suspend fun dismissUpdate(version: String) = context.dataStore.edit { it[Keys.DISMISSED_VERSION] = version }
     suspend fun setMaxParallel(n: Int) = context.dataStore.edit { it[Keys.MAX_PARALLEL] = n.coerceIn(1, 3) }
     suspend fun setFragmentThreads(n: Int) = context.dataStore.edit { it[Keys.FRAGMENT_THREADS] = n.takeIf { v -> v in FRAGMENT_OPTIONS } ?: 4 }
+    suspend fun setSkipDownloaded(on: Boolean) = context.dataStore.edit { it[Keys.SKIP_DOWNLOADED] = on }
     suspend fun setSpeedLimit(l: SpeedLimit) = context.dataStore.edit { it[Keys.SPEED_LIMIT] = l.name }
     suspend fun setFileNameTemplate(t: FileNameTemplate) = context.dataStore.edit { it[Keys.FILE_TEMPLATE] = t.name }
     suspend fun setClipShortcut(on: Boolean) = context.dataStore.edit { it[Keys.CLIP_SHORTCUT] = on }

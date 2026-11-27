@@ -582,6 +582,23 @@ private fun OptionsCard(ui: HomeUi, vm: HomeViewModel, onPickEntries: () -> Unit
                 }
             }
 
+            if (info != null && info.isPlaylist) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Yuklanganlarini o'tkazib yuborish", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            "Avval yuklangan videolar qayta tushmaydi, faqat yangilari",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(checked = ui.skipDownloaded, onCheckedChange = vm::setSkipDownloaded)
+                }
+            }
+
             if (ui.hasVideoAndList) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),

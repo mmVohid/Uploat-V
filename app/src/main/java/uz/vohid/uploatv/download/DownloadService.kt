@@ -91,7 +91,7 @@ class DownloadService : Service() {
         val text = if (ok) name else "$name\n${item.error ?: "Yuklab bo'lmadi"}"
         return NotificationCompat.Builder(this, UploatApp.CHANNEL_DONE)
             .setSmallIcon(R.drawable.ic_stat_penguin)
-            .setContentTitle(if (ok) "Yuklandi" else "Yuklab bo'lmadi")
+            .setContentTitle(if (!ok) "Yuklab bo'lmadi" else if (item.savedUri == null) "Yangi video yo'q" else "Yuklandi")
             .setContentText(name)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setPriority(NotificationCompat.PRIORITY_HIGH)

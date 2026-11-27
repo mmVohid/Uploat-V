@@ -32,6 +32,7 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.ContentPaste
 import androidx.compose.material.icons.rounded.DeleteSweep
+import androidx.compose.material.icons.rounded.PlaylistAddCheck
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material.icons.rounded.Speed
@@ -673,6 +674,44 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
             }
         }
         Caption("Bir nechta havola birdan joylanganda (yoki nusxalanganda) qanday ishlashi")
+
+        SectionLabel("Playlist")
+        SettingsCard {
+            val appContext = LocalContext.current.applicationContext
+            var archived by remember { mutableStateOf(uz.vohid.uploatv.download.PlaylistArchive.count(appContext)) }
+            var confirmClear by remember { mutableStateOf(false) }
+            SwitchRow(
+                icon = Icons.Rounded.PlaylistAddCheck,
+                title = "Yuklanganlarini o'tkazib yuborish",
+                subtitle = "Playlist qayta yuklanganda faqat yangi videolar tushadi",
+                checked = settings.skipDownloaded,
+                onChange = vm::setSkipDownloaded,
+            )
+            RowDivider()
+            ActionRow(
+                icon = Icons.Rounded.DeleteSweep,
+                title = "Yodlangan videolarni tozalash",
+                subtitle = if (archived == 0) "Hozircha bo'sh" else "$archived ta video yodlangan",
+                onClick = { if (archived > 0) confirmClear = true },
+                trailing = null,
+            )
+            if (confirmClear) {
+                androidx.compose.material3.AlertDialog(
+                    onDismissRequest = { confirmClear = false },
+                    title = { Text("Ro'yxat tozalansinmi?") },
+                    text = { Text("Playlistlar keyingi yuklashda hamma videolarni qaytadan yuklaydi. Telefondagi fayllar o'chmaydi.") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            uz.vohid.uploatv.download.PlaylistArchive.clear(appContext)
+                            archived = 0
+                            confirmClear = false
+                        }) { Text("Tozalash") }
+                    },
+                    dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("Bekor qilish") } },
+                )
+            }
+        }
+        Caption("Playlistdagi videolar qaysi havola orqali kelganidan qat'i nazar, bir marta yuklangani yodda qoladi. Inkognito rejimida yodlanmaydi")
 
         SectionLabel("Tezlik")
         SettingsCard {

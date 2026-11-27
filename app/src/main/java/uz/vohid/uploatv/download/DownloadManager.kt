@@ -356,6 +356,7 @@ object DownloadManager {
         netWaiting.remove(id)
         mutate(id) { it.copy(status = Status.RUNNING, progress = 0f, detail = "Boshlanmoqda…", error = null) }
         val dir = File(app.getExternalFilesDir(null) ?: app.filesDir, "tmp/$id")
+        var skipped = 0 // playlistda yodda bor bo'lgani uchun o'tkazib yuborilgan videolar
 
         // 1-urinish: noldan; 2-urinish: yarim fayldan davom; 3-urinish: eskisi buzuq bo'lishi mumkin, noldan
         val attempt = (attempts[id] ?: 0) + 1
@@ -381,8 +382,10 @@ object DownloadManager {
                 var index = 1
                 var total = 1
                 var speed: String? = null
+                skipped = 0
                 var lastUiMs = 0L // ekran yangilanishini sekundiga ~2 martaga cheklaydi
                 YoutubeDL.getInstance().execute(buildRequest(item, dir, s), id) { percent, eta, line ->
+                    if ("already been recorded in the archive" in line) skipped++
                     ITEM_REGEX.find(line)?.let {
                         index = it.groupValues[1].toInt()
                         total = it.groupValues[2].toInt()
@@ -412,14 +415,32 @@ object DownloadManager {
             mutate(id) { it.copy(detail = "Saqlanmoqda…", progress = 1f) }
             val treeUri = s.saveTreeUri
             val saved = if (treeUri != null) saveToTree(dir, Uri.parse(treeUri)) else saveToDownloads(dir)
-            if (saved.isEmpty()) throw IllegalStateException("Fayl topilmadi")
+            if (saved.isEmpty()) {
+                // Playlistdagi hamma video avval yuklangan: xato emas, shunchaki yangisi yo'q
+                if (item.playlist && item.skipDownloaded && !item.incognito && skipped > 0) {
+                    autoRetries.remove(id)
+                    mutate(id) {
+                        it.copy(
+                            status = Status.DONE,
+                            progress = 1f,
+                            detail = "Yangi video yo'q: $skipped ta video avval yuklangan",
+                            savedUri = null, mime = null, savedTo = null,
+                        )
+                    }
+                    return
+                }
+                throw IllegalStateException("Fayl topilmadi")
+            }
 
             autoRetries.remove(id)
             mutate(id) {
                 it.copy(
                     status = Status.DONE,
                     progress = 1f,
-                    detail = if (saved.size > 1) "${saved.size} ta fayl" else "",
+                    detail = listOfNotNull(
+                        if (saved.size > 1) "${saved.size} ta fayl" else null,
+                        if (skipped > 0) "$skipped ta o'tkazildi" else null,
+                    ).joinToString(" · "),
                     savedUri = saved.first().first,
                     mime = saved.first().second,
                     savedTo = if (treeUri != null) describeTree(Uri.parse(treeUri)) else DEFAULT_FOLDER,
@@ -465,6 +486,10 @@ object DownloadManager {
             if (item.playlist) {
                 addOption("--yes-playlist")
                 item.playlistItems?.let { addOption("--playlist-items", it) }
+                // Yodlangan videolar o'tkazib yuboriladi; inkognitoda yodlash ham, o'qish ham yo'q
+                if (item.skipDownloaded && !item.incognito) {
+                    addOption("--download-archive", PlaylistArchive.file(app).absolutePath)
+                }
             } else {
                 addOption("--no-playlist")
             }

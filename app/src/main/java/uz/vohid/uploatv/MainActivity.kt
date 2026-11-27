@@ -63,6 +63,7 @@ import androidx.navigation.navArgument
 import uz.vohid.uploatv.download.DownloadManager
 import uz.vohid.uploatv.download.ErrorAction
 import uz.vohid.uploatv.ui.CookiesScreen
+import uz.vohid.uploatv.ui.PlayerPip
 import uz.vohid.uploatv.ui.PlayerScreen
 import uz.vohid.uploatv.ui.DownloadsScreen
 import uz.vohid.uploatv.ui.GuideScreen
@@ -100,6 +101,14 @@ class MainActivity : ComponentActivity() {
                     AppRoot(sharedUrl = sharedUrl, onSharedConsumed = { sharedUrl = null })
                 }
             }
+        }
+    }
+
+    // Android 11 va undan eski: ijro paytida ilovadan chiqilsa, video ekran ustiga o'tadi (12+ da avtomatik)
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        if (PlayerPip.active && PlayerPip.playing && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            PlayerPip.enter(this)
         }
     }
 

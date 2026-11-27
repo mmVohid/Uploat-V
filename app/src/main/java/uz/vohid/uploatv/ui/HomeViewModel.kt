@@ -70,6 +70,8 @@ data class HomeUi(
     /** Playlistdan tanlangan videolar raqami; null = hammasi. */
     val selectedEntries: Set<Int>? = null,
     val bulk: BulkUi? = null,
+    /** Playlistda avval yuklangan videolarni o'tkazib yuborish (standart qiymat sozlamalardan). */
+    val skipDownloaded: Boolean = true,
 ) {
     /** Havolada ham video, ham playlist bo'lsa (watch?v=…&list=…) foydalanuvchi tanlaydi. */
     val hasVideoAndList: Boolean
@@ -131,6 +133,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             settings.settings.collect { s ->
                 incognito = s.incognito
                 bulkMode = s.bulkMode
+                _ui.update { if (it.skipDownloaded == s.skipDownloaded) it else it.copy(skipDownloaded = s.skipDownloaded) }
                 if (first) {
                     first = false
                     _ui.update { it.copy(quality = s.defaultQuality) }
@@ -230,6 +233,8 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
+    fun setSkipDownloaded(on: Boolean) = _ui.update { it.copy(skipDownloaded = on) }
+
     fun setSelectedEntries(selected: Set<Int>?) = _ui.update { it.copy(selectedEntries = selected) }
 
     fun onUrlChange(value: String, immediate: Boolean = false) {
@@ -286,6 +291,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                 quality = s.quality,
                 playlist = info.isPlaylist,
                 playlistItems = if (partial) compressIndices(picked.orEmpty()) else null,
+                skipDownloaded = info.isPlaylist && s.skipDownloaded,
                 incognito = incognito,
             )
         )
