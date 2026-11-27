@@ -91,7 +91,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        handleIntent(intent)
+        // Ilova qayta yaratilganda (tema, til, jarayon o'chishi) eski ulashilgan havola qayta ishlanmasin
+        if (savedInstanceState == null) handleIntent(intent)
 
         val settingsRepo = SettingsRepository(applicationContext)
         setContent {
@@ -121,6 +122,8 @@ class MainActivity : ComponentActivity() {
         if (intent?.action != Intent.ACTION_SEND) return
         val text = intent.getStringExtra(Intent.EXTRA_TEXT) ?: return
         sharedUrl = URL_REGEX.find(text)?.value
+        // Intent bir marta ishlatiladi: keyingi qayta yaratishda yana ko'rinmasin
+        setIntent(Intent())
     }
 
     private companion object {
