@@ -21,7 +21,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.NewReleases
+import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.ContentPaste
@@ -121,8 +121,8 @@ fun NewsButton(hasNews: Boolean, onClick: () -> Unit, modifier: Modifier = Modif
             contentAlignment = Alignment.Center,
         ) {
             Icon(
-                Icons.Rounded.NewReleases,
-                contentDescription = "Yangiliklar",
+                Icons.Rounded.Notifications,
+                contentDescription = "Xabarlar",
                 tint = scheme.primary,
                 modifier = Modifier.size(22.dp),
             )
@@ -176,7 +176,7 @@ fun WhatsNewSheet(onSeen: () -> Unit, onDismiss: () -> Unit) {
                         Modifier.size(52.dp).clip(RoundedCornerShape(18.dp)).background(scheme.primaryContainer),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(Icons.Rounded.NewReleases, contentDescription = null, tint = scheme.onPrimaryContainer, modifier = Modifier.size(28.dp))
+                        Icon(Icons.Rounded.Notifications, contentDescription = null, tint = scheme.onPrimaryContainer, modifier = Modifier.size(28.dp))
                     }
                     Spacer(Modifier.width(16.dp))
                     Column {
