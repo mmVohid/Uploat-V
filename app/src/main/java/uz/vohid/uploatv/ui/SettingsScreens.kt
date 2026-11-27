@@ -11,6 +11,34 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
+import androidx.compose.material.icons.rounded.Autorenew
+import androidx.compose.material.icons.rounded.BatteryChargingFull
+import androidx.compose.material.icons.rounded.BugReport
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.ContentPaste
+import androidx.compose.material.icons.rounded.DeleteSweep
+import androidx.compose.material.icons.rounded.Folder
+import androidx.compose.material.icons.rounded.HighQuality
+import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.Public
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.RestartAlt
+import androidx.compose.material.icons.rounded.Science
+import androidx.compose.material.icons.rounded.SystemUpdate
+import androidx.compose.material.icons.rounded.VisibilityOff
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -27,7 +55,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -273,6 +300,7 @@ private fun NotificationsSection(vm: SettingsViewModel) {
             // Android ilovaga tizim ruxsatini o'zi qaytarib olishga ruxsat bermaydi, shuning uchun
             // "o'chirish" ilova ichida (natija xabarlarini to'xtatish) bajariladi, tizim sozlamalari ochilmaydi.
             SwitchRow(
+                icon = Icons.Rounded.Notifications,
                 title = "Bildirishnoma ruxsati",
                 subtitle = when {
                     !enabled -> "Tizimda o'chirilgan. Yoqish uchun bosing"
@@ -295,27 +323,6 @@ private fun NotificationsSection(vm: SettingsViewModel) {
     }
 }
 
-@Composable
-private fun NetworkChoiceRow(title: String, subtitle: String, selected: Boolean, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        androidx.compose.material3.RadioButton(selected = selected, onClick = onClick)
-        Column(Modifier.weight(1f).padding(start = 8.dp)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge)
-            Text(
-                subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
 // ======================= Ko'rinish =======================
 
 @Composable
@@ -324,18 +331,90 @@ fun AppearanceScreen(vm: SettingsViewModel, onBack: () -> Unit) {
 
     SettingsPage(title = "Tashqi ko'rinish", onBack = onBack) {
         SettingsCard {
-            LabeledRow("Rang mavzusi") {
-                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                    ThemeMode.entries.forEachIndexed { i, mode ->
-                        SegmentedButton(
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Text("Rang mavzusi", style = MaterialTheme.typography.titleMedium)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    ThemeMode.entries.forEach { mode ->
+                        ThemePreview(
+                            mode = mode,
                             selected = settings.themeMode == mode,
                             onClick = { vm.setTheme(mode) },
-                            shape = SegmentedButtonDefaults.itemShape(i, ThemeMode.entries.size),
-                        ) { Text(mode.label) }
+                            modifier = Modifier.weight(1f),
+                        )
                     }
                 }
+                Text(
+                    text = when (settings.themeMode) {
+                        ThemeMode.SYSTEM -> "Telefon sozlamasiga qarab avtomatik o'zgaradi"
+                        ThemeMode.LIGHT -> "Doim yorug' ko'rinish"
+                        ThemeMode.DARK -> "Doim qorong'i ko'rinish"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
+    }
+}
+
+/** Mavzuning kichik ko'rinishi: bosilganda tanlanadi, tanlangani rangli ramka va ✓ bilan ajraladi. */
+@Composable
+private fun ThemePreview(mode: ThemeMode, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val borderColor by animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+        label = "themeBorder",
+    )
+    val shape = RoundedCornerShape(16.dp)
+    Column(
+        modifier = modifier.selectable(selected = selected, role = Role.RadioButton, onClick = onClick),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(0.72f)
+                .clip(shape)
+                .border(if (selected) 2.dp else 1.dp, borderColor, shape),
+        ) {
+            when (mode) {
+                ThemeMode.LIGHT -> MiniScreen(light = true, modifier = Modifier.fillMaxSize())
+                ThemeMode.DARK -> MiniScreen(light = false, modifier = Modifier.fillMaxSize())
+                ThemeMode.SYSTEM -> Row(Modifier.fillMaxSize()) {
+                    MiniScreen(light = true, modifier = Modifier.weight(1f).fillMaxHeight())
+                    MiniScreen(light = false, modifier = Modifier.weight(1f).fillMaxHeight())
+                }
+            }
+            if (selected) {
+                Icon(
+                    Icons.Rounded.CheckCircle,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).size(20.dp),
+                )
+            }
+        }
+        Text(
+            text = mode.label,
+            style = MaterialTheme.typography.labelLarge,
+            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun MiniScreen(light: Boolean, modifier: Modifier = Modifier) {
+    val bg = if (light) Color(0xFFF4F4F6) else Color(0xFF0B0B0F)
+    val card = if (light) Color(0xFFFFFFFF) else Color(0xFF1B1B21)
+    val line = if (light) Color(0xFF1B1B21) else Color(0xFFF4F4F6)
+    Column(
+        modifier = modifier.background(bg).padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Box(Modifier.fillMaxWidth(0.55f).height(6.dp).background(line, RoundedCornerShape(3.dp)))
+        Box(Modifier.fillMaxWidth().height(22.dp).background(card, RoundedCornerShape(6.dp)))
+        Box(Modifier.fillMaxWidth().height(22.dp).background(card, RoundedCornerShape(6.dp)))
+        Box(Modifier.fillMaxWidth(0.7f).height(22.dp).background(card, RoundedCornerShape(6.dp)))
     }
 }
 
@@ -348,56 +427,71 @@ fun EngineScreen(vm: SettingsViewModel, onBack: () -> Unit) {
 
     SettingsPage(title = "Yuklovchi", onBack = onBack) {
         SettingsCard {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                Column(Modifier.weight(1f)) {
-                    Text("yt-dlp", style = MaterialTheme.typography.bodyLarge)
-                    Text(
-                        text = "Versiya: ${engine.version ?: "…"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    engine.message?.let {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RowIcon(Icons.Rounded.Memory)
+                    Spacer(Modifier.width(16.dp))
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text("yt-dlp", style = MaterialTheme.typography.titleMedium)
                         Text(
-                            text = it,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (engine.messageOk) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.error
-                            },
+                            text = "Versiya: ${engine.version ?: "…"}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
+                engine.message?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (engine.messageOk) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
+                    )
+                }
                 if (engine.updating) {
-                    CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.5.dp)
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        LinearProgressIndicator(Modifier.fillMaxWidth())
+                        Text(
+                            "Yangilanmoqda…",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 } else {
-                    FilledTonalButton(onClick = vm::updateEngine) { Text("Yangilash") }
+                    FilledTonalButton(onClick = vm::updateEngine, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                        Icon(Icons.Rounded.Refresh, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Yangilash")
+                    }
                 }
             }
+        }
+
+        SectionLabel("Yangilanish")
+        SettingsCard {
             SwitchRow(
-                title = "Nightly (eng yangi) versiya",
-                subtitle = "Instagram kabi saytlar tuzatishlari tezroq keladi, lekin ba'zan beqaror. Yoqqandan keyin \"Yangilash\" ni bosing",
-                checked = settings.ytdlpNightly,
-                onChange = vm::setYtdlpNightly,
-            )
-            SwitchRow(
+                icon = Icons.Rounded.Autorenew,
                 title = "Avtomatik yangilash",
                 subtitle = "Kuniga bir marta, internet sarflaydi",
                 checked = settings.autoUpdateYtdlp,
                 onChange = vm::setAutoUpdate,
             )
+            RowDivider()
+            SwitchRow(
+                icon = Icons.Rounded.Science,
+                title = "Nightly (eng yangi) versiya",
+                subtitle = "Instagram kabi saytlar tuzatishlari tezroq keladi, lekin ba'zan beqaror. Yoqqandan keyin «Yangilash» ni bosing",
+                checked = settings.ytdlpNightly,
+                onChange = vm::setYtdlpNightly,
+            )
         }
-        Text(
-            text = "Sayt o'zgarib video yuklanmay qolsa, avval yuklovchini (yt-dlp) yangilang",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 8.dp),
-        )
+        Caption("Sayt o'zgarib video yuklanmay qolsa, avval yuklovchini (yt-dlp) yangilang")
     }
 }
 
@@ -426,8 +520,14 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
     LaunchedEffect(Unit) { vm.refreshCache() }
 
     SettingsPage(title = "Yuklash", onBack = onBack) {
+        SectionLabel("Video")
         SettingsCard {
-            LabeledRow("Standart video sifati") {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RowIcon(Icons.Rounded.HighQuality)
+                    Spacer(Modifier.width(16.dp))
+                    Text("Standart video sifati", style = MaterialTheme.typography.bodyLarge)
+                }
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -441,22 +541,58 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
                     }
                 }
             }
+            RowDivider()
             val treeUri = settings.saveTreeUri
-            ClickableRow(
+            ActionRow(
+                icon = Icons.Rounded.Folder,
                 title = "Saqlash joyi",
-                value = treeUri?.let { describeTree(Uri.parse(it)) } ?: DEFAULT_FOLDER,
-                hint = if (treeUri == null) "Standart · o'zgartirish uchun bosing" else "O'zgartirish uchun bosing",
+                subtitle = treeUri?.let { describeTree(Uri.parse(it)) } ?: DEFAULT_FOLDER,
                 onClick = { pickFolder.launch(null) },
             )
             if (treeUri != null) {
-                TextButton(
+                RowDivider()
+                ActionRow(
+                    icon = Icons.Rounded.RestartAlt,
+                    title = "Standart papkaga qaytarish",
+                    subtitle = DEFAULT_FOLDER,
                     onClick = { vm.setSaveTree(null) },
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                ) { Text("Standart papkaga qaytarish") }
+                    trailing = null,
+                )
             }
         }
 
-        SectionLabel("Fon rejimi")
+        SectionLabel("Tarmoq")
+        SettingsCard {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                val modes = uz.vohid.uploatv.data.NetworkMode.entries
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    modes.forEachIndexed { i, mode ->
+                        SegmentedButton(
+                            selected = settings.networkMode == mode,
+                            onClick = { vm.setNetworkMode(mode) },
+                            shape = SegmentedButtonDefaults.itemShape(i, modes.size),
+                            icon = {},
+                        ) {
+                            Text(
+                                when (mode) {
+                                    uz.vohid.uploatv.data.NetworkMode.ANY -> "Hammasi"
+                                    uz.vohid.uploatv.data.NetworkMode.WIFI -> "Wi‑Fi"
+                                    uz.vohid.uploatv.data.NetworkMode.MOBILE -> "Mobil"
+                                },
+                                maxLines = 1,
+                            )
+                        }
+                    }
+                }
+                Text(
+                    text = settings.networkMode.label + ". " + settings.networkMode.hint,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        SectionLabel("Qulaylik")
         SettingsCard {
             var unrestricted by remember { mutableStateOf(isBatteryUnrestricted(context)) }
             LifecycleResumeEffect(Unit) {
@@ -464,6 +600,7 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
                 onPauseOrDispose { }
             }
             SwitchRow(
+                icon = Icons.Rounded.BatteryChargingFull,
                 title = "Batareya cheklovisiz ishlash",
                 subtitle = if (unrestricted) {
                     "Yoqilgan. O'chirish uchun tizim ro'yxatidan «Optimallashtirish»ni tanlang"
@@ -482,43 +619,40 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
                     }
                 },
             )
-        }
-
-        SectionLabel("Tarmoq")
-        SettingsCard {
-            uz.vohid.uploatv.data.NetworkMode.entries.forEach { mode ->
-                NetworkChoiceRow(
-                    title = mode.label,
-                    subtitle = mode.hint,
-                    selected = settings.networkMode == mode,
-                    onClick = { vm.setNetworkMode(mode) },
-                )
-            }
-        }
-
-        NotificationsSection(vm)
-
-        SectionLabel("Buferdan yuklash")
-        SettingsCard {
+            RowDivider()
             SwitchRow(
-                title = "Bildirishnomada tugma",
-                subtitle = "Havolani nusxalang, panelni tushirib «Buferdan yuklash» ni bosing. Tezkor sozlamalarga ham plitka qo'shishingiz mumkin",
+                icon = Icons.Rounded.ContentPaste,
+                title = "Bildirishnomada «Buferdan yuklash» tugmasi",
+                subtitle = "Havolani nusxalang, panelni tushirib tugmani bosing. Tezkor sozlamalarga ham plitka qo'shishingiz mumkin",
                 checked = settings.clipShortcut,
                 onChange = vm::setClipShortcut,
             )
         }
+
+        NotificationsSection(vm)
+
         SectionLabel("Kesh")
         SettingsCard {
-            ClickableRow(
+            ActionRow(
+                icon = Icons.Rounded.DeleteSweep,
                 title = "Keshni tozalash",
-                value = when {
+                subtitle = when {
                     cache.busy -> "Tozalanmoqda…"
                     cache.message != null -> cache.message.orEmpty()
-                    cache.bytes != null -> "Hajmi: ${formatBytes(cache.bytes ?: 0L)}"
-                    else -> "Hajmi hisoblanmoqda…"
+                    else -> "Vaqtinchalik fayllar o'chadi, yuklab olingan videolar saqlanib qoladi"
                 },
-                hint = "Vaqtinchalik fayllar o'chadi, yuklab olingan videolar saqlanib qoladi",
                 onClick = vm::clearCache,
+                trailing = {
+                    if (cache.busy) {
+                        CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text(
+                            text = cache.bytes?.let { formatBytes(it) } ?: "…",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                },
             )
         }
     }
@@ -549,38 +683,56 @@ fun AboutScreen(vm: SettingsViewModel, onOpenGuide: () -> Unit, onBack: () -> Un
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            Text(
+                "yt-dlp asosida video yuklovchi",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
 
+        SectionLabel("Yangilanishlar")
         SettingsCard {
-            InfoRow("Yuklovchi", "yt-dlp asosida video yuklovchi")
-        }
-
-        SettingsCard {
-            ClickableRow(
+            ActionRow(
+                icon = Icons.Rounded.SystemUpdate,
                 title = "Eng so'nggi versiya",
-                value = "GitHub'da ochish",
-                hint = "Yangi APK'ni yuklab olish sahifasi",
+                subtitle = "Yangi APK'ni yuklab olish sahifasi",
                 onClick = { openUrl(context, "$REPO_URL/releases/latest") },
+                trailing = { OpenInNewIcon() },
             )
-            ClickableRow(
+            RowDivider()
+            ActionRow(
+                icon = Icons.Rounded.History,
                 title = "O'zgarishlar va versiyalar",
-                value = "Barcha versiyalar ro'yxati",
-                hint = "Har bir versiyada nima yangilangani",
+                subtitle = "Har bir versiyada nima yangilangani",
                 onClick = { openUrl(context, "$REPO_URL/releases") },
-            )
-            ClickableRow(
-                title = "Muammo haqida xabar berish",
-                value = "GitHub'da yozish",
-                hint = "Xatolik yoki taklifni Issues bo'limiga yuboring",
-                onClick = { openUrl(context, "$REPO_URL/issues/new/choose") },
+                trailing = { OpenInNewIcon() },
             )
         }
 
+        SectionLabel("Yordam")
         SettingsCard {
-            ClickableRow(
-                title = "Xato jurnali",
-                value = "Nusxalash",
-                hint = "Muammo bo'lsa, jurnalni nusxalab yuboring",
+            ActionRow(
+                icon = Icons.AutoMirrored.Rounded.MenuBook,
+                title = "Foydalanish qo'llanmasi",
+                subtitle = "Havola qo'shish, yuklash, akkauntlar va boshqalar",
+                onClick = onOpenGuide,
+            )
+            RowDivider()
+            ActionRow(
+                icon = Icons.Rounded.BugReport,
+                title = "Muammo haqida xabar berish",
+                subtitle = "Xatolik yoki taklifni Issues bo'limiga yuboring",
+                onClick = { openUrl(context, "$REPO_URL/issues/new/choose") },
+                trailing = { OpenInNewIcon() },
+            )
+        }
+
+        SectionLabel("Xato jurnali")
+        SettingsCard {
+            ActionRow(
+                icon = Icons.Rounded.ContentCopy,
+                title = "Jurnalni nusxalash",
+                subtitle = "Muammo bo'lsa, jurnalni nusxalab yuboring",
                 onClick = {
                     val log = uz.vohid.uploatv.download.ErrorLog.read().ifBlank { "Xatolar yo'q" }
                     val header = "Uploat-V ${BuildConfig.VERSION_NAME} · Android ${android.os.Build.VERSION.RELEASE} · ${android.os.Build.MODEL}\n\n"
@@ -588,25 +740,31 @@ fun AboutScreen(vm: SettingsViewModel, onOpenGuide: () -> Unit, onBack: () -> Un
                         .setPrimaryClip(android.content.ClipData.newPlainText("Uploat-V jurnal", header + log))
                     android.widget.Toast.makeText(context, "Jurnal nusxalandi", android.widget.Toast.LENGTH_SHORT).show()
                 },
+                trailing = null,
             )
-            TextButton(
+            RowDivider()
+            ActionRow(
+                icon = Icons.Rounded.DeleteSweep,
+                title = "Jurnalni tozalash",
+                subtitle = "Saqlangan xatolar o'chadi",
                 onClick = {
                     uz.vohid.uploatv.download.ErrorLog.clear()
                     android.widget.Toast.makeText(context, "Jurnal tozalandi", android.widget.Toast.LENGTH_SHORT).show()
                 },
-                modifier = Modifier.padding(horizontal = 8.dp),
-            ) { Text("Jurnalni tozalash") }
-        }
-
-        SettingsCard {
-            ClickableRow(
-                title = "Foydalanish qo'llanmasi",
-                value = "Ilovadan qanday foydalanish",
-                hint = "Havola qo'shish, yuklash, akkauntlar va boshqalar",
-                onClick = onOpenGuide,
+                trailing = null,
             )
         }
     }
+}
+
+@Composable
+private fun OpenInNewIcon() {
+    Icon(
+        Icons.AutoMirrored.Rounded.OpenInNew,
+        contentDescription = null,
+        modifier = Modifier.size(20.dp),
+        tint = MaterialTheme.colorScheme.outline,
+    )
 }
 
 private const val REPO_URL = "https://github.com/mmVohid/Uploat-V"
@@ -687,7 +845,18 @@ private fun SectionLabel(text: String) {
         text = text,
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 8.dp, top = 8.dp),
+        modifier = Modifier.padding(start = 12.dp, top = 4.dp),
+    )
+}
+
+/** Karta ostidagi kichik tushuntirish matni. */
+@Composable
+private fun Caption(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 12.dp),
     )
 }
 
@@ -699,10 +868,74 @@ private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
         colors = glassCardColors(),
     ) {
         Column(
-            modifier = Modifier.padding(vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.clip(RoundedCornerShape(24.dp)).animateContentSize(),
             content = content,
         )
+    }
+}
+
+/** Qator boshidagi doira ichidagi ikonka: barcha sahifalarda bir xil o'lcham. */
+@Composable
+private fun RowIcon(icon: ImageVector) {
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.primaryContainer),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            modifier = Modifier.size(22.dp),
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+        )
+    }
+}
+
+@Composable
+private fun RowDivider() {
+    HorizontalDivider(
+        modifier = Modifier.padding(start = 72.dp, end = 16.dp),
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+    )
+}
+
+/** Bosiladigan qator: ikonka, sarlavha, izoh va o'ngda (odatda ›) belgi. */
+@Composable
+private fun ActionRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String?,
+    onClick: () -> Unit,
+    trailing: (@Composable () -> Unit)? = {
+        Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
+    },
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 64.dp)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RowIcon(icon)
+        Spacer(Modifier.width(16.dp))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge)
+            if (subtitle != null) {
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        if (trailing != null) {
+            Spacer(Modifier.width(12.dp))
+            trailing()
+        }
     }
 }
 
@@ -720,14 +953,26 @@ private fun LabeledRow(label: String, content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun SwitchRow(title: String, subtitle: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+private fun SwitchRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onChange: (Boolean) -> Unit,
+    icon: ImageVector? = null,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .heightIn(min = 64.dp)
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onChange)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(Modifier.weight(1f)) {
+        if (icon != null) {
+            RowIcon(icon)
+            Spacer(Modifier.width(16.dp))
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(title, style = MaterialTheme.typography.bodyLarge)
             Text(
                 subtitle,
@@ -735,7 +980,8 @@ private fun SwitchRow(title: String, subtitle: String, checked: Boolean, onChang
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Switch(checked = checked, onCheckedChange = onChange)
+        Spacer(Modifier.width(12.dp))
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
 
@@ -930,45 +1176,47 @@ fun PrivacyScreen(vm: SettingsViewModel, onOpenCookies: () -> Unit, onBack: () -
     SettingsPage(title = "Maxfiylik", onBack = onBack) {
         SettingsCard {
             SwitchRow(
+                icon = Icons.Rounded.VisibilityOff,
                 title = "Inkognito",
-                subtitle = "Yuklab olish tarixini o'chirib qo'ying: yuklashlar tarixga saqlanmaydi",
+                subtitle = "Yuklashlar tarixga saqlanmaydi",
                 checked = settings.incognito,
                 onChange = vm::setIncognito,
             )
         }
+
         SectionLabel("Tarix")
         SettingsCard {
-            LabeledRow("Yuklashlar tarixini saqlash") {
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    uz.vohid.uploatv.data.Retention.entries.forEach { r ->
-                        FilterChip(
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RowIcon(Icons.Rounded.History)
+                    Spacer(Modifier.width(16.dp))
+                    Text("Yuklashlar tarixini saqlash", style = MaterialTheme.typography.bodyLarge)
+                }
+                val options = uz.vohid.uploatv.data.Retention.entries
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    options.forEachIndexed { i, r ->
+                        SegmentedButton(
                             selected = settings.historyRetention == r,
                             onClick = { vm.setRetention(r) },
-                            label = { Text(r.label) },
-                        )
+                            shape = SegmentedButtonDefaults.itemShape(i, options.size),
+                            icon = {},
+                        ) { Text(r.label, maxLines = 1) }
                     }
                 }
             }
-            Text(
-                "Faqat ro'yxatdagi eski yozuvlar o'chadi. Yuklangan videolar telefonda qoladi.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            )
         }
+        Caption("Faqat ro'yxatdagi eski yozuvlar o'chadi. Yuklangan videolar telefonda qoladi.")
 
-        SectionLabel("Cookies")
+        SectionLabel("Akkauntlar")
         SettingsCard {
-            ClickableRow(
+            ActionRow(
+                icon = Icons.Rounded.Public,
                 title = "Cookies",
-                value = CookieStore.count().let { if (it == 0) "Hozircha yo'q" else "$it ta cookie saqlangan" },
-                hint = "Login talab qiladigan saytlar (Instagram va boshqalar) uchun kirish",
+                subtitle = CookieStore.count().let { if (it == 0) "Hozircha yo'q" else "$it ta cookie saqlangan" },
                 onClick = onOpenCookies,
             )
         }
+        Caption("Login talab qiladigan saytlar (Instagram va boshqalar) uchun kirish")
     }
 }
 
