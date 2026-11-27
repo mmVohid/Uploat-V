@@ -35,6 +35,9 @@ import androidx.compose.material.icons.rounded.ContentPaste
 import androidx.compose.material.icons.rounded.PlaylistAddCheck
 import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.Shield
+import androidx.compose.material.icons.rounded.TabletAndroid
+import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -65,8 +68,8 @@ data class ChangeEntry(val id: String, val title: String, val date: String?, val
 object Changelog {
     val entries: List<ChangeEntry> = listOf(
         ChangeEntry(
-            id = "2026-11-28",
-            title = "Yangi imkoniyatlar",
+            id = "v1.1.0",
+            title = "Versiya 1.1.0: yangi imkoniyatlar",
             date = "28-noyabr 2026",
             items = listOf(
                 ChangeItem(
@@ -77,12 +80,22 @@ object Changelog {
                 ChangeItem(
                     Icons.Rounded.PlayCircle,
                     "Boyitilgan pleer",
-                    "Ikki marta bosib 10 soniya oldinga yoki orqaga suring, tezlikni 0,5× dan 2× gacha tanlang, ekran ustida ijro (PiP) va gorizontal to'liq ekrandan foydalaning.",
+                    "Ikki marta bosib 10 soniya oldinga yoki orqaga suring, tezlikni 0,5× dan 2× gacha tanlang. Ekran ustida ijro (PiP) va gorizontal to'liq ekran ham bor.",
+                ),
+                ChangeItem(
+                    Icons.Rounded.PlaylistAddCheck,
+                    "Playlistdan tanlab yuklash",
+                    "Playlistdagi kerakli videolarni belgilab, faqat shularni yuklang.",
                 ),
                 ChangeItem(
                     Icons.Rounded.Link,
                     "Playlist: faqat yangilari",
-                    "Playlistni qayta qo'ysangiz, avval yuklangan videolar o'tkazib yuboriladi.",
+                    "Playlistni qayta qo'ysangiz, avval yuklangan videolar o'tkazib yuboriladi. Sozlamalar → Yuklash bo'limida boshqariladi.",
+                ),
+                ChangeItem(
+                    Icons.Rounded.ContentPaste,
+                    "Ko'p havolani birdan joylash",
+                    "Bir nechta havola qo'yilsa, ro'yxat chiqadi. Rejimni Sozlamalar → Yuklash bo'limidan tanlang.",
                 ),
                 ChangeItem(
                     Icons.Rounded.SwapVert,
@@ -100,6 +113,23 @@ object Changelog {
                     "Havoladagi kuzatuv qismlari olib tashlanadi, bir xil video qayta yuklanmaydi.",
                 ),
                 ChangeItem(
+                    Icons.Rounded.SystemUpdate,
+                    "Yangi versiya haqida xabar",
+                    "Yangi reliz chiqsa, bosh sahifada bildiriladi.",
+                ),
+                ChangeItem(
+                    Icons.Rounded.Notifications,
+                    "Yangiliklar oynasi",
+                    "Sarlavhadagi qo'ng'iroqcha va Ilova haqida bo'limida o'zgarishlar ro'yxati.",
+                ),
+            ),
+        ),
+        ChangeEntry(
+            id = "v1.1.0-improve",
+            title = "Versiya 1.1.0: qulaylik va ko'rinish",
+            date = null,
+            items = listOf(
+                ChangeItem(
                     Icons.Rounded.Palette,
                     "Aksent rang va AMOLED",
                     "Tashqi ko'rinishda ilova rangini tanlang va qorong'i rejimda sof qora fonni yoqing.",
@@ -109,49 +139,52 @@ object Changelog {
                     "Tugash tebranishi",
                     "Hamma yuklashlar tugaganda telefon tebranadi. Sozlamalar → Yuklash bo'limida sozlanadi.",
                 ),
-            ),
-        ),
-        ChangeEntry(
-            id = "2026-11-27",
-            title = "Oldingi yangiliklar",
-            date = "27-noyabr 2026",
-            items = listOf(
                 ChangeItem(
-                    Icons.Rounded.PlaylistAddCheck,
-                    "Playlistdan tanlab yuklash",
-                    "Playlistdagi kerakli videolarni belgilab, faqat shularni yuklang.",
+                    Icons.Rounded.Speed,
+                    "Yuklash tezligi",
+                    "Parcha oqimlarini 4, 8 yoki 16 qilib tanlang. Bir vaqtda 1–3 ta yuklash va tezlik chegarasi ham bor.",
+                ),
+                ChangeItem(
+                    Icons.Rounded.Tune,
+                    "Fayl nomi shabloni",
+                    "Saqlanadigan fayl nomini o'zingizga moslang. Yuklangan faylni ulashish va o'chirish ham mumkin.",
+                ),
+                ChangeItem(
+                    Icons.Rounded.TabletAndroid,
+                    "Katta ekran va gorizontal ko'rinish",
+                    "Planshet, katlanuvchi telefon va yotiq holatda kontent markazga yig'iladi.",
+                ),
+                ChangeItem(
+                    Icons.Rounded.Palette,
+                    "Yangilangan Sozlamalar",
+                    "Tartibli bo'limlar, ikonkali qatorlar, mavzu ko'rinishi va yuklovchi holat kartasi.",
                 ),
                 ChangeItem(
                     Icons.Rounded.ContentPaste,
-                    "Ko'p havolani birdan joylash",
-                    "Bir nechta havola qo'yilsa, ro'yxat chiqadi. Rejimni Sozlamalar → Yuklash bo'limidan tanlang.",
+                    "Qulayroq bosh sahifa",
+                    "Yuklash tugmasi pastda, bitta joylash tugmasi, yuklanish paytida skelet va toza sarlavha.",
                 ),
-                ChangeItem(
-                    Icons.Rounded.SystemUpdate,
-                    "Yangi versiya haqida xabar",
-                    "Yangi reliz chiqsa, bosh sahifada bildiriladi.",
-                ),
+            ),
+        ),
+        ChangeEntry(
+            id = "v1.1.0-tech",
+            title = "Versiya 1.1.0: tezlik va ishonchlilik",
+            date = null,
+            items = listOf(
                 ChangeItem(
                     Icons.Rounded.Bolt,
                     "Tezroq va yengilroq",
                     "Ilova silliqroq ishlaydi, o'rnatish fayli ancha kichraydi.",
                 ),
-            ),
-        ),
-        ChangeEntry(
-            id = "earlier",
-            title = "Avvalgi yangilanishlar",
-            date = null,
-            items = listOf(
                 ChangeItem(
-                    Icons.Rounded.Tune,
-                    "Ko'proq nazorat",
-                    "Bir vaqtda 1–3 ta yuklash, tezlik chegarasi va fayl nomi shabloni.",
+                    Icons.Rounded.Shield,
+                    "Play Protect bilan muammo yo'q",
+                    "Maxsus imkoniyatlar xizmati olib tashlandi: faqat plitka va doimiy tugma qoldi.",
                 ),
                 ChangeItem(
-                    Icons.Rounded.Palette,
-                    "Yangilangan Sozlamalar",
-                    "Tartibli bo'limlar va qulayroq ichki sahifalar.",
+                    Icons.Rounded.Bolt,
+                    "Barqaror ishlash",
+                    "Tarix xavfsiz yoziladi, ro'yxatlar kamroq qayta chiziladi, surish foni faqat surish paytida ko'rinadi.",
                 ),
             ),
         ),
