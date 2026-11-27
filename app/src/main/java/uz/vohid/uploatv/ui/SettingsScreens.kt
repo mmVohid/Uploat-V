@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -40,7 +41,7 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material3.Card
-import androidx.compose.material.icons.rounded.Storage
+import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material3.TopAppBar
 import uz.vohid.uploatv.download.CookieStore
@@ -71,6 +72,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -123,52 +125,62 @@ fun SettingsMainScreen(vm: SettingsViewModel, onNavigate: (String) -> Unit, onBa
         if (banner.phase != BannerPhase.HIDDEN) {
             EngineBanner(state = banner, onUpdate = EngineWatch::update, onDismiss = EngineWatch::dismiss)
         }
-        Card(
-            modifier = Modifier.fillMaxWidth().glass(RoundedCornerShape(28.dp)),
-            shape = RoundedCornerShape(28.dp),
-            colors = glassCardColors(),
-        ) {
-            Column {
-                CategoryRow(
-                    icon = Icons.Rounded.Palette,
-                    title = "Mavzu",
-                    subtitle = settings.themeMode.label,
-                    onClick = { onNavigate(SettingsRoutes.APPEARANCE) },
-                )
-                CategoryDivider()
-                CategoryRow(
-                    icon = Icons.Rounded.Shield,
-                    title = "Maxfiylik va xavfsizlik",
-                    subtitle = buildString {
-                        append(if (settings.incognito) "Inkognito yoqilgan" else "Inkognito o'chiq")
-                        CookieStore.count().takeIf { it > 0 }?.let { append(" · cookies bor") }
-                    },
-                    onClick = { onNavigate(SettingsRoutes.PRIVACY) },
-                )
-                CategoryDivider()
-                CategoryRow(
-                    icon = Icons.Rounded.Memory,
-                    title = "Dvigatel",
-                    subtitle = "yt-dlp ${engine.version ?: ""}".trim(),
-                    onClick = { onNavigate(SettingsRoutes.ENGINE) },
-                )
-                CategoryDivider()
-                CategoryRow(
-                    icon = Icons.Rounded.Storage,
-                    title = "Ma'lumotlar va xotira",
-                    subtitle = "${settings.defaultQuality.label} · " +
-                        (settings.saveTreeUri?.let { describeTree(Uri.parse(it)) } ?: DEFAULT_FOLDER),
-                    onClick = { onNavigate(SettingsRoutes.DOWNLOAD) },
-                )
-                CategoryDivider()
-                CategoryRow(
-                    icon = Icons.Rounded.Info,
-                    title = "Ilova haqida",
-                    subtitle = "Versiya ${BuildConfig.VERSION_NAME}",
-                    onClick = { onNavigate(SettingsRoutes.ABOUT) },
-                )
-            }
+        val downloadSubtitle = "${settings.defaultQuality.label} · " +
+            (settings.saveTreeUri?.let { describeTree(Uri.parse(it)) } ?: DEFAULT_FOLDER)
+        val privacySubtitle = buildString {
+            append(if (settings.incognito) "Inkognito yoqilgan" else "Inkognito o'chiq")
+            CookieStore.count().takeIf { it > 0 }?.let { append(" · cookies bor") }
         }
+
+        CategoryGroup {
+            CategoryRow(
+                icon = Icons.Rounded.Download,
+                title = "Yuklash",
+                subtitle = downloadSubtitle,
+                onClick = { onNavigate(SettingsRoutes.DOWNLOAD) },
+            )
+            CategoryDivider()
+            CategoryRow(
+                icon = Icons.Rounded.Shield,
+                title = "Maxfiylik",
+                subtitle = privacySubtitle,
+                onClick = { onNavigate(SettingsRoutes.PRIVACY) },
+            )
+        }
+        CategoryGroup {
+            CategoryRow(
+                icon = Icons.Rounded.Palette,
+                title = "Tashqi ko'rinish",
+                subtitle = settings.themeMode.label,
+                onClick = { onNavigate(SettingsRoutes.APPEARANCE) },
+            )
+            CategoryDivider()
+            CategoryRow(
+                icon = Icons.Rounded.Memory,
+                title = "Yuklovchi",
+                subtitle = "yt-dlp ${engine.version ?: ""}".trim(),
+                onClick = { onNavigate(SettingsRoutes.ENGINE) },
+            )
+        }
+        CategoryGroup {
+            CategoryRow(
+                icon = Icons.Rounded.Info,
+                title = "Ilova haqida",
+                subtitle = "Versiya ${BuildConfig.VERSION_NAME}",
+                onClick = { onNavigate(SettingsRoutes.ABOUT) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun CategoryGroup(content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth().glass(RoundedCornerShape(24.dp)),
+        shape = RoundedCornerShape(24.dp),
+        colors = glassCardColors(),
+    ) {
+        Column(modifier = Modifier.clip(RoundedCornerShape(24.dp)), content = content)
     }
 }
 
@@ -177,8 +189,9 @@ private fun CategoryRow(icon: ImageVector, title: String, subtitle: String, onCl
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .heightIn(min = 72.dp)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -188,19 +201,30 @@ private fun CategoryRow(icon: ImageVector, title: String, subtitle: String, onCl
                 .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
+            Icon(
+                icon,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
         }
         Spacer(Modifier.width(16.dp))
-        Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.titleMedium)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
             Text(
                 text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
+        Spacer(Modifier.width(8.dp))
         Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
     }
 }
@@ -298,9 +322,9 @@ private fun NetworkChoiceRow(title: String, subtitle: String, selected: Boolean,
 fun AppearanceScreen(vm: SettingsViewModel, onBack: () -> Unit) {
     val settings by vm.settings.collectAsStateWithLifecycle()
 
-    SettingsPage(title = "Mavzu", onBack = onBack) {
+    SettingsPage(title = "Tashqi ko'rinish", onBack = onBack) {
         SettingsCard {
-            LabeledRow("Mavzu") {
+            LabeledRow("Rang mavzusi") {
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                     ThemeMode.entries.forEachIndexed { i, mode ->
                         SegmentedButton(
@@ -315,14 +339,14 @@ fun AppearanceScreen(vm: SettingsViewModel, onBack: () -> Unit) {
     }
 }
 
-// ======================= Dvigatel =======================
+// ======================= Yuklovchi =======================
 
 @Composable
 fun EngineScreen(vm: SettingsViewModel, onBack: () -> Unit) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val engine by vm.engine.collectAsStateWithLifecycle()
 
-    SettingsPage(title = "Dvigatel", onBack = onBack) {
+    SettingsPage(title = "Yuklovchi", onBack = onBack) {
         SettingsCard {
             Row(
                 modifier = Modifier
@@ -369,7 +393,7 @@ fun EngineScreen(vm: SettingsViewModel, onBack: () -> Unit) {
             )
         }
         Text(
-            text = "Sayt o'zgarib video yuklanmay qolsa, avval dvigatelni yangilang",
+            text = "Sayt o'zgarib video yuklanmay qolsa, avval yuklovchini (yt-dlp) yangilang",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 8.dp),
@@ -401,7 +425,7 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
     val cache by vm.cache.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { vm.refreshCache() }
 
-    SettingsPage(title = "Ma'lumotlar va xotira", onBack = onBack) {
+    SettingsPage(title = "Yuklash", onBack = onBack) {
         SettingsCard {
             LabeledRow("Standart video sifati") {
                 FlowRow(
@@ -474,30 +498,15 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
 
         NotificationsSection(vm)
 
-        SectionLabel("Xotira tozaligi")
+        SectionLabel("Buferdan yuklash")
         SettingsCard {
-            LabeledRow("Yuklashlar tarixini saqlash") {
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    uz.vohid.uploatv.data.Retention.entries.forEach { r ->
-                        FilterChip(
-                            selected = settings.historyRetention == r,
-                            onClick = { vm.setRetention(r) },
-                            label = { Text(r.label) },
-                        )
-                    }
-                }
-            }
-            Text(
-                "Faqat ro'yxatdagi eski yozuvlar o'chadi. Yuklangan videolar telefonda qoladi.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            SwitchRow(
+                title = "Bildirishnomada tugma",
+                subtitle = "Havolani nusxalang, panelni tushirib «Buferdan yuklash» ni bosing. Tezkor sozlamalarga ham plitka qo'shishingiz mumkin",
+                checked = settings.clipShortcut,
+                onChange = vm::setClipShortcut,
             )
         }
-
         SectionLabel("Kesh")
         SettingsCard {
             ClickableRow(
@@ -543,7 +552,7 @@ fun AboutScreen(vm: SettingsViewModel, onOpenGuide: () -> Unit, onBack: () -> Un
         }
 
         SettingsCard {
-            InfoRow("Dvigatel", "yt-dlp asosida video yuklovchi")
+            InfoRow("Yuklovchi", "yt-dlp asosida video yuklovchi")
         }
 
         SettingsCard {
@@ -912,12 +921,13 @@ fun LoginWebScreen(startUrl: String, onDone: () -> Unit) {
     }
 }
 
-// ======================= Maxfiylik va xavfsizlik =======================
+// ======================= Maxfiylik =======================
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PrivacyScreen(vm: SettingsViewModel, onOpenCookies: () -> Unit, onBack: () -> Unit) {
     val settings by vm.settings.collectAsStateWithLifecycle()
-    SettingsPage(title = "Maxfiylik va xavfsizlik", onBack = onBack) {
+    SettingsPage(title = "Maxfiylik", onBack = onBack) {
         SettingsCard {
             SwitchRow(
                 title = "Inkognito",
@@ -926,15 +936,30 @@ fun PrivacyScreen(vm: SettingsViewModel, onOpenCookies: () -> Unit, onBack: () -
                 onChange = vm::setIncognito,
             )
         }
-        SectionLabel("Buferdan yuklash")
+        SectionLabel("Tarix")
         SettingsCard {
-            SwitchRow(
-                title = "Bildirishnomada tugma",
-                subtitle = "Havolani nusxalang, panelni tushirib «Buferdan yuklash» ni bosing. Tezkor sozlamalarga ham plitka qo'shishingiz mumkin",
-                checked = settings.clipShortcut,
-                onChange = vm::setClipShortcut,
+            LabeledRow("Yuklashlar tarixini saqlash") {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    uz.vohid.uploatv.data.Retention.entries.forEach { r ->
+                        FilterChip(
+                            selected = settings.historyRetention == r,
+                            onClick = { vm.setRetention(r) },
+                            label = { Text(r.label) },
+                        )
+                    }
+                }
+            }
+            Text(
+                "Faqat ro'yxatdagi eski yozuvlar o'chadi. Yuklangan videolar telefonda qoladi.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
         }
+
         SectionLabel("Cookies")
         SettingsCard {
             ClickableRow(
@@ -955,8 +980,8 @@ private val GUIDE = listOf(
     "2. Tezkor yuklash" to "Ulashishda «Tezkor yuklash» ni tanlasangiz, video ilovani ochmasdan fonda yuklanadi.",
     "3. Yuklashlar" to "Pastdagi yuklashlar ikonkasi ro'yxatni ochadi. Bir vaqtda 2 ta video yuklanadi, qolganlari " +
         "navbatda kutadi. Tugaganini chapga surib o'chirasiz.",
-    "4. Video ochilmasa" to "Instagram kabi saytlar uchun Maxfiylik va xavfsizlik → Cookies bo'limida saytga kiring.",
-    "5. Xato chiqsa" to "Dvigatel bo'limida yt-dlp'ni yangilang. Hal bo'lmasa, xatodagi «Nusxalash» ni bosib yuboring.",
+    "4. Video ochilmasa" to "Instagram kabi saytlar uchun Maxfiylik → Cookies bo'limida saytga kiring.",
+    "5. Xato chiqsa" to "Yuklovchi bo'limida yt-dlp'ni yangilang. Hal bo'lmasa, xatodagi «Nusxalash» ni bosib yuboring.",
 )
 
 @Composable

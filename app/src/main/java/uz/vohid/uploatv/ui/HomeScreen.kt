@@ -504,7 +504,7 @@ private fun HomeHeader(engineState: Int, activeCount: Int) {
         val (label, dot) = when {
             activeCount > 0 -> "$activeCount ta yuklash" to scheme.primary
             engineState == 1 -> "Tayyor" to scheme.tertiary
-            engineState == 2 -> "Dvigatel xatosi" to scheme.error
+            engineState == 2 -> "Yuklovchi xatosi" to scheme.error
             else -> "Yuklanmoqda…" to scheme.outline
         }
         Row(

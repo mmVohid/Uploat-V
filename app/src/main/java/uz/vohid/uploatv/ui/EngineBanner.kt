@@ -69,7 +69,7 @@ fun EngineBanner(
                         BannerPhase.UPDATING -> "Yangilanmoqda…"
                         BannerPhase.DONE -> "Yangilandi"
                         BannerPhase.FAILED -> "Yangilab bo'lmadi"
-                        else -> "Dvigatelni yangilang"
+                        else -> "Yuklovchini yangilang"
                     },
                     style = MaterialTheme.typography.titleSmall,
                     color = onContainer,

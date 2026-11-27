@@ -128,7 +128,7 @@ private fun OnboardingDialog(onAccept: () -> Unit, onSkip: () -> Unit) {
                 PermissionRow(
                     icon = Icons.Rounded.SystemUpdate,
                     title = "yt-dlp yangilash",
-                    text = "Sayt o'zgarganda video yuklanishi uchun dvigatel kuniga bir marta " +
+                    text = "Sayt o'zgarganda video yuklanishi uchun yuklovchi (yt-dlp) kuniga bir marta " +
                         "avtomatik yangilanadi (internet sarflaydi). Sozlamalardan o'chirish mumkin.",
                 )
                 PermissionRow(

@@ -40,14 +40,14 @@ fun friendlyError(e: Throwable): String {
     val low = msg.lowercase()
     return when {
         isLoginError(msg) ->
-            "Bu video uchun akkauntga kirish kerak. Sozlamalar → Maxfiylik va xavfsizlik → Cookies bo'limidan saytga kiring"
+            "Bu video uchun akkauntga kirish kerak. Sozlamalar → Maxfiylik → Cookies bo'limidan saytga kiring"
         "unsupported url" in low -> "Bu havola qo'llab-quvvatlanmaydi"
         isNetworkText(low) -> "Internet aloqasini tekshiring"
         "no space left" in low -> "Telefon xotirasi to'ldi. Joy bo'shatib qayta urinib ko'ring"
         "private video" in low || "this video is private" in low -> "Bu video yopiq (maxfiy)"
         "confirm your age" in low || "age-restricted" in low || "age restricted" in low ->
             "Video yoshga cheklangan. Cookies orqali akkauntga kiring"
-        "sign in to confirm" in low -> "Sayt tasdiqlashni talab qilmoqda. Cookies'ni yoqing yoki dvigatelni yangilang"
+        "sign in to confirm" in low -> "Sayt tasdiqlashni talab qilmoqda. Cookies'ni yoqing yoki yuklovchini yangilang"
         "not available in your country" in low || "geo" in low && "restrict" in low || "blocked it in your country" in low ->
             "Bu video sizning mintaqangizda ko'rish uchun yopilgan"
         "has been removed" in low || "been deleted" in low || "no longer available" in low || "video unavailable" in low ->
@@ -57,7 +57,7 @@ fun friendlyError(e: Throwable): String {
         "is live" in low || "live stream" in low -> "Jonli efirni yuklab bo'lmaydi"
         "http error 429" in low || "too many requests" in low -> "Server ko'p so'rovdan to'xtatdi. Birozdan keyin qayta urinib ko'ring"
         "http error 404" in low -> "Video topilmadi (404). Havolani tekshiring"
-        "http error 403" in low -> "Server ruxsat bermadi (403). Dvigatelni yangilab ko'ring"
+        "http error 403" in low -> "Server ruxsat bermadi (403). Yuklovchini yangilab ko'ring"
         "requested format is not available" in low -> "Tanlangan sifat mavjud emas. Boshqa sifatni tanlang"
         "not available" in low || "unavailable" in low -> "Video mavjud emas"
         else -> msg.lineSequence()
