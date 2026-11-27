@@ -73,7 +73,12 @@ import uz.vohid.uploatv.download.ErrorAction
 
 /** Barcha yuklashlar: faol va tugaganlar. Tugaganlarni chapga surib o'chirish mumkin. */
 @Composable
-fun DownloadsScreen(snackbar: SnackbarHostState, onErrorAction: (ErrorAction, String) -> Unit, onBack: () -> Unit) {
+fun DownloadsScreen(
+    snackbar: SnackbarHostState,
+    onErrorAction: (ErrorAction, String) -> Unit,
+    onPlay: (String) -> Unit,
+    onBack: () -> Unit,
+) {
     val items by DownloadManager.items.collectAsStateWithLifecycle()
     val queue by DownloadManager.queue.collectAsStateWithLifecycle()
     val currentQueue by rememberUpdatedState(queue)
@@ -190,6 +195,7 @@ fun DownloadsScreen(snackbar: SnackbarHostState, onErrorAction: (ErrorAction, St
                         index = index,
                         snackbar = snackbar,
                         onErrorAction = { onErrorAction(it, item.id) },
+                        onPlay = { onPlay(item.id) },
                         queuePos = pos,
                         onMoveToFront = { DownloadManager.moveToFront(item.id) },
                         dragHandle = handle,
@@ -216,6 +222,7 @@ private fun SwipeDownloadRow(
     snackbar: SnackbarHostState,
     onErrorAction: (ErrorAction) -> Unit,
     queuePos: Int?,
+    onPlay: () -> Unit,
     onMoveToFront: () -> Unit,
     dragHandle: (@Composable () -> Unit)?,
     modifier: Modifier = Modifier,
@@ -285,6 +292,8 @@ private fun SwipeDownloadRow(
                 onOpen = { openFile(context, item) },
                 onRemove = { DownloadManager.remove(item.id) },
                 onErrorAction = onErrorAction,
+                // Bitta video fayli ilova ichida ijro etiladi; playlist yoki boshqa turdagi fayllar tashqi ilovada
+                onPlay = if (!item.playlist && item.mime?.startsWith("video") == true) onPlay else null,
                 queuePos = queuePos,
                 onMoveToFront = onMoveToFront,
                 dragHandle = dragHandle,

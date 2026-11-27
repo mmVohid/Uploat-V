@@ -63,6 +63,7 @@ import androidx.navigation.navArgument
 import uz.vohid.uploatv.download.DownloadManager
 import uz.vohid.uploatv.download.ErrorAction
 import uz.vohid.uploatv.ui.CookiesScreen
+import uz.vohid.uploatv.ui.PlayerScreen
 import uz.vohid.uploatv.ui.DownloadsScreen
 import uz.vohid.uploatv.ui.GuideScreen
 import uz.vohid.uploatv.ui.PrivacyScreen
@@ -276,8 +277,12 @@ private fun AppRoot(sharedUrl: String?, onSharedConsumed: () -> Unit) {
                             ErrorAction.NONE -> Unit
                         }
                     },
+                    onPlay = { id -> nav.navigate("player/$id") },
                     onBack = { nav.popBackStack() },
                 )
+            }
+            composable("player/{id}") { entry ->
+                PlayerScreen(id = entry.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() })
             }
             composable(SettingsRoutes.MAIN) {
                 SettingsMainScreen(

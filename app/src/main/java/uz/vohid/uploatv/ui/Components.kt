@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowUpward
+import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
@@ -104,6 +105,8 @@ fun DownloadRow(
     onErrorAction: (ErrorAction) -> Unit = {},
     /** Navbatdagi o'rni (1 dan); null bo'lsa ko'rsatilmaydi. */
     queuePos: Int? = null,
+    /** Berilsa, "Ko'rish" ilova ichida ijro etadi; "Ochish" esa menyuga o'tadi. */
+    onPlay: (() -> Unit)? = null,
     onMoveToFront: (() -> Unit)? = null,
     dragHandle: (@Composable () -> Unit)? = null,
 ) {
@@ -180,10 +183,10 @@ fun DownloadRow(
                         var menuOpen by remember { mutableStateOf(false) }
                         var confirmDelete by remember { mutableStateOf(false) }
                         val scope = rememberCoroutineScope()
-                        FilledTonalButton(onClick = onOpen) {
+                        FilledTonalButton(onClick = onPlay ?: onOpen) {
                             Icon(Icons.Rounded.PlayArrow, null, Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("Ochish")
+                            Text(if (onPlay != null) "Ko'rish" else "Ochish")
                         }
                         IconButton(onClick = { shareFile(context, item) }) {
                             Icon(Icons.Rounded.Share, contentDescription = "Ulashish")
@@ -193,6 +196,16 @@ fun DownloadRow(
                                 Icon(Icons.Rounded.MoreVert, contentDescription = "Boshqa amallar")
                             }
                             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                                if (onPlay != null) {
+                                    DropdownMenuItem(
+                                        text = { Text("Boshqa ilovada ochish") },
+                                        leadingIcon = { Icon(Icons.Rounded.OpenInNew, contentDescription = null) },
+                                        onClick = {
+                                            menuOpen = false
+                                            onOpen()
+                                        },
+                                    )
+                                }
                                 DropdownMenuItem(
                                     text = { Text("Ro'yxatdan olib tashlash") },
                                     leadingIcon = { Icon(Icons.Rounded.Delete, contentDescription = null) },

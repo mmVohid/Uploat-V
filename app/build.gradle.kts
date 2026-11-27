@@ -86,6 +86,9 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     implementation("io.coil-kt:coil-compose:2.7.0")
+    // Ilova ichidagi pleer
+    implementation("androidx.media3:media3-exoplayer:1.5.1")
+    implementation("androidx.media3:media3-ui:1.5.1")
     // Baseline Profile'ni o'rnatish (Play Store'siz o'rnatilganda ham ishlaydi)
     implementation("androidx.profileinstaller:profileinstaller:1.4.1")
 
