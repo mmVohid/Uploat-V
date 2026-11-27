@@ -98,8 +98,6 @@ import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.runtime.produceState
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeSource
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -175,12 +173,10 @@ fun HomeScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = { HomeHeader(engineState = engineState, activeCount = activeCount) },
     ) { pad ->
-      val listHaze = remember { HazeState() }
       Box(Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .hazeSource(listHaze)
                 .imePadding(),
             contentPadding = PaddingValues(
                 start = 16.dp,
@@ -329,7 +325,6 @@ fun HomeScreen(
                 onDownloads = onOpenDownloads,
                 onSettings = onOpenSettings,
                 activeCount = activeCount,
-                hazeState = listHaze,
             )
         }
       }
@@ -526,7 +521,6 @@ private fun FloatingBar(
     onDownloads: () -> Unit,
     onSettings: () -> Unit,
     activeCount: Int,
-    hazeState: HazeState,
 ) {
     val pasteSource = remember { MutableInteractionSource() }
     val setSource = remember { MutableInteractionSource() }
@@ -536,7 +530,7 @@ private fun FloatingBar(
             .navigationBarsPadding()
             .padding(horizontal = 16.dp, vertical = 12.dp)
             .fillMaxWidth()
-            .glass(RoundedCornerShape(32.dp), tintAlpha = 0.6f, hazeState = hazeState)
+            .glass(RoundedCornerShape(32.dp), tintAlpha = 0.88f)
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),

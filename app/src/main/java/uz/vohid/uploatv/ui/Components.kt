@@ -7,12 +7,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
@@ -46,8 +49,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.runtime.getValue
@@ -116,6 +118,24 @@ fun DownloadRow(
                         overflow = TextOverflow.Ellipsis,
                     )
                     StatusLine(item)
+                    if (item.status == Status.QUEUED || item.status == Status.RUNNING) {
+                        val bar by animateFloatAsState(item.progress, label = "bar")
+                        val barModifier = Modifier.fillMaxWidth().padding(top = 4.dp).height(4.dp).clip(RoundedCornerShape(2.dp))
+                        if (item.status == Status.RUNNING && item.progress > 0f) {
+                            LinearProgressIndicator(
+                                progress = { bar },
+                                modifier = barModifier,
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                            )
+                        } else {
+                            LinearProgressIndicator(
+                                modifier = barModifier,
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                            )
+                        }
+                    }
                 }
             }
 
@@ -214,91 +234,76 @@ fun DownloadRow(
     }
 }
 
-/** Yumaloq rasm atrofida gradient progress halqasi; tugagach yashil porlaydi. */
+/**
+ * Ixcham 16:9 rasm (yumaloq burchakli to'rtburchak). Ustida: yuklanayotganda foiz, tugagach yashil ✓, xatoda qizil belgi.
+ * Coil rasmni o'zi ko'rsatiladigan o'lchamgacha kichraytirib yuklaydi.
+ */
 @Composable
 private fun ProgressThumb(item: DownloadItem) {
     val scheme = MaterialTheme.colorScheme
-    val progress by animateFloatAsState(item.progress, label = "ring")
-    val done = item.status == Status.DONE
-    val failed = item.status == Status.FAILED
     Box(
         modifier = Modifier
-            .size(72.dp)
-            .drawBehind {
-                if (done) {
-                    drawCircle(
-                        Brush.radialGradient(
-                            listOf(scheme.tertiary.copy(alpha = 0.45f), Color.Transparent),
-                            radius = size.minDimension * 0.75f,
-                        ),
-                    )
-                }
-            },
+            .width(96.dp)
+            .aspectRatio(16f / 9f)
+            .clip(RoundedCornerShape(12.dp))
+            .background(scheme.surfaceContainerHighest),
         contentAlignment = Alignment.Center,
     ) {
-        Box(
-            Modifier
-                .size(56.dp)
-                .clip(CircleShape)
-                .background(scheme.surfaceContainerHighest),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (item.thumbnail != null) {
-                AsyncImage(
-                    model = item.thumbnail,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.matchParentSize(),
-                )
-            } else {
-                Icon(Icons.Rounded.Videocam, null, tint = scheme.onSurfaceVariant)
-            }
-            if (item.status == Status.RUNNING && item.progress > 0f) {
-                Box(
-                    Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.45f)),
-                    contentAlignment = Alignment.Center,
-                ) {
+        if (item.thumbnail != null) {
+            AsyncImage(
+                model = item.thumbnail,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.matchParentSize(),
+            )
+        } else {
+            Icon(Icons.Rounded.Videocam, null, tint = scheme.onSurfaceVariant)
+        }
+        when (item.status) {
+            Status.QUEUED, Status.RUNNING -> Box(
+                Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.45f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (item.status == Status.RUNNING && item.progress > 0f) {
                     Text(
                         "${(item.progress * 100).toInt()}%",
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.labelLarge,
                         color = Color.White,
+                    )
+                } else {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        strokeWidth = 2.5.dp,
+                        color = Color.White,
+                        trackColor = Color.White.copy(alpha = 0.25f),
+                        strokeCap = StrokeCap.Round,
                     )
                 }
             }
+            Status.DONE -> StatusBadge(
+                icon = Icons.Rounded.Check,
+                container = scheme.tertiary,
+                content = scheme.onTertiary,
+                modifier = Modifier.align(Alignment.BottomEnd),
+            )
+            Status.FAILED -> StatusBadge(
+                icon = Icons.Rounded.Close,
+                container = scheme.error,
+                content = scheme.onError,
+                modifier = Modifier.align(Alignment.BottomEnd),
+            )
+            Status.CANCELED -> {}
         }
-        val track = scheme.outlineVariant.copy(alpha = 0.5f)
-        when {
-            item.status == Status.QUEUED || (item.status == Status.RUNNING && item.progress <= 0f) ->
-                CircularProgressIndicator(
-                    modifier = Modifier.size(70.dp),
-                    strokeWidth = 4.dp,
-                    color = scheme.primary,
-                    trackColor = track,
-                    strokeCap = StrokeCap.Round,
-                )
-            item.status == Status.RUNNING ->
-                CircularProgressIndicator(
-                    progress = { progress },
-                    modifier = Modifier.size(70.dp),
-                    strokeWidth = 4.dp,
-                    color = scheme.primary,
-                    trackColor = track,
-                    strokeCap = StrokeCap.Round,
-                )
-            else ->
-                CircularProgressIndicator(
-                    progress = { 1f },
-                    modifier = Modifier.size(70.dp),
-                    strokeWidth = 3.dp,
-                    color = when {
-                        done -> scheme.tertiary
-                        failed -> scheme.error
-                        else -> track
-                    },
-                    trackColor = Color.Transparent,
-                    strokeCap = StrokeCap.Round,
-                )
-        }
+    }
+}
+
+@Composable
+private fun StatusBadge(icon: androidx.compose.ui.graphics.vector.ImageVector, container: Color, content: Color, modifier: Modifier) {
+    Box(
+        modifier = modifier.padding(4.dp).size(20.dp).clip(CircleShape).background(container),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, contentDescription = null, modifier = Modifier.size(14.dp), tint = content)
     }
 }
 

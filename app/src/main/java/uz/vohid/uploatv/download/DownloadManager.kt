@@ -43,6 +43,7 @@ import java.util.concurrent.ConcurrentHashMap
 object DownloadManager {
 
     private const val HISTORY_LIMIT = 100
+    private const val UI_INTERVAL_MS = 500L
     private val ITEM_REGEX = Regex("""Downloading item (\d+) of (\d+)""")
     private val SPEED_REGEX = Regex("""\bat\s+(\d+(?:\.\d+)?\s?[KMGT]?i?B/s)""")
 
@@ -268,11 +269,10 @@ object DownloadManager {
 
     /** Bo'sh joy chiqquncha kutadi. Chegara sozlamalardan o'qiladi, shuning uchun o'zgarsa darrov hisobga olinadi. */
     private suspend fun acquireSlot() {
-        val repo = SettingsRepository(app)
+        val maxFlow = SettingsRepository(app).settings.map { it.maxParallel }
         while (true) {
-            combine(running, repo.settings.map { it.maxParallel }) { r, m -> r < m }.first { it }
+            val max = combine(running, maxFlow) { r, m -> r to m }.first { (r, m) -> r < m }.second
             val cur = running.value
-            val max = repo.settings.first().maxParallel
             if (cur < max && running.compareAndSet(cur, cur + 1)) return
         }
     }
@@ -342,13 +342,16 @@ object DownloadManager {
                 var index = 1
                 var total = 1
                 var speed: String? = null
+                var lastUiMs = 0L // ekran yangilanishini sekundiga ~2 martaga cheklaydi
                 YoutubeDL.getInstance().execute(buildRequest(item, dir, s), id) { percent, eta, line ->
                     ITEM_REGEX.find(line)?.let {
                         index = it.groupValues[1].toInt()
                         total = it.groupValues[2].toInt()
                     }
                     SPEED_REGEX.find(line)?.let { speed = it.groupValues[1].replace("iB", "B") }
-                    if (percent >= 0f) {
+                    val nowMs = android.os.SystemClock.elapsedRealtime()
+                    if (percent >= 0f && (nowMs - lastUiMs >= UI_INTERVAL_MS || percent >= 100f)) {
+                        lastUiMs = nowMs
                         val overall = if (total > 1) ((index - 1) + percent / 100f) / total else percent / 100f
                         val parts = buildList {
                             if (total > 1) add("$index/$total")
@@ -368,7 +371,7 @@ object DownloadManager {
             if (get(id)?.status == Status.CANCELED) return
 
             mutate(id) { it.copy(detail = "Saqlanmoqda…", progress = 1f) }
-            val treeUri = SettingsRepository(app).settings.first().saveTreeUri
+            val treeUri = s.saveTreeUri
             val saved = if (treeUri != null) saveToTree(dir, Uri.parse(treeUri)) else saveToDownloads(dir)
             if (saved.isEmpty()) throw IllegalStateException("Fayl topilmadi")
 

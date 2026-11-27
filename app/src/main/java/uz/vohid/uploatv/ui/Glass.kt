@@ -25,14 +25,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeTint
-import dev.chrisbanes.haze.hazeEffect
-import dev.chrisbanes.haze.hazeSource
 
 /**
  * Butun ilova uchun toza fon (yorug' rejimda oq, qorong'uda qora).
- * Kartochkalar shu qatlamni xiralashtiradi (hazeSource).
+ * Kartochkalar ustiga yarim shaffof rang qo'yiladi.
  */
 @Composable
 fun GlassScaffold(content: @Composable BoxScope.() -> Unit) {
@@ -56,34 +52,24 @@ fun Modifier.pressScale(source: InteractionSource, pressedScale: Float = 0.95f):
     return this.graphicsLayer { scaleX = scale; scaleY = scale }
 }
 
-/** Shisha effekti: xiralashgan fon + yarim shaffof rang + yorug' chegara. */
+/** Shisha ko'rinish: yarim shaffof rang + yorug' chegara. Xiralashtirish (blur) yo'q: GPU'ni yuklamaydi. */
 @Composable
 fun Modifier.glass(
     shape: Shape = RoundedCornerShape(20.dp),
     tint: Color = MaterialTheme.colorScheme.surfaceContainer,
     tintAlpha: Float = 0.9f,
-    hazeState: HazeState? = null,
 ): Modifier {
-    val state = hazeState
     val scheme = MaterialTheme.colorScheme
     val dark = scheme.surface.luminance() < 0.5f
     val rim = if (dark) Color.White else Color.Black
-    val base = this.clip(shape)
-    val blurred = if (state != null) {
-        base.hazeEffect(state) {
-            blurRadius = 28.dp
-            backgroundColor = scheme.surface
-            tints = listOf(HazeTint(tint.copy(alpha = tintAlpha)))
-            noiseFactor = 0.04f
-        }
-    } else {
-        base.background(tint.copy(alpha = tintAlpha))
-    }
-    return blurred.border(
-        1.dp,
-        Brush.linearGradient(listOf(rim.copy(alpha = if (dark) 0.22f else 0.12f), rim.copy(alpha = if (dark) 0.06f else 0.04f))),
-        shape,
-    )
+    return this
+        .clip(shape)
+        .background(tint.copy(alpha = tintAlpha))
+        .border(
+            1.dp,
+            Brush.linearGradient(listOf(rim.copy(alpha = if (dark) 0.22f else 0.12f), rim.copy(alpha = if (dark) 0.06f else 0.04f))),
+            shape,
+        )
 }
 
 /** Shisha kartochka ichidagi Card: o'zi shaffof, effekt modifier orqali beriladi. */
