@@ -14,6 +14,9 @@ import androidx.compose.foundation.background
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.border
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -356,6 +359,59 @@ fun AppearanceScreen(vm: SettingsViewModel, onBack: () -> Unit) {
                 )
             }
         }
+
+        SectionLabel("Aksent rangi")
+        SettingsCard {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    uz.vohid.uploatv.data.AccentColor.entries.forEach { accent ->
+                        AccentSwatch(
+                            accent = accent,
+                            selected = settings.accent == accent,
+                            onClick = { vm.setAccent(accent) },
+                        )
+                    }
+                }
+                Text(
+                    text = settings.accent.label,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        Caption("Tugmalar, jarayon chiziqlari va belgilar shu rangda ko'rinadi")
+
+        SectionLabel("Qorong'i rejim")
+        SettingsCard {
+            SwitchRow(
+                icon = Icons.Rounded.DarkMode,
+                title = "Toza qora (AMOLED)",
+                subtitle = "Qorong'i rejimda fon sof qora bo'ladi. OLED ekranda batareya tejaydi",
+                checked = settings.amoled,
+                onChange = vm::setAmoled,
+            )
+        }
+    }
+}
+
+/** Aksent rangi namunasi: doira, tanlangani halqa va ✓ bilan ajraladi. */
+@Composable
+private fun AccentSwatch(accent: uz.vohid.uploatv.data.AccentColor, selected: Boolean, onClick: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    val fill = accent.argb?.let { Color(it) } ?: scheme.onSurface
+    val mark = if (fill.luminance() > 0.5f) Color(0xFF111318) else Color.White
+    val ring by animateColorAsState(if (selected) scheme.onSurface else Color.Transparent, label = "accentRing")
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .border(2.dp, ring, CircleShape)
+            .padding(5.dp)
+            .clip(CircleShape)
+            .background(fill)
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (selected) Icon(Icons.Rounded.Check, contentDescription = accent.label, tint = mark, modifier = Modifier.size(20.dp))
     }
 }
 
@@ -725,6 +781,27 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
         }
 
         NotificationsSection(vm)
+
+        SectionLabel("Tugash signali")
+        SettingsCard {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                val modes = uz.vohid.uploatv.data.DoneVibration.entries
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    modes.forEachIndexed { i, mode ->
+                        SegmentedButton(
+                            selected = settings.doneVibration == mode,
+                            onClick = {
+                                vm.setDoneVibration(mode)
+                                uz.vohid.uploatv.download.VibrationPlayer.play(context, mode)
+                            },
+                            shape = SegmentedButtonDefaults.itemShape(i, modes.size),
+                            icon = {},
+                        ) { Text(mode.label, maxLines = 1) }
+                    }
+                }
+            }
+        }
+        Caption("Hamma yuklashlar tugaganda telefon tebranadi. Tanlaganingizda namuna tebranadi")
 
         SectionLabel("Kesh")
         SettingsCard {

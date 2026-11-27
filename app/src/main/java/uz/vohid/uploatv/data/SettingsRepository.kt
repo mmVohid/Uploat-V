@@ -38,6 +38,9 @@ class SettingsRepository(private val context: Context) {
         val LATEST_VERSION = stringPreferencesKey("latest_version")
         val LATEST_URL = stringPreferencesKey("latest_url")
         val CHANGELOG_SEEN = stringPreferencesKey("changelog_seen")
+        val ACCENT = stringPreferencesKey("accent_color")
+        val AMOLED = booleanPreferencesKey("amoled")
+        val DONE_VIBRATION = stringPreferencesKey("done_vibration")
         val LATEST_ETAG = stringPreferencesKey("latest_etag")
         val DISMISSED_VERSION = stringPreferencesKey("dismissed_version")
         val SPEED_LIMIT = stringPreferencesKey("speed_limit")
@@ -71,6 +74,9 @@ class SettingsRepository(private val context: Context) {
             latestVersion = p[Keys.LATEST_VERSION],
             latestUrl = p[Keys.LATEST_URL],
             changelogSeen = p[Keys.CHANGELOG_SEEN] ?: "",
+            accent = p[Keys.ACCENT].toEnum(AccentColor.MONO),
+            amoled = p[Keys.AMOLED] ?: false,
+            doneVibration = p[Keys.DONE_VIBRATION].toEnum(DoneVibration.SHORT),
             latestEtag = p[Keys.LATEST_ETAG],
             dismissedVersion = p[Keys.DISMISSED_VERSION],
             speedLimit = p[Keys.SPEED_LIMIT].toEnum(SpeedLimit.NONE),
@@ -101,6 +107,9 @@ class SettingsRepository(private val context: Context) {
     suspend fun touchUpdateCheck() = context.dataStore.edit {
         it[Keys.LAST_APP_UPDATE_CHECK] = System.currentTimeMillis()
     }
+    suspend fun setAccent(a: AccentColor) = context.dataStore.edit { it[Keys.ACCENT] = a.name }
+    suspend fun setAmoled(on: Boolean) = context.dataStore.edit { it[Keys.AMOLED] = on }
+    suspend fun setDoneVibration(v: DoneVibration) = context.dataStore.edit { it[Keys.DONE_VIBRATION] = v.name }
     suspend fun setChangelogSeen(id: String) = context.dataStore.edit { it[Keys.CHANGELOG_SEEN] = id }
     suspend fun dismissUpdate(version: String) = context.dataStore.edit { it[Keys.DISMISSED_VERSION] = version }
     suspend fun setMaxParallel(n: Int) = context.dataStore.edit { it[Keys.MAX_PARALLEL] = n.coerceIn(1, 3) }

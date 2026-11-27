@@ -62,6 +62,8 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import uz.vohid.uploatv.download.DEFAULT_FOLDER
 import uz.vohid.uploatv.download.DownloadItem
+import uz.vohid.uploatv.download.ErrorAction
+import uz.vohid.uploatv.download.errorAction
 import uz.vohid.uploatv.download.Status
 
 /** 16:9 rasm; rasm bo'lmasa tur ikonkasi ko'rsatiladi. */
@@ -98,6 +100,7 @@ fun DownloadRow(
     onOpen: () -> Unit,
     onRemove: () -> Unit,
     modifier: Modifier = Modifier,
+    onErrorAction: (ErrorAction) -> Unit = {},
 ) {
     val clipboard = LocalClipboardManager.current
     val context = LocalContext.current
@@ -139,6 +142,14 @@ fun DownloadRow(
                 }
             }
 
+            // Xato sababiga mos tavsiya: bir bosishda to'g'ri joyga olib boradi
+            val action = if (item.status == Status.FAILED) errorAction(item.errorDetail) else ErrorAction.NONE
+            if (action != ErrorAction.NONE) {
+                FilledTonalButton(
+                    onClick = { onErrorAction(action) },
+                    modifier = Modifier.align(Alignment.End).padding(top = 8.dp),
+                ) { Text(action.label) }
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,

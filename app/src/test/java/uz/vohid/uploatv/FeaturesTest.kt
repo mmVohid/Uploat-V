@@ -5,7 +5,11 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import uz.vohid.uploatv.download.ErrorAction
+import uz.vohid.uploatv.download.UrlCleaner
 import uz.vohid.uploatv.download.compressIndices
+import uz.vohid.uploatv.download.errorAction
+import uz.vohid.uploatv.download.friendlyError
 import uz.vohid.uploatv.ui.extractUrls
 import uz.vohid.uploatv.update.UpdateChecker
 
@@ -49,5 +53,48 @@ class FeaturesTest {
         assertEquals("1.1.0", r?.version)
         assertEquals("https://github.com/x/Uploat-V.apk", r?.url)
         assertNull(UpdateChecker.parseRelease("""{"tag_name":"v2.0.0","prerelease":true}"""))
+    }
+
+    @Test
+    fun urlCleaner_removesTrackingOnly() {
+        assertEquals("https://youtu.be/abc12345678?t=30", UrlCleaner.clean("https://youtu.be/abc12345678?si=XYZ&t=30"))
+        assertEquals(
+            "https://www.youtube.com/watch?v=abc12345678&list=PL1",
+            UrlCleaner.clean("https://www.youtube.com/watch?v=abc12345678&list=PL1&feature=share&pp=ygU"),
+        )
+        assertEquals("https://www.instagram.com/reel/AbC/", UrlCleaner.clean("https://www.instagram.com/reel/AbC/?igsh=abc&utm_source=x"))
+        assertEquals("https://vm.tiktok.com/ZM123/", UrlCleaner.clean("https://vm.tiktok.com/ZM123/?_r=1&_t=abc"))
+        assertEquals("https://site.com/v?id=5", UrlCleaner.clean("https://site.com/v?id=5&utm_campaign=a&fbclid=z"))
+        assertEquals("https://site.com/v", UrlCleaner.clean("https://site.com/v?utm_source=a"))
+        assertEquals("https://site.com/page#part", UrlCleaner.clean("https://site.com/page?gclid=1#part"))
+        // o'zgarishsiz havola o'zgarmaydi
+        assertEquals("https://site.com/a?b=1", UrlCleaner.clean("https://site.com/a?b=1"))
+    }
+
+    @Test
+    fun urlCleaner_keyMatchesSameVideo() {
+        val a = UrlCleaner.key("https://youtu.be/abc12345678?si=1")
+        val b = UrlCleaner.key("https://www.youtube.com/watch?v=abc12345678&feature=share")
+        val c = UrlCleaner.key("https://m.youtube.com/shorts/abc12345678")
+        assertEquals(a, b)
+        assertEquals(a, c)
+        assertFalse(a == UrlCleaner.key("https://youtu.be/zzz12345678"))
+        assertEquals(UrlCleaner.key("https://site.com/a/b/"), UrlCleaner.key("https://www.site.com/a/b?utm_x=1"))
+    }
+
+    @Test
+    fun errors_haveHintsAndActions() {
+        fun err(m: String) = RuntimeException(m)
+        assertEquals("Bu video faqat kanal a'zolari uchun", friendlyError(err("ERROR: Join this channel to get access")))
+        assertEquals("Video DRM bilan himoyalangan, uni yuklab bo'lmaydi", friendlyError(err("ERROR: This video is DRM protected")))
+        assertEquals(ErrorAction.OPEN_COOKIES, errorAction("ERROR: Sign in to confirm you're not a bot"))
+        assertEquals(ErrorAction.OPEN_COOKIES, errorAction("This video may be inappropriate. Confirm your age"))
+        assertEquals(ErrorAction.UPDATE_ENGINE, errorAction("ERROR: Unable to extract uploader id"))
+        assertEquals(ErrorAction.UPDATE_ENGINE, errorAction("HTTP Error 403: Forbidden"))
+        assertEquals(ErrorAction.BEST_QUALITY, errorAction("ERROR: Requested format is not available"))
+        assertEquals(ErrorAction.NONE, errorAction("ERROR: Private video"))
+        assertEquals(ErrorAction.NONE, errorAction(null))
+        // eski xatti-harakat saqlanadi
+        assertEquals("Bu video yopiq (maxfiy)", friendlyError(err("ERROR: Private video. Sign in")))
     }
 }

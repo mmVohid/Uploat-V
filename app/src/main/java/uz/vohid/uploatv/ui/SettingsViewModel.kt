@@ -60,6 +60,10 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         loadVersion()
     }
 
+    fun setAccent(a: uz.vohid.uploatv.data.AccentColor) = viewModelScope.launch { repo.setAccent(a) }
+    fun setAmoled(on: Boolean) = viewModelScope.launch { repo.setAmoled(on) }
+    fun setDoneVibration(v: uz.vohid.uploatv.data.DoneVibration) = viewModelScope.launch { repo.setDoneVibration(v) }
+
     fun markNewsSeen() {
         viewModelScope.launch { repo.setChangelogSeen(Changelog.LATEST_ID) }
     }

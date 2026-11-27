@@ -60,6 +60,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.navigation.compose.NavHost
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import uz.vohid.uploatv.download.DownloadManager
+import uz.vohid.uploatv.download.ErrorAction
 import uz.vohid.uploatv.ui.CookiesScreen
 import uz.vohid.uploatv.ui.DownloadsScreen
 import uz.vohid.uploatv.ui.GuideScreen
@@ -92,7 +94,7 @@ class MainActivity : ComponentActivity() {
         val settingsRepo = SettingsRepository(applicationContext)
         setContent {
             val settings by settingsRepo.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
-            UploatTheme(themeMode = settings.themeMode) {
+            UploatTheme(themeMode = settings.themeMode, accent = settings.accent, amoled = settings.amoled) {
                 GlassScaffold {
                     AppRoot(sharedUrl = sharedUrl, onSharedConsumed = { sharedUrl = null })
                 }
@@ -254,9 +256,29 @@ private fun AppRoot(sharedUrl: String?, onSharedConsumed: () -> Unit) {
                     snackbar = snackbar,
                     onOpenDownloads = { nav.navigate("downloads") },
                     onOpenSettings = { nav.navigate(SettingsRoutes.MAIN) },
+                    onErrorAction = { action ->
+                        when (action) {
+                            ErrorAction.OPEN_COOKIES -> nav.navigate(SettingsRoutes.COOKIES)
+                            ErrorAction.UPDATE_ENGINE -> nav.navigate(SettingsRoutes.ENGINE)
+                            else -> Unit
+                        }
+                    },
                 )
             }
-            composable("downloads") { DownloadsScreen(snackbar) { nav.popBackStack() } }
+            composable("downloads") {
+                DownloadsScreen(
+                    snackbar = snackbar,
+                    onErrorAction = { action, id ->
+                        when (action) {
+                            ErrorAction.OPEN_COOKIES -> nav.navigate(SettingsRoutes.COOKIES)
+                            ErrorAction.UPDATE_ENGINE -> nav.navigate(SettingsRoutes.ENGINE)
+                            ErrorAction.BEST_QUALITY -> DownloadManager.retry(id, uz.vohid.uploatv.data.Quality.BEST)
+                            ErrorAction.NONE -> Unit
+                        }
+                    },
+                    onBack = { nav.popBackStack() },
+                )
+            }
             composable(SettingsRoutes.MAIN) {
                 SettingsMainScreen(
                     vm = settingsVm,

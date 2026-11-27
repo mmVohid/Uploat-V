@@ -145,7 +145,8 @@ object DownloadManager {
      * "Tezkor yuklash": havola ulashilganda ilova ochilmasdan, sozlamalardagi standart
      * tur/sifat bilan orqa fonda yuklashni boshlaydi.
      */
-    fun quickDownload(url: String) {
+    fun quickDownload(rawUrl: String) {
+        val url = UrlCleaner.clean(rawUrl)
         val id = UUID.randomUUID().toString()
         scope.launch {
             val s = SettingsRepository(app).settings.first()
@@ -205,10 +206,16 @@ object DownloadManager {
         persist()
     }
 
-    fun retry(id: String) {
+    /** [quality] berilsa, qayta urinish shu sifatda bo'ladi (masalan, tanlangan sifat mavjud bo'lmaganda). */
+    fun retry(id: String, quality: uz.vohid.uploatv.data.Quality? = null) {
         netWaiting.remove(id)
         loginRetried.remove(id)
-        mutate(id) { it.copy(status = Status.QUEUED, progress = 0f, detail = "", error = null) }
+        mutate(id) {
+            it.copy(
+                status = Status.QUEUED, progress = 0f, detail = "", error = null,
+                quality = quality ?: it.quality,
+            )
+        }
         startService()
         launchJob(id)
     }

@@ -59,10 +59,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import uz.vohid.uploatv.download.DownloadItem
 import uz.vohid.uploatv.download.DownloadManager
+import uz.vohid.uploatv.download.ErrorAction
 
 /** Barcha yuklashlar: faol va tugaganlar. Tugaganlarni chapga surib o'chirish mumkin. */
 @Composable
-fun DownloadsScreen(snackbar: SnackbarHostState, onBack: () -> Unit) {
+fun DownloadsScreen(snackbar: SnackbarHostState, onErrorAction: (ErrorAction, String) -> Unit, onBack: () -> Unit) {
     val items by DownloadManager.items.collectAsStateWithLifecycle()
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
@@ -130,7 +131,13 @@ fun DownloadsScreen(snackbar: SnackbarHostState, onBack: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 itemsIndexed(items, key = { _, it -> it.id }, contentType = { _, _ -> "download" }) { index, item ->
-                    SwipeDownloadRow(item = item, index = index, snackbar = snackbar, modifier = Modifier.animateItem())
+                    SwipeDownloadRow(
+                        item = item,
+                        index = index,
+                        snackbar = snackbar,
+                        onErrorAction = { onErrorAction(it, item.id) },
+                        modifier = Modifier.animateItem(),
+                    )
                 }
             }
         }
@@ -138,7 +145,13 @@ fun DownloadsScreen(snackbar: SnackbarHostState, onBack: () -> Unit) {
 }
 
 @Composable
-private fun SwipeDownloadRow(item: DownloadItem, index: Int, snackbar: SnackbarHostState, modifier: Modifier = Modifier) {
+private fun SwipeDownloadRow(
+    item: DownloadItem,
+    index: Int,
+    snackbar: SnackbarHostState,
+    onErrorAction: (ErrorAction) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
@@ -203,6 +216,7 @@ private fun SwipeDownloadRow(item: DownloadItem, index: Int, snackbar: SnackbarH
                 onRetry = { DownloadManager.retry(item.id) },
                 onOpen = { openFile(context, item) },
                 onRemove = { DownloadManager.remove(item.id) },
+                onErrorAction = onErrorAction,
             )
         }
     }

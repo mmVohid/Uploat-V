@@ -34,6 +34,7 @@ import uz.vohid.uploatv.download.Status
 import uz.vohid.uploatv.download.InfoFetcher
 import uz.vohid.uploatv.download.friendlyError
 import androidx.compose.runtime.Immutable
+import uz.vohid.uploatv.download.UrlCleaner
 import uz.vohid.uploatv.download.rawError
 import java.util.UUID
 
@@ -51,7 +52,8 @@ internal fun extractUrls(text: String): List<String> =
     URL_FIND.findAll(text)
         .map { it.value.trimEnd('.', ',', ';', '"', '\'') }
         .filter { it.length > 10 }
-        .distinct()
+        .map { UrlCleaner.clean(it) }
+        .distinctBy { UrlCleaner.key(it) }
         .toList()
 
 @Immutable
@@ -220,8 +222,8 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun enqueueUrls(urls: List<String>) {
-        val active = DownloadManager.items.value.filter { it.isActive }.map { it.url }.toSet()
-        val fresh = urls.filter { it !in active }
+        val active = DownloadManager.items.value.filter { it.isActive }.map { UrlCleaner.key(it.url) }.toSet()
+        val fresh = urls.filter { UrlCleaner.key(it) !in active }
         fresh.forEach { DownloadManager.quickDownload(it) }
         _events.trySend(
             if (fresh.isEmpty()) "Bu havolalar allaqachon yuklanmoqda" else "${fresh.size} ta havola navbatga qo'shildi",
@@ -238,10 +240,12 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         }
         fetchJob?.cancel()
         InfoFetcher.cancel()
+        // Joylash/ulashishda kuzatuv qismlari olib tashlanadi; qo'lda yozilayotgan matn o'zgartirilmaydi
+        val text = if (immediate && looksLikeUrl(value.trim())) UrlCleaner.clean(value) else value
         _ui.update {
-            it.copy(url = value, info = null, error = null, fetching = false, wholePlaylist = false, selectedEntries = null, bulk = null)
+            it.copy(url = text, info = null, error = null, fetching = false, wholePlaylist = false, selectedEntries = null, bulk = null)
         }
-        if (!looksLikeUrl(value.trim())) return
+        if (!looksLikeUrl(text.trim())) return
         startFetch(immediate)
     }
 
@@ -267,7 +271,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         val picked = s.selectedEntries
         if (info.isPlaylist && picked != null && picked.isEmpty()) return false
         val partial = info.isPlaylist && picked != null && picked.size < info.entryCount
-        if (!force && DownloadManager.items.value.any { it.url == url && it.status == Status.DONE }) {
+        if (!force && DownloadManager.items.value.any { UrlCleaner.key(it.url) == UrlCleaner.key(url) && it.status == Status.DONE }) {
             _ui.update { it.copy(duplicate = true) }
             return false
         }

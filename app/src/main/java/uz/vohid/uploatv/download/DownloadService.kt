@@ -26,6 +26,7 @@ class DownloadService : Service() {
     private var job: Job? = null
     private val seen = mutableSetOf<String>()
     private val notified = mutableSetOf<String>()
+    private var prevActive = 0
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -62,6 +63,12 @@ class DownloadService : Service() {
         }
 
         val waiting = items.count { it.status == Status.FAILED && DownloadManager.willAutoRetry(it.id) }
+        // Hamma yuklashlar tugadi (bekor qilish hisoblanmaydi): sozlangan tebranish
+        if (prevActive > 0 && active.isEmpty() && waiting == 0 && finished.isNotEmpty()) {
+            val mode = SettingsRepository(this).settings.first().doneVibration
+            VibrationPlayer.play(this, mode)
+        }
+        prevActive = active.size
         if (active.isEmpty() && waiting == 0) {
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()

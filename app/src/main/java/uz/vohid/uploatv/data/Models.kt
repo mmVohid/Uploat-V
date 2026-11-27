@@ -8,6 +8,24 @@ enum class ThemeMode(val label: String) {
     DARK("Qorong'i"),
 }
 
+/** Ilovaning aksent rangi. [argb] null bo'lsa, oddiy (oq/qora) ko'rinish. */
+enum class AccentColor(val label: String, val argb: Long?) {
+    MONO("Oddiy", null),
+    BLUE("Ko'k", 0xFF3B82F6),
+    GREEN("Yashil", 0xFF22A06B),
+    PURPLE("Binafsha", 0xFF8B5CF6),
+    ROSE("Pushti", 0xFFEC4899),
+    ORANGE("To'q sariq", 0xFFF59E0B),
+}
+
+/** Hamma yuklashlar tugaganda tebranish: [pattern] — kutish/tebranish davomiyligi (ms). */
+enum class DoneVibration(val label: String, val pattern: LongArray?) {
+    OFF("O'chiq", null),
+    SHORT("Qisqa", longArrayOf(0, 120)),
+    DOUBLE("2 marta", longArrayOf(0, 100, 120, 100)),
+    LONG("Uzun", longArrayOf(0, 450)),
+}
+
 enum class Quality(val label: String, val height: Int?) {
     BEST("Eng yaxshi", null),
     P1080("1080p", 1080),
@@ -102,6 +120,10 @@ data class AppSettings(
     val dismissedVersion: String? = null,
     /** Oxirgi ko'rilgan "Yangiliklar" yozuvi (yangi yozuv chiqsa, belgi qayta paydo bo'ladi). */
     val changelogSeen: String = "",
+    val accent: AccentColor = AccentColor.MONO,
+    /** Qorong'i rejimda fon sof qora (AMOLED). */
+    val amoled: Boolean = false,
+    val doneVibration: DoneVibration = DoneVibration.SHORT,
 )
 
 /** Havola bo'yicha yt-dlp qaytargan qisqa ma'lumot. */

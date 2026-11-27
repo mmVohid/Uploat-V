@@ -2,7 +2,12 @@ package uz.vohid.uploatv.ui.theme
 
 import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
+import uz.vohid.uploatv.data.AccentColor
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -76,9 +81,36 @@ private val DarkColors = darkColorScheme(
     surfaceContainerHighest = Color(0xFF222327),
 )
 
+/** Aksent rangidan asosiy (primary) ranglar to'plamini hosil qiladi; qolgan ranglar neytral qoladi. */
+private fun withAccent(base: ColorScheme, accent: Color, dark: Boolean): ColorScheme {
+    val primary = if (dark) lerp(accent, Color.White, 0.18f) else accent
+    val onPrimary = if (primary.luminance() > 0.5f) Color(0xFF111318) else Color.White
+    val container = if (dark) lerp(base.surface, accent, 0.30f) else lerp(Color.White, accent, 0.16f)
+    val onContainer = if (dark) lerp(accent, Color.White, 0.80f) else lerp(accent, Color.Black, 0.60f)
+    return base.copy(
+        primary = primary,
+        onPrimary = onPrimary,
+        primaryContainer = container,
+        onPrimaryContainer = onContainer,
+    )
+}
+
+/** Sof qora fon: OLED ekranlarda piksellar o'chadi, batareya tejaladi. */
+private fun pureBlack(base: ColorScheme) = base.copy(
+    background = Color.Black,
+    surface = Color.Black,
+    surfaceContainerLowest = Color.Black,
+    surfaceContainerLow = Color(0xFF08090A),
+    surfaceContainer = Color(0xFF0E0F11),
+    surfaceContainerHigh = Color(0xFF151618),
+    surfaceContainerHighest = Color(0xFF1C1D20),
+)
+
 @Composable
 fun UploatTheme(
     themeMode: ThemeMode,
+    accent: AccentColor = AccentColor.MONO,
+    amoled: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val dark = when (themeMode) {
@@ -86,7 +118,12 @@ fun UploatTheme(
         ThemeMode.LIGHT -> false
         ThemeMode.DARK -> true
     }
-    val scheme = if (dark) DarkColors else LightColors
+    val scheme = remember(dark, accent, amoled) {
+        var s = if (dark) DarkColors else LightColors
+        if (dark && amoled) s = pureBlack(s)
+        accent.argb?.let { s = withAccent(s, Color(it), dark) }
+        s
+    }
 
     // Status va navigatsiya paneli ikonkalari mavzuga mos bo'lsin
     val view = LocalView.current

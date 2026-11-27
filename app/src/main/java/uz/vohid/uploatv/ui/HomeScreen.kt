@@ -121,6 +121,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import uz.vohid.uploatv.UploatApp
 import uz.vohid.uploatv.download.DownloadItem
+import uz.vohid.uploatv.download.ErrorAction
+import uz.vohid.uploatv.download.errorAction
 import uz.vohid.uploatv.download.DownloadManager
 import uz.vohid.uploatv.download.formatDuration
 
@@ -131,6 +133,7 @@ fun HomeScreen(
     snackbar: SnackbarHostState,
     onOpenDownloads: () -> Unit,
     onOpenSettings: () -> Unit,
+    onErrorAction: (ErrorAction) -> Unit = {},
 ) {
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val ui by vm.ui.collectAsStateWithLifecycle()
@@ -274,7 +277,13 @@ fun HomeScreen(
 
             item(key = "error") {
                 AnimatedVisibility(visible = ui.error != null) {
-                    ErrorCard(message = ui.error.orEmpty(), detail = ui.errorDetail, url = ui.url, onRetry = vm::retryFetch)
+                    ErrorCard(
+                        message = ui.error.orEmpty(),
+                        detail = ui.errorDetail,
+                        url = ui.url,
+                        onRetry = vm::retryFetch,
+                        onAction = onErrorAction,
+                    )
                 }
             }
 
@@ -439,7 +448,9 @@ private fun ActiveDownloadRow(id: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun ErrorCard(message: String, detail: String?, url: String, onRetry: () -> Unit) {
+private fun ErrorCard(message: String, detail: String?, url: String, onRetry: () -> Unit, onAction: (ErrorAction) -> Unit) {
+    // Sifatni almashtirish faqat yuklash qatorida mazmunli; bu yerda sifat tanlagich bor
+    val action = errorAction(detail).takeIf { it != ErrorAction.BEST_QUALITY } ?: ErrorAction.NONE
     val clipboard = LocalClipboardManager.current
     val context = LocalContext.current
     Card(
@@ -459,6 +470,9 @@ private fun ErrorCard(message: String, detail: String?, url: String, onRetry: ()
             Spacer(Modifier.width(12.dp))
             Text(message, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
             Column(horizontalAlignment = Alignment.End) {
+                if (action != ErrorAction.NONE) {
+                    TextButton(onClick = { onAction(action) }) { Text(action.label) }
+                }
                 TextButton(onClick = onRetry) { Text("Qayta") }
                 if (!detail.isNullOrBlank()) {
                     TextButton(onClick = {
