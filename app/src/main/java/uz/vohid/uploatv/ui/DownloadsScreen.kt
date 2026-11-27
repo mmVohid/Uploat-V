@@ -167,19 +167,22 @@ private fun SwipeDownloadRow(item: DownloadItem, index: Int, snackbar: SnackbarH
         enableDismissFromStartToEnd = false,
         enableDismissFromEndToStart = !item.isActive,
         backgroundContent = {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(MaterialTheme.colorScheme.errorContainer)
-                    .padding(end = 24.dp),
-                contentAlignment = Alignment.CenterEnd,
-            ) {
-                Icon(
-                    Icons.Rounded.Delete,
-                    contentDescription = "O'chirish",
-                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                )
+            // Karta yarim shaffof: fon faqat surish paytida chizilsin, aks holda orqadan ko'rinib turadi
+            if (dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(MaterialTheme.colorScheme.errorContainer)
+                        .padding(end = 24.dp),
+                    contentAlignment = Alignment.CenterEnd,
+                ) {
+                    Icon(
+                        Icons.Rounded.Delete,
+                        contentDescription = "O'chirish",
+                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                    )
+                }
             }
         },
     ) {
