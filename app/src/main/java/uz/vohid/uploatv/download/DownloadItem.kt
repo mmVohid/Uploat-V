@@ -13,6 +13,8 @@ data class DownloadItem(
     val uploader: String?,
     val quality: Quality,
     val playlist: Boolean,
+    /** Playlistdan tanlangan videolar, yt-dlp formatida ("1-3,5"); null = hammasi. */
+    val playlistItems: String? = null,
     val status: Status = Status.QUEUED,
     val progress: Float = 0f,
     val detail: String = "",
@@ -37,6 +39,7 @@ data class DownloadItem(
         put("uploader", uploader)
         put("quality", quality.name)
         put("playlist", playlist)
+        put("playlistItems", playlistItems)
         put("status", status.name)
         put("detail", detail)
         put("error", error)
@@ -58,6 +61,7 @@ data class DownloadItem(
                 uploader = s("uploader"),
                 quality = runCatching { Quality.valueOf(o.optString("quality")) }.getOrDefault(Quality.BEST),
                 playlist = o.optBoolean("playlist"),
+                playlistItems = s("playlistItems"),
                 status = runCatching { Status.valueOf(o.optString("status")) }.getOrDefault(Status.FAILED),
                 progress = if (o.optString("status") == Status.DONE.name) 1f else 0f,
                 detail = o.optString("detail"),

@@ -9,6 +9,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import uz.vohid.uploatv.UploatApp
 import uz.vohid.uploatv.data.MediaInfo
+import uz.vohid.uploatv.data.PlaylistEntry
 import uz.vohid.uploatv.data.Quality
 
 /** Yuklashdan oldin havola haqida ma'lumot (nom, rasm, davomiylik, mavjud sifat) olish. */
@@ -57,6 +58,19 @@ object InfoFetcher {
             (0 until arr.length()).maxOfOrNull { arr.optJSONObject(it)?.optInt("height", 0) ?: 0 }
         }?.takeIf { it > 0 }
 
+        val entryList = if (isPlaylist && entries != null) {
+            (0 until entries.length()).map { i ->
+                val e = entries.optJSONObject(i)
+                PlaylistEntry(
+                    index = i + 1,
+                    title = e?.str("title") ?: e?.str("id") ?: "Video ${i + 1}",
+                    durationSec = e?.takeIf { !it.isNull("duration") }?.optDouble("duration")?.toLong(),
+                )
+            }
+        } else {
+            emptyList()
+        }
+
         return MediaInfo(
             title = o.str("title") ?: "Nomsiz",
             uploader = o.str("uploader") ?: o.str("channel"),
@@ -66,6 +80,7 @@ object InfoFetcher {
             entryCount = if (isPlaylist) (entries?.length() ?: o.optInt("playlist_count")) else 1,
             maxHeight = maxHeight,
             sizes = if (isPlaylist) emptyMap() else estimateSizes(o.optJSONArray("formats")),
+            entries = entryList,
         )
     }
 

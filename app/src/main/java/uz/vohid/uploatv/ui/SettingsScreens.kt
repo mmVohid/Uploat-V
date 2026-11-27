@@ -594,6 +594,29 @@ fun DownloadSettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
             }
         }
 
+        SectionLabel("Ko'p havola")
+        SettingsCard {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                val bulkModes = uz.vohid.uploatv.data.BulkMode.entries
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    bulkModes.forEachIndexed { i, mode ->
+                        SegmentedButton(
+                            selected = settings.bulkMode == mode,
+                            onClick = { vm.setBulkMode(mode) },
+                            shape = SegmentedButtonDefaults.itemShape(i, bulkModes.size),
+                            icon = {},
+                        ) { Text(mode.label, maxLines = 1) }
+                    }
+                }
+                Text(
+                    text = settings.bulkMode.hint,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        Caption("Bir nechta havola birdan joylanganda (yoki nusxalanganda) qanday ishlashi")
+
         SectionLabel("Tezlik")
         SettingsCard {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -764,6 +787,31 @@ fun AboutScreen(vm: SettingsViewModel, onOpenGuide: () -> Unit, onBack: () -> Un
 
         SectionLabel("Yangilanishlar")
         SettingsCard {
+            val check by vm.updateCheck.collectAsStateWithLifecycle()
+            ActionRow(
+                icon = Icons.Rounded.Refresh,
+                title = "Yangilanishni tekshirish",
+                subtitle = when {
+                    check.checking -> "Tekshirilmoqda…"
+                    check.message != null -> check.message
+                    else -> "Hozirgi versiya: ${BuildConfig.VERSION_NAME}"
+                },
+                onClick = vm::checkUpdateNow,
+                trailing = if (check.checking) {
+                    { CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp) }
+                } else {
+                    null
+                },
+            )
+            RowDivider()
+            SwitchRow(
+                icon = Icons.Rounded.Notifications,
+                title = "Yangi versiya haqida xabar",
+                subtitle = "Reliz chiqqanda bosh sahifada bildiriladi",
+                checked = settings.updateCheck,
+                onChange = vm::setUpdateCheck,
+            )
+            RowDivider()
             ActionRow(
                 icon = Icons.Rounded.SystemUpdate,
                 title = "Eng so'nggi versiya",

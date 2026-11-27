@@ -44,6 +44,16 @@ enum class FileNameTemplate(val label: String, val example: String, val pattern:
     DATE_TITLE("Sana – Sarlavha", "2026-11-27 - Video nomi.mp4", "%(upload_date>%Y-%m-%d|Sanasiz)s - %(title).80s"),
 }
 
+/** Ko'p havola joylanganda nima qilinishi. */
+enum class BulkMode(val label: String, val hint: String) {
+    INSTANT("Darrov", "Topilgan hamma havola darrov navbatga qo'shiladi"),
+    CONFIRM("Tasdiq bilan", "Ro'yxat chiqadi, tasdiqlasangiz hammasi yuklanadi"),
+    MANUAL("Qo'lda", "Ro'yxatdan kerakli havolalarni o'zingiz tanlaysiz"),
+}
+
+/** Playlistdagi bitta video (tanlash oynasi uchun). [index] 1 dan boshlanadi. */
+data class PlaylistEntry(val index: Int, val title: String, val durationSec: Long?)
+
 data class AppSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val defaultQuality: Quality = Quality.BEST,
@@ -77,6 +87,14 @@ data class AppSettings(
     val maxParallel: Int = 2,
     val speedLimit: SpeedLimit = SpeedLimit.NONE,
     val fileNameTemplate: FileNameTemplate = FileNameTemplate.TITLE_ID,
+    val bulkMode: BulkMode = BulkMode.MANUAL,
+    /** Yangi versiya haqida xabar berish (GitHub Releases tekshiriladi). */
+    val updateCheck: Boolean = true,
+    val lastUpdateCheck: Long = 0L,
+    val latestVersion: String? = null,
+    val latestUrl: String? = null,
+    /** Foydalanuvchi yopib qo'ygan versiya: shu versiya haqida qayta ko'rsatilmaydi. */
+    val dismissedVersion: String? = null,
 )
 
 /** Havola bo'yicha yt-dlp qaytargan qisqa ma'lumot. */
@@ -90,4 +108,6 @@ data class MediaInfo(
     val maxHeight: Int?,
     /** Har sifat uchun taxminiy fayl hajmi (bayt); ma'lum bo'lmasa kalit yo'q. */
     val sizes: Map<Quality, Long> = emptyMap(),
+    /** Playlist videolari ro'yxati (playlist bo'lmasa bo'sh). */
+    val entries: List<PlaylistEntry> = emptyList(),
 )

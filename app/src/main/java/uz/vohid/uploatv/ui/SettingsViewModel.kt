@@ -31,6 +31,9 @@ data class EngineUi(
     val messageOk: Boolean = true,
 )
 
+/** "Yangilanishni tekshirish" holati (Ilova haqida sahifasi). */
+data class UpdateCheckUi(val checking: Boolean = false, val message: String? = null)
+
 data class CacheUi(
     val bytes: Long? = null,
     val busy: Boolean = false,
@@ -50,8 +53,38 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     private val _cache = MutableStateFlow(CacheUi())
     val cache: StateFlow<CacheUi> = _cache.asStateFlow()
 
+    private val _updateCheck = MutableStateFlow(UpdateCheckUi())
+    val updateCheck: StateFlow<UpdateCheckUi> = _updateCheck.asStateFlow()
+
     init {
         loadVersion()
+    }
+
+    fun setBulkMode(m: uz.vohid.uploatv.data.BulkMode) = viewModelScope.launch { repo.setBulkMode(m) }
+    fun setUpdateCheck(on: Boolean) = viewModelScope.launch { repo.setUpdateCheck(on) }
+
+    /** Qo'lda tekshirish: natija matn sifatida ko'rsatiladi. */
+    fun checkUpdateNow() {
+        if (_updateCheck.value.checking) return
+        viewModelScope.launch {
+            _updateCheck.value = UpdateCheckUi(checking = true)
+            val latest = uz.vohid.uploatv.update.UpdateChecker.fetchLatest()
+            val current = uz.vohid.uploatv.BuildConfig.VERSION_NAME
+            val message = when {
+                latest == null -> "Tekshirib bo'lmadi. Internetni tekshiring"
+                else -> {
+                    repo.setLatestRelease(latest.version, latest.url)
+                    when {
+                        uz.vohid.uploatv.update.UpdateChecker.isNewer(latest.version, current) ->
+                            "Yangi versiya bor: v${latest.version}"
+                        uz.vohid.uploatv.update.UpdateChecker.parseVersion(current) == null ->
+                            "Sinov versiyasi. Oxirgi reliz: v${latest.version}"
+                        else -> "Eng so'nggi versiya o'rnatilgan"
+                    }
+                }
+            }
+            _updateCheck.value = UpdateCheckUi(message = message)
+        }
     }
 
     fun setTheme(mode: ThemeMode) = viewModelScope.launch { repo.setTheme(mode) }

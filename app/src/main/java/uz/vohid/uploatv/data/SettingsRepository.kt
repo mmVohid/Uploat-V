@@ -32,6 +32,12 @@ class SettingsRepository(private val context: Context) {
         val RETENTION = stringPreferencesKey("history_retention")
         val CLIP_SHORTCUT = booleanPreferencesKey("clip_shortcut")
         val MAX_PARALLEL = intPreferencesKey("max_parallel")
+        val BULK_MODE = stringPreferencesKey("bulk_mode")
+        val UPDATE_CHECK = booleanPreferencesKey("update_check")
+        val LAST_APP_UPDATE_CHECK = longPreferencesKey("last_app_update_check")
+        val LATEST_VERSION = stringPreferencesKey("latest_version")
+        val LATEST_URL = stringPreferencesKey("latest_url")
+        val DISMISSED_VERSION = stringPreferencesKey("dismissed_version")
         val SPEED_LIMIT = stringPreferencesKey("speed_limit")
         val FILE_TEMPLATE = stringPreferencesKey("file_name_template")
     }
@@ -57,6 +63,12 @@ class SettingsRepository(private val context: Context) {
             historyRetention = p[Keys.RETENTION].toEnum(Retention.FOREVER),
             clipShortcut = p[Keys.CLIP_SHORTCUT] ?: false,
             maxParallel = (p[Keys.MAX_PARALLEL] ?: 2).coerceIn(1, 3),
+            bulkMode = p[Keys.BULK_MODE].toEnum(BulkMode.MANUAL),
+            updateCheck = p[Keys.UPDATE_CHECK] ?: true,
+            lastUpdateCheck = p[Keys.LAST_APP_UPDATE_CHECK] ?: 0L,
+            latestVersion = p[Keys.LATEST_VERSION],
+            latestUrl = p[Keys.LATEST_URL],
+            dismissedVersion = p[Keys.DISMISSED_VERSION],
             speedLimit = p[Keys.SPEED_LIMIT].toEnum(SpeedLimit.NONE),
             fileNameTemplate = p[Keys.FILE_TEMPLATE].toEnum(FileNameTemplate.TITLE_ID),
         )
@@ -72,6 +84,14 @@ class SettingsRepository(private val context: Context) {
     suspend fun setEngineBannerDismissed(tag: String) = context.dataStore.edit { it[Keys.ENGINE_BANNER_DISMISSED] = tag }
     suspend fun setNetworkMode(m: NetworkMode) = context.dataStore.edit { it[Keys.NETWORK_MODE] = m.name }
     suspend fun setRetention(r: Retention) = context.dataStore.edit { it[Keys.RETENTION] = r.name }
+    suspend fun setBulkMode(m: BulkMode) = context.dataStore.edit { it[Keys.BULK_MODE] = m.name }
+    suspend fun setUpdateCheck(on: Boolean) = context.dataStore.edit { it[Keys.UPDATE_CHECK] = on }
+    suspend fun setLatestRelease(version: String, url: String) = context.dataStore.edit {
+        it[Keys.LATEST_VERSION] = version
+        it[Keys.LATEST_URL] = url
+        it[Keys.LAST_APP_UPDATE_CHECK] = System.currentTimeMillis()
+    }
+    suspend fun dismissUpdate(version: String) = context.dataStore.edit { it[Keys.DISMISSED_VERSION] = version }
     suspend fun setMaxParallel(n: Int) = context.dataStore.edit { it[Keys.MAX_PARALLEL] = n.coerceIn(1, 3) }
     suspend fun setSpeedLimit(l: SpeedLimit) = context.dataStore.edit { it[Keys.SPEED_LIMIT] = l.name }
     suspend fun setFileNameTemplate(t: FileNameTemplate) = context.dataStore.edit { it[Keys.FILE_TEMPLATE] = t.name }

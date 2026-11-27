@@ -6,6 +6,13 @@ import androidx.compose.ui.res.imageResource
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.SystemUpdate
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import uz.vohid.uploatv.data.PlaylistEntry
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -128,6 +135,8 @@ fun HomeScreen(
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val ui by vm.ui.collectAsStateWithLifecycle()
     val banner by vm.banner.collectAsStateWithLifecycle()
+    val update by vm.update.collectAsStateWithLifecycle()
+    var showPicker by remember { mutableStateOf(false) }
     if (ui.duplicate) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = vm::dismissDuplicate,
@@ -164,13 +173,24 @@ fun HomeScreen(
     val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
 
     val pasteFromClipboard: () -> Unit = {
-        val url = URL_REGEX.find(clipboard.getText()?.text.orEmpty())?.value
         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-        if (url != null) {
-            vm.onUrlChange(url, immediate = true)
-        } else {
+        if (!vm.onPaste(clipboard.getText()?.text.orEmpty())) {
             scope.launch { snackbar.showSnackbar("Buferda havola yo'q") }
         }
+    }
+    LaunchedEffect(Unit) { vm.events.collect { snackbar.showSnackbar(it) } }
+
+    val pickInfo = ui.info
+    if (showPicker && pickInfo != null && pickInfo.entries.isNotEmpty()) {
+        PlaylistPickerSheet(
+            entries = pickInfo.entries,
+            initial = ui.selectedEntries,
+            onDone = {
+                vm.setSelectedEntries(it)
+                showPicker = false
+            },
+            onDismiss = { showPicker = false },
+        )
     }
 
     Scaffold(
@@ -191,6 +211,16 @@ fun HomeScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            update?.let { u ->
+                item(key = "update") {
+                    UpdateBanner(
+                        version = u.version,
+                        onDownload = { openExternalUrl(context, u.url) },
+                        onDismiss = vm::dismissUpdate,
+                        modifier = Modifier.animateItem(),
+                    )
+                }
+            }
             if (banner.phase != BannerPhase.HIDDEN) {
                 item(key = "engine") {
                     EngineBanner(
@@ -242,12 +272,32 @@ fun HomeScreen(
                 }
             }
 
+            ui.bulk?.let { bulk ->
+                item(key = "bulk-header") {
+                    BulkHeader(
+                        bulk = bulk,
+                        onCancel = vm::cancelBulk,
+                        onAll = { vm.setAllBulk(true) },
+                        onNone = { vm.setAllBulk(false) },
+                    )
+                }
+                items(bulk.urls.size, key = { "bulk-$it" }) { i ->
+                    BulkRow(
+                        url = bulk.urls[i],
+                        checked = i in bulk.selected,
+                        selectable = bulk.selectable,
+                        onToggle = { vm.toggleBulk(i) },
+                        modifier = Modifier.animateItem(),
+                    )
+                }
+            }
+
             item(key = "info") {
                 AnimatedVisibility(visible = ui.info != null) {
                     ui.info?.let { info ->
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             InfoCard(info)
-                            OptionsCard(ui = ui, vm = vm)
+                            OptionsCard(ui = ui, vm = vm, onPickEntries = { showPicker = true })
                         }
                     }
                 }
@@ -279,12 +329,23 @@ fun HomeScreen(
                 onDownloads = onOpenDownloads,
                 onSettings = onOpenSettings,
                 activeCount = activeCount,
-                downloadLabel = ui.info?.let { if (it.isPlaylist) "Playlistni yuklash (${it.entryCount})" else "Videoni yuklash" },
+                downloadLabel = run {
+                    val bulk = ui.bulk
+                    val info = ui.info
+                    when {
+                        bulk != null ->
+                            if (bulk.selectable) "Tanlanganlarni yuklash (${bulk.selected.size})" else "${bulk.urls.size} ta havolani yuklash"
+                        info != null ->
+                            if (info.isPlaylist) "Playlistni yuklash (${ui.selectedEntries?.size ?: info.entryCount})" else "Videoni yuklash"
+                        else -> null
+                    }
+                },
+                downloadEnabled = (ui.bulk?.selected?.isNotEmpty() ?: true) && ui.selectedEntries?.isEmpty() != true,
                 onDownload = {
                     focus.clearFocus()
                     keyboard?.hide()
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    vm.download()
+                    if (ui.bulk != null) vm.downloadBulk() else vm.download()
                 },
             )
         }
@@ -452,7 +513,7 @@ private fun InfoCard(info: MediaInfo) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun OptionsCard(ui: HomeUi, vm: HomeViewModel) {
+private fun OptionsCard(ui: HomeUi, vm: HomeViewModel, onPickEntries: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().glass(RoundedCornerShape(20.dp)),
         shape = RoundedCornerShape(20.dp),
@@ -475,6 +536,29 @@ private fun OptionsCard(ui: HomeUi, vm: HomeViewModel) {
                         onClick = { vm.setQuality(q) },
                         label = { Text(if (size != null) "${q.label} · ~${formatBytes(size)}" else q.label) },
                     )
+                }
+            }
+
+            val info = ui.info
+            if (info != null && info.isPlaylist && info.entries.isNotEmpty()) {
+                val picked = ui.selectedEntries
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable(onClick = onPickEntries)
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Videolarni tanlash", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            text = if (picked == null) "Hammasi (${info.entryCount})" else "${picked.size} / ${info.entryCount} tanlangan",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
                 }
             }
 
@@ -542,6 +626,7 @@ private fun FloatingBar(
     activeCount: Int,
     /** null bo'lsa — oddiy panel; bo'lmasa asosiy tugma "yuklash" ga aylanadi. */
     downloadLabel: String?,
+    downloadEnabled: Boolean,
     onDownload: () -> Unit,
 ) {
     val pasteSource = remember { MutableInteractionSource() }
@@ -575,6 +660,7 @@ private fun FloatingBar(
             } else {
                 Button(
                     onClick = onDownload,
+                    enabled = downloadEnabled,
                     interactionSource = downloadSource,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -634,6 +720,177 @@ private fun PlatformBadge(url: String) {
             contentAlignment = Alignment.Center,
         ) {
             Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+        }
+    }
+}
+
+@Composable
+private fun UpdateBanner(version: String, onDownload: () -> Unit, onDismiss: () -> Unit, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.fillMaxWidth().glass(
+            RoundedCornerShape(20.dp),
+            tint = MaterialTheme.colorScheme.primaryContainer,
+            tintAlpha = 0.85f,
+        ),
+        shape = RoundedCornerShape(20.dp),
+        colors = glassCardColors(MaterialTheme.colorScheme.onPrimaryContainer),
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Rounded.SystemUpdate, contentDescription = null)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Yangi versiya bor", style = MaterialTheme.typography.titleSmall)
+                Text("v$version", style = MaterialTheme.typography.bodySmall)
+            }
+            TextButton(onClick = onDownload) { Text("Yuklab olish") }
+            IconButton(onClick = onDismiss) { Icon(Icons.Rounded.Close, contentDescription = "Yopish") }
+        }
+    }
+}
+
+private fun openExternalUrl(context: android.content.Context, url: String) {
+    try {
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    } catch (_: ActivityNotFoundException) {
+        Toast.makeText(context, "Brauzer topilmadi", Toast.LENGTH_SHORT).show()
+    }
+}
+
+@Composable
+private fun BulkHeader(bulk: BulkUi, onCancel: () -> Unit, onAll: () -> Unit, onNone: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth().glass(RoundedCornerShape(20.dp)),
+        shape = RoundedCornerShape(20.dp),
+        colors = glassCardColors(),
+    ) {
+        Column(Modifier.padding(start = 16.dp, top = 12.dp, end = 8.dp, bottom = 8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("${bulk.urls.size} ta havola topildi", style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        text = if (bulk.selectable) "Kerakli havolalarni belgilang" else "Hammasi navbatga qo'shiladi",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                TextButton(onClick = onCancel) { Text("Bekor qilish") }
+            }
+            if (bulk.selectable) {
+                Row {
+                    TextButton(onClick = onAll) { Text("Hammasi") }
+                    TextButton(onClick = onNone) { Text("Hech biri") }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BulkRow(url: String, checked: Boolean, selectable: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
+    val host = runCatching { Uri.parse(url).host }.getOrNull() ?: url
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .glass(RoundedCornerShape(16.dp))
+            .let { if (selectable) it.clickable(onClick = onToggle) else it }
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (selectable) {
+            Checkbox(checked = checked, onCheckedChange = null)
+            Spacer(Modifier.width(12.dp))
+        }
+        PlatformBadge(url)
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(host, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                url,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+/** Playlistdan kerakli videolarni belgilash oynasi. Hammasi belgilangan bo'lsa, null qaytadi (= hammasi). */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PlaylistPickerSheet(
+    entries: List<PlaylistEntry>,
+    initial: Set<Int>?,
+    onDone: (Set<Int>?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var selected by remember { mutableStateOf(initial ?: entries.map { it.index }.toSet()) }
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    ) {
+        Column(Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.padding(horizontal = 20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Videolarni tanlang", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                Text(
+                    "${selected.size} / ${entries.size}",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            Row(Modifier.padding(horizontal = 12.dp)) {
+                TextButton(onClick = { selected = entries.map { it.index }.toSet() }) { Text("Hammasi") }
+                TextButton(onClick = { selected = emptySet() }) { Text("Hech biri") }
+            }
+            LazyColumn(Modifier.weight(1f, fill = false)) {
+                items(entries, key = { it.index }) { e ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                selected = if (e.index in selected) selected - e.index else selected + e.index
+                            }
+                            .padding(horizontal = 20.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Checkbox(checked = e.index in selected, onCheckedChange = null)
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            "${e.index}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.width(28.dp),
+                        )
+                        Column(Modifier.weight(1f)) {
+                            Text(e.title, style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            e.durationSec?.let {
+                                Text(
+                                    formatDuration(it),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            Button(
+                onClick = { onDone(if (selected.size == entries.size) null else selected) },
+                enabled = selected.isNotEmpty(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 20.dp, vertical = 12.dp)
+                    .height(52.dp),
+            ) {
+                Text("Tayyor (${selected.size})", style = MaterialTheme.typography.titleMedium)
+            }
         }
     }
 }

@@ -23,6 +23,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import uz.vohid.uploatv.data.AppSettings
@@ -50,6 +52,9 @@ object DownloadManager {
     private lateinit var app: Context
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val running = MutableStateFlow(0)
+
+    /** Ko'p havola birdan qo'shilganda ma'lumot olish jarayonlari bir vaqtda 2 tadan oshmasin. */
+    private val infoGate = Semaphore(2)
     private val jobs = ConcurrentHashMap<String, Job>()
 
     private val _items = MutableStateFlow<List<DownloadItem>>(emptyList())
@@ -161,10 +166,13 @@ object DownloadManager {
             try {
                 val noPlaylist = url.contains("v=") && url.contains("list=")
                 // processId = id: shu id bilan "Bekor qilish" ma'lumot olishni ham to'xtatadi
-                val info = InfoFetcher.fetch(
-                    url, noPlaylist, processId = id,
-                    cancelled = { get(id)?.status == Status.CANCELED },
-                )
+                val info = infoGate.withPermit {
+                    if (get(id)?.status == Status.CANCELED) return@launch
+                    InfoFetcher.fetch(
+                        url, noPlaylist, processId = id,
+                        cancelled = { get(id)?.status == Status.CANCELED },
+                    )
+                }
                 if (get(id)?.status == Status.CANCELED) return@launch
                 mutate(id) {
                     it.copy(
@@ -423,7 +431,12 @@ object DownloadManager {
             addOption("--fragment-retries", "5")
             addOption("--socket-timeout", "20")
             CookieStore.fileFor(item.url)?.let { addOption("--cookies", it.absolutePath) }
-            addOption(if (item.playlist) "--yes-playlist" else "--no-playlist")
+            if (item.playlist) {
+                addOption("--yes-playlist")
+                item.playlistItems?.let { addOption("--playlist-items", it) }
+            } else {
+                addOption("--no-playlist")
+            }
 
             val h = item.quality.height
             val selector = if (h == null) "bv*+ba/b" else "bv*[height<=$h]+ba/b[height<=$h]/b"
