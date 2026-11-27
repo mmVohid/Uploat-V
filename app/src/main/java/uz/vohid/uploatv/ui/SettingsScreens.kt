@@ -1121,6 +1121,7 @@ private fun InfoRow(title: String, value: String) {
 
 // ======================= Cookies =======================
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CookiesScreen(vm: SettingsViewModel, onOpenLogin: (String) -> Unit, onBack: () -> Unit) {
     val settings by vm.settings.collectAsStateWithLifecycle()
